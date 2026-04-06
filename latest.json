@@ -4,15 +4,15 @@
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-arm64.dmg",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.2/ZQ.Mark-1.0.2-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x64.dmg",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.2/ZQ.Mark-1.0.2.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-Setup-1.1.0-x64.exe",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.2/ZQ.Mark.Setup.1.0.2.exe",
       "size": 78000000
     },
     "linux-x64": {
