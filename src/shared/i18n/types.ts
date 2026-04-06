@@ -79,6 +79,12 @@ export interface MenuLocale {
     about: string
     devTools: string
   }
+  tray: {
+    show: string
+    newDocument: string
+    newLibrary: string
+    quit: string
+  }
 }
 
 export interface AppLocale {

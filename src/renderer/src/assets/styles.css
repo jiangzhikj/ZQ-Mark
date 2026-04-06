@@ -162,6 +162,7 @@ button {
 
 /* ===== Platform-specific overrides ===== */
 [data-platform='win32'],
-[data-platform='linux'] {
+[data-platform='linux'],
+[data-platform='web'] {
   --titlebar-height: 40px;
 }

@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import {
+  Check,
+  Download,
+  Info,
+  Monitor,
+  Moon,
+  Palette,
+  Settings,
+  Sun,
+  X,
+} from '@/components/icons'
 
 const props = defineProps<{
   visible: boolean
@@ -94,10 +105,7 @@ function onCheckUpdate() {
               :class="{ active: activeTab === 'general' }"
               @click="activeTab = 'general'"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-                <circle cx="8" cy="8" r="3" />
-                <path d="M8 1v2M8 13v2M1 8h2M13 8h2M2.9 2.9l1.4 1.4M11.7 11.7l1.4 1.4M13.1 2.9l-1.4 1.4M4.3 11.7l-1.4 1.4" />
-              </svg>
+              <Settings :size="16" :stroke-width="1.3" />
               {{ t('settings.general') }}
             </button>
             <button
@@ -105,10 +113,7 @@ function onCheckUpdate() {
               :class="{ active: activeTab === 'appearance' }"
               @click="activeTab = 'appearance'"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-                <rect x="2" y="2" width="12" height="12" rx="2" />
-                <path d="M2 6h12" />
-              </svg>
+              <Palette :size="16" :stroke-width="1.3" />
               {{ t('settings.appearance') }}
             </button>
             <button
@@ -116,19 +121,14 @@ function onCheckUpdate() {
               :class="{ active: activeTab === 'about' }"
               @click="activeTab = 'about'"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3">
-                <circle cx="8" cy="8" r="6" />
-                <path d="M8 5v1M8 8v3" />
-              </svg>
+              <Info :size="16" :stroke-width="1.3" />
               {{ t('settings.about') }}
             </button>
           </nav>
 
           <div class="settings-content">
             <button class="close-btn" @click="emit('close')">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M3 3l8 8M11 3l-8 8" />
-              </svg>
+              <X :size="14" :stroke-width="1.5" />
             </button>
 
             <div v-if="activeTab === 'general'" class="tab-content">
@@ -149,9 +149,12 @@ function onCheckUpdate() {
                   >
                     <span class="lang-name">{{ lang.isSystem ? t('settings.languageSystem') : lang.label }}</span>
                     <span v-if="!lang.isSystem" class="lang-desc">{{ lang.desc }}</span>
-                    <svg v-if="selectedLocale === lang.code" class="check-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M6.5 11.5L3 8l1-1 2.5 2.5L12 4l1 1-6.5 6.5z" />
-                    </svg>
+                    <Check
+                      v-if="selectedLocale === lang.code"
+                      class="check-icon"
+                      :size="16"
+                      :stroke-width="2.5"
+                    />
                   </button>
                 </div>
               </div>
@@ -190,17 +193,17 @@ function onCheckUpdate() {
                     @click="onThemeChange(th.code)"
                   >
                     <span class="theme-icon">
-                      <svg v-if="th.code === 'system'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="3" width="20" height="14" rx="2" />
-                        <path d="M8 21h8M12 17v4" />
-                      </svg>
-                      <svg v-else-if="th.code === 'light'" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="4" />
-                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-                      </svg>
-                      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                      </svg>
+                      <Monitor
+                        v-if="th.code === 'system'"
+                        :size="24"
+                        :stroke-width="1.5"
+                      />
+                      <Sun
+                        v-else-if="th.code === 'light'"
+                        :size="24"
+                        :stroke-width="1.5"
+                      />
+                      <Moon v-else :size="24" :stroke-width="1.5" />
                     </span>
                     <span class="theme-name">{{ t(`settings.theme${th.code.charAt(0).toUpperCase() + th.code.slice(1)}`) }}</span>
                   </button>
@@ -237,11 +240,7 @@ function onCheckUpdate() {
 
               <div class="setting-group">
                 <button class="check-update-btn" @click="onCheckUpdate">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
+                  <Download :size="16" :stroke-width="2" />
                   {{ t('update.checkUpdate') }}
                 </button>
               </div>

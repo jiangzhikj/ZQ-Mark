@@ -84,6 +84,12 @@ const zhTW: AppLocale = {
       markdownReference: 'Markdown 參考',
       about: '關於 ZQ Mark',
       devTools: '開發者工具'
+    },
+    tray: {
+      show: '顯示主視窗',
+      newDocument: '新建文檔',
+      newLibrary: '新建檔案庫',
+      quit: '結束'
     }
   },
   editor: {

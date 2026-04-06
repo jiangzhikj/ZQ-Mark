@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Menu, Minus, Square, SquareStack, X } from '@/components/icons'
 
 defineProps<{
   fileName: string
@@ -17,14 +18,17 @@ const { t } = useI18n()
 const platform = ref('darwin')
 const isMaximized = ref(false)
 const isMac = ref(true)
+const isWeb = ref(false)
+const menuBtnRef = ref<HTMLButtonElement | null>(null)
 
 let cleanupMaximize: (() => void) | null = null
 
 onMounted(async () => {
   platform.value = await window.electron.getPlatform()
   isMac.value = platform.value === 'darwin'
+  isWeb.value = platform.value === 'web'
 
-  if (!isMac.value) {
+  if (!isMac.value && !isWeb.value) {
     isMaximized.value = await window.electron.windowIsMaximized()
     cleanupMaximize = window.electron.onMaximizeChange((val) => {
       isMaximized.value = val
@@ -37,6 +41,12 @@ onUnmounted(() => {
 })
 
 function onMenuClick() {
+  if (platform.value === 'web') {
+    const el = menuBtnRef.value
+    const rect = el?.getBoundingClientRect()
+    window.dispatchEvent(new CustomEvent('web:app-menu-open', { detail: rect }))
+    return
+  }
   window.electron.popupMenu()
 }
 
@@ -55,12 +65,16 @@ function onClose() {
 
 <template>
   <header class="titlebar" :class="{ 'titlebar--win': !isMac }">
-    <!-- Win/Linux: hamburger menu button on left -->
+    <!-- Win/Linux/Web: hamburger menu button on left -->
     <div v-if="!isMac" class="titlebar-left">
-      <button class="menu-btn" :title="t('titlebar.menu')" @click="onMenuClick">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
-        </svg>
+      <button
+        ref="menuBtnRef"
+        class="menu-btn"
+        type="button"
+        :title="t('titlebar.menu')"
+        @click="onMenuClick"
+      >
+        <Menu :size="16" :stroke-width="1.4" />
       </button>
     </div>
 
@@ -69,25 +83,17 @@ function onClose() {
       <span v-if="isModified" class="modified-indicator">&mdash; {{ t('status.modified') }}</span>
     </div>
 
-    <!-- Win/Linux: window control buttons on right -->
-    <div v-if="!isMac" class="window-controls">
+    <!-- Win/Linux: window control buttons on right（网页版无系统窗口） -->
+    <div v-if="!isMac && !isWeb" class="window-controls">
       <button class="win-btn win-btn--minimize" :title="t('titlebar.minimize')" @click="onMinimize">
-        <svg width="10" height="10" viewBox="0 0 10 10">
-          <path d="M1 5h8" stroke="currentColor" stroke-width="1.2" />
-        </svg>
+        <Minus :size="10" :stroke-width="1.2" />
       </button>
       <button class="win-btn win-btn--maximize" :title="t('titlebar.maximize')" @click="onMaximizeToggle">
-        <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10">
-          <rect x="1" y="1" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.2" fill="none" />
-        </svg>
-        <svg v-else width="10" height="10" viewBox="0 0 10 10">
-          <path d="M3 1h5a1 1 0 0 1 1 1v5M1 3h5a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.1" fill="none" />
-        </svg>
+        <Square v-if="!isMaximized" :size="10" :stroke-width="1.2" />
+        <SquareStack v-else :size="10" :stroke-width="1.1" />
       </button>
       <button class="win-btn win-btn--close" :title="t('titlebar.close')" @click="onClose">
-        <svg width="10" height="10" viewBox="0 0 10 10">
-          <path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
-        </svg>
+        <X :size="10" :stroke-width="1.2" />
       </button>
     </div>
 
@@ -153,9 +159,10 @@ function onClose() {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 100%;
+  width: 32px;
+  height: 32px;
   border: none;
+  border-radius: 8px;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;

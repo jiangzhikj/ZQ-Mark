@@ -27,6 +27,7 @@ import {
   Trash2,
   X,
 } from '@/components/icons';
+import { ZqScrollbar } from '@/components/ui';
 import { $t } from '../utils/i18n';
 
 interface Props {
@@ -70,7 +71,9 @@ function openSubmenu(type: 'align' | 'color') {
   }
 }
 
-const menuStyle = computed(() => {
+const menuScrollbarHeight = computed(() => `${window.innerHeight * 0.75}px`);
+
+const menuPositionStyle = computed(() => {
   const maxH = window.innerHeight * 0.75;
   let top = props.position.y;
   let left = props.position.x;
@@ -83,7 +86,6 @@ const menuStyle = computed(() => {
   return {
     left: `${left}px`,
     top: `${top}px`,
-    maxHeight: `${maxH}px`,
   };
 });
 
@@ -392,10 +394,11 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="zq-table-context-menu"
-    :style="menuStyle"
+    :style="menuPositionStyle"
     @click.stop
     @contextmenu.prevent
   >
+    <ZqScrollbar :height="menuScrollbarHeight">
     <!-- Merge / Split (prominent when multi-cell selected) -->
     <template v-if="hasMultiCellSelection">
       <button
@@ -603,6 +606,7 @@ onBeforeUnmount(() => {
       <TableProperties class="zq-table-context-menu__icon" />
       <span>{{ $t('zq-editor.table.deleteTable') }}</span>
     </button>
+    </ZqScrollbar>
   </div>
 </template>
 
@@ -616,7 +620,6 @@ onBeforeUnmount(() => {
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 4px;
-  overflow-y: auto;
 }
 
 .zq-table-context-menu__item {

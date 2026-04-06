@@ -20,6 +20,8 @@ import {
 } from '@/components/icons';
 import { $t } from '../utils/i18n';
 
+import { ZqScrollbar } from '@/components/ui';
+
 import ColorPicker from './ColorPicker.vue';
 import EmojiPicker from './EmojiPicker.vue';
 import LinkEditor from './LinkEditor.vue';
@@ -177,16 +179,18 @@ function openLinkEditor() {
           <ChevronDown class="h-3 w-3" />
         </button>
         <div v-if="showFontSizeMenu" class="zq-bubble-toolbar__fontsize-dropdown">
-          <button
-            v-for="opt in fontSizeOptions"
-            :key="opt.value ?? 'default'"
-            class="zq-bubble-toolbar__dropdown-item"
-            :class="{ 'is-active': getCurrentFontSize() === opt.label() }"
-            :style="opt.value ? { fontSize: opt.value } : {}"
-            @click="setFontSize(opt.value)"
-          >
-            {{ opt.label() }}
-          </button>
+          <ZqScrollbar height="252px">
+            <button
+              v-for="opt in fontSizeOptions"
+              :key="opt.value ?? 'default'"
+              class="zq-bubble-toolbar__dropdown-item"
+              :class="{ 'is-active': getCurrentFontSize() === opt.label() }"
+              :style="opt.value ? { fontSize: opt.value } : {}"
+              @click="setFontSize(opt.value)"
+            >
+              {{ opt.label() }}
+            </button>
+          </ZqScrollbar>
         </div>
       </div>
     </div>
@@ -499,7 +503,6 @@ function openLinkEditor() {
   z-index: 2001;
   min-width: 100px;
   max-height: 260px;
-  overflow-y: auto;
   background: var(--el-bg-color);
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;

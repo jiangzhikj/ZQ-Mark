@@ -26,15 +26,25 @@ let _pendingJSON: any = null
 let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let _suppressUpdate = false
 let _beforeSaveMd: (() => Promise<'md' | 'zq' | 'cancel'>) | null = null
+
+let _unsavedDialog: (() => Promise<'save' | 'discard' | 'cancel'>) | null = null
 const AUTO_SAVE_DELAY = 1500
 
 function t(key: string): string {
   return (i18n.global as any).t(key)
 }
 
+/** 显示用文件名（支持 `web:xxx.md` 与 Windows 路径） */
+function fileNameFromPath(path: string): string {
+  const base = path.replace(/^web:/, '')
+  const seg = base.split(/[/\\]/).pop() || base
+  return seg || ''
+}
+
 function getExtension(path: string): string {
-  const idx = path.lastIndexOf('.')
-  return idx >= 0 ? path.slice(idx).toLowerCase() : ''
+  const name = fileNameFromPath(path)
+  const idx = name.lastIndexOf('.')
+  return idx >= 0 ? name.slice(idx).toLowerCase() : ''
 }
 
 export function useEditor() {
@@ -141,7 +151,9 @@ export function useEditor() {
       : isModified.value
     if (!hasUnsaved) return true
 
-    const result = await window.electron.showUnsavedDialog()
+    const result = _unsavedDialog
+      ? await _unsavedDialog()
+      : 'cancel'
     if (result === 'save') {
       await saveFile()
       return true
@@ -213,8 +225,10 @@ export function useEditor() {
     if ((result as any).opened === 'library-in-place') return 'library-in-place'
     if ((result as any).opened === 'library-window') return null
 
+    if (!result.filePath) return null
+
     filePath.value = result.filePath
-    fileName.value = result.filePath.split('/').pop() || ''
+    fileName.value = fileNameFromPath(result.filePath)
 
     _suppressUpdate = true
     if (result.isZq && result.json) {
@@ -228,11 +242,12 @@ export function useEditor() {
     } else {
       isZqFormat.value = false
       zqMeta.value = null
-      markdownContent.value = result.content
+      const md = result.content ?? ''
+      markdownContent.value = md
       if (_setContent) {
-        _setContent(result.content)
+        _setContent(md)
       } else {
-        _pendingContent = result.content
+        _pendingContent = md
       }
     }
     _suppressUpdate = false
@@ -249,7 +264,7 @@ export function useEditor() {
     if (result) {
       filePath.value = result
       isZqFormat.value = getExtension(result) === '.zq'
-      fileName.value = result.split('/').pop() || ''
+      fileName.value = fileNameFromPath(result)
       markAsSaved()
     }
   }
@@ -295,6 +310,10 @@ export function useEditor() {
     _beforeSaveMd = fn
   }
 
+  function setUnsavedDialog(fn: () => Promise<'save' | 'discard' | 'cancel'>) {
+    _unsavedDialog = fn
+  }
+
   async function saveAsZq(path: string | null) {
     const raw = _getJSON?.()
     if (!raw) return
@@ -311,7 +330,7 @@ export function useEditor() {
     if (result) {
       filePath.value = result
       isZqFormat.value = true
-      fileName.value = result.split('/').pop() || ''
+      fileName.value = fileNameFromPath(result)
       markAsSaved()
     }
   }
@@ -326,7 +345,7 @@ export function useEditor() {
 
   function loadFileResult(result: { filePath: string; content: string; json?: any; meta?: any; isZq: boolean }) {
     filePath.value = result.filePath
-    fileName.value = result.filePath.split('/').pop() || ''
+    fileName.value = fileNameFromPath(result.filePath)
 
     _suppressUpdate = true
     if (result.isZq && result.json) {
@@ -340,11 +359,12 @@ export function useEditor() {
     } else {
       isZqFormat.value = false
       zqMeta.value = null
-      markdownContent.value = result.content
+      const md = result.content ?? ''
+      markdownContent.value = md
       if (_setContent) {
-        _setContent(result.content)
+        _setContent(md)
       } else {
-        _pendingContent = result.content
+        _pendingContent = md
       }
     }
     _suppressUpdate = false
@@ -439,6 +459,7 @@ export function useEditor() {
     fileName,
     isModified,
     isZqFormat,
+    zqMeta,
     stats,
     windowMode,
     libraryDocId,
@@ -450,6 +471,7 @@ export function useEditor() {
     saveAsMd,
     saveAsZq,
     setBeforeSaveMd,
+    setUnsavedDialog,
     newFile,
     newLibrary,
     switchLibraryDoc,

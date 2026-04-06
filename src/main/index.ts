@@ -19,8 +19,9 @@ import type { SupportedLocale } from '../shared/i18n'
 import { registerUpdaterIPC, checkForUpdate } from './updater'
 import {
   createWindow, getStateByWebContents, getWindowByPath,
-  forceClose, setLocale, getLocale, showUnsavedDialog, getAllStates
+  forceClose, setLocale, getLocale, getAllStates
 } from './window-manager'
+import { createTray, rebuildTrayMenu, destroyTray } from './tray'
 
 const MAX_RECENT = 10
 let recentFiles: string[] = []
@@ -186,6 +187,7 @@ ipcMain.handle('get-system-theme', () => {
 ipcMain.handle('change-locale', (_event, locale: SupportedLocale) => {
   setLocale(locale)
   buildMenu(locale)
+  rebuildTrayMenu(locale)
 })
 
 ipcMain.handle('get-window-mode', (event) => {
@@ -217,12 +219,6 @@ ipcMain.handle('settings:set', (_event, partial: Partial<AppSettings>) => {
 ipcMain.on('request-close', (event) => {
   const state = getStateByWebContents(event.sender)
   if (state) forceClose(state)
-})
-
-ipcMain.handle('dialog:unsaved', async (event) => {
-  const win = getWinFromEvent(event)
-  if (!win) return 'discard'
-  return showUnsavedDialog(win)
 })
 
 ipcMain.on('window:new-document', () => {
@@ -653,6 +649,7 @@ app.whenReady().then(async () => {
   const locale = getSystemLocale()
   setLocale(locale)
   buildMenu(locale)
+  createTray(locale)
 
   // Auto-check for updates on launch (delayed by 10s) and every 4 hours
   if (appSettings.updateUrl) {
@@ -680,13 +677,15 @@ app.whenReady().then(async () => {
 })
 
 app.on('before-quit', () => {
+  destroyTray()
   for (const state of getAllStates()) {
     state.forceQuit = true
   }
 })
 
+// Windows / Linux：关闭所有窗口后进程保留在系统托盘；从托盘「退出」才会真正退出
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
+  if (process.platform === 'darwin') {
+    return
   }
 })

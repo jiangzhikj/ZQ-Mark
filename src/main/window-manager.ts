@@ -1,7 +1,6 @@
-import { BrowserWindow, shell, ipcMain, dialog } from 'electron'
+import { BrowserWindow, shell, ipcMain } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
-import { messages } from '../shared/i18n'
 import type { SupportedLocale } from '../shared/i18n'
 import type { WindowMode } from '../shared/types'
 import type { LibraryRuntime } from './zq-file'
@@ -186,17 +185,31 @@ function checkRendererDirty(state: WindowState): Promise<boolean> {
 }
 
 export function showUnsavedDialog(win: BrowserWindow): Promise<'save' | 'discard' | 'cancel'> {
-  const m = messages[currentLocale].dialog
-  return dialog.showMessageBox(win, {
-    type: 'warning',
-    buttons: [m.save, m.dontSave, m.cancel],
-    defaultId: 0,
-    cancelId: 2,
-    title: m.unsavedTitle,
-    message: m.unsavedMessage
-  }).then(({ response }) => {
-    if (response === 0) return 'save'
-    if (response === 1) return 'discard'
-    return 'cancel'
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (r: 'save' | 'discard' | 'cancel') => {
+      if (settled) return
+      settled = true
+      ipcMain.removeListener('dialog:unsaved-result', onResult)
+      win.removeListener('closed', onClosed)
+      resolve(r)
+    }
+
+    const onResult = (
+      event: Electron.IpcMainEvent,
+      result: 'save' | 'discard' | 'cancel'
+    ) => {
+      const sender = BrowserWindow.fromWebContents(event.sender)
+      if (!sender || sender.id !== win.id) return
+      finish(result)
+    }
+
+    const onClosed = () => {
+      finish('cancel')
+    }
+
+    ipcMain.on('dialog:unsaved-result', onResult)
+    win.once('closed', onClosed)
+    win.webContents.send('dialog:unsaved-show')
   })
 }

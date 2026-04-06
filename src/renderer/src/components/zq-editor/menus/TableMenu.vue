@@ -31,6 +31,7 @@ import {
   Trash2,
   X,
 } from '@/components/icons';
+import { ZqScrollbar } from '@/components/ui';
 import { $t } from '../utils/i18n';
 
 interface Props {
@@ -75,7 +76,9 @@ function openSubmenu(type: 'color' | 'align') {
   }
 }
 
-const menuStyle = computed(() => {
+const menuScrollbarHeight = computed(() => `${window.innerHeight * 0.75}px`);
+
+const menuPositionStyle = computed(() => {
   const maxH = window.innerHeight * 0.75;
   let top = props.position.y;
   let left = props.position.x;
@@ -88,7 +91,6 @@ const menuStyle = computed(() => {
   return {
     left: `${left}px`,
     top: `${top}px`,
-    maxHeight: `${maxH}px`,
   };
 });
 
@@ -497,9 +499,10 @@ function sortColumn(direction: 'asc' | 'desc') {
 <template>
   <div
     class="zq-table-menu"
-    :style="menuStyle"
+    :style="menuPositionStyle"
     @click.stop
   >
+    <ZqScrollbar :height="menuScrollbarHeight">
     <!-- Move operations -->
     <button
       class="zq-table-menu__item"
@@ -743,6 +746,7 @@ function sortColumn(direction: 'asc' | 'desc') {
       <TableProperties class="zq-table-menu__icon" />
       <span>{{ $t('zq-editor.table.deleteTable') }}</span>
     </button>
+    </ZqScrollbar>
   </div>
 </template>
 
@@ -756,7 +760,6 @@ function sortColumn(direction: 'asc' | 'desc') {
   border-radius: 10px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   padding: 4px;
-  overflow-y: auto;
 }
 
 .zq-table-menu__item {

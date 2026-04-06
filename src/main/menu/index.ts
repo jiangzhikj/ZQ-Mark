@@ -54,13 +54,6 @@ function buildFileMenu(m: MenuLocale): MenuItemConstructorOptions {
     { type: 'separator' }
   ]
 
-  if (process.platform !== 'darwin') {
-    submenu.push(
-      { label: m.app.preferences, accelerator: 'CmdOrCtrl+,', click: () => sendAction('app:preferences') },
-      { type: 'separator' }
-    )
-  }
-
   submenu.push({ label: m.file.close, role: 'close' })
 
   return { label: m.file.label, submenu }
@@ -101,35 +94,44 @@ function buildViewMenu(m: MenuLocale): MenuItemConstructorOptions {
   }
 }
 
-function buildHelpMenu(m: MenuLocale): MenuItemConstructorOptions {
+function buildHelpMenu(m: MenuLocale, includePreferences?: boolean): MenuItemConstructorOptions {
+  const submenu: MenuItemConstructorOptions[] = []
+  if (includePreferences) {
+    submenu.push(
+      { label: m.app.preferences, accelerator: 'CmdOrCtrl+,', click: () => sendAction('app:preferences') },
+      { type: 'separator' }
+    )
+  }
+  submenu.push(
+    {
+      label: m.help.markdownReference,
+      click: () => shell.openExternal('https://www.markdownguide.org/basic-syntax/')
+    },
+    { type: 'separator' },
+    {
+      label: m.help.about,
+      click: () => sendAction('help:about')
+    },
+    { type: 'separator' },
+    { label: m.help.devTools, accelerator: 'CmdOrCtrl+Alt+I', click: () => {
+      const win = BrowserWindow.getFocusedWindow()
+      win?.webContents.toggleDevTools()
+    }}
+  )
   return {
     label: m.help.label,
     role: 'help',
-    submenu: [
-      {
-        label: m.help.markdownReference,
-        click: () => shell.openExternal('https://www.markdownguide.org/basic-syntax/')
-      },
-      { type: 'separator' },
-      {
-        label: m.help.about,
-        click: () => sendAction('help:about')
-      },
-      { type: 'separator' },
-      { label: m.help.devTools, accelerator: 'CmdOrCtrl+Alt+I', click: () => {
-        const win = BrowserWindow.getFocusedWindow()
-        win?.webContents.toggleDevTools()
-      }}
-    ]
+    submenu
   }
 }
 
 function buildPopupTemplate(m: MenuLocale): MenuItemConstructorOptions[] {
+  // Win/Linux 无菜单栏，仅靠 popup；多顶级项时最后一项可能不显示，故将「设置」放入「帮助」子菜单
   return [
     buildFileMenu(m),
     buildEditMenu(m),
     buildViewMenu(m),
-    buildHelpMenu(m)
+    buildHelpMenu(m, true)
   ]
 }
 

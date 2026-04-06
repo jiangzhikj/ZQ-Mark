@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import logoSrc from '@/assets/icon/icon.svg'
+import { CircleCheck, CircleX, Download, X } from '@/components/icons'
 
 const props = defineProps<{
   visible: boolean
@@ -111,9 +112,7 @@ function backToAbout() {
       <div v-if="visible" class="about-overlay" @click.self="emit('close')">
         <div class="about-dialog">
           <button class="close-btn" @click="emit('close')">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <path d="M3 3l8 8M11 3l-8 8" />
-            </svg>
+            <X :size="12" :stroke-width="1.5" />
           </button>
 
           <!-- About view -->
@@ -126,11 +125,7 @@ function backToAbout() {
             <p class="app-desc">{{ t('app.name') }}</p>
             <div class="about-divider" />
             <button class="check-btn" @click="checkUpdate">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                <polyline points="7 10 12 15 17 10" />
-                <line x1="12" y1="15" x2="12" y2="3" />
-              </svg>
+              <Download :size="16" :stroke-width="2" />
               {{ t('update.checkUpdate') }}
             </button>
           </template>
@@ -164,10 +159,7 @@ function backToAbout() {
           <!-- Not available -->
           <template v-if="viewState === 'not-available'">
             <div class="state-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
+              <CircleCheck class="state-icon__lucide state-icon__lucide--accent" :size="48" :stroke-width="2" />
             </div>
             <p class="state-text">{{ t('update.noUpdate') }}</p>
             <button class="action-btn default" @click="backToAbout">{{ t('dialog.confirm') }}</button>
@@ -191,10 +183,7 @@ function backToAbout() {
           <!-- Downloaded -->
           <template v-if="viewState === 'downloaded'">
             <div class="state-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
+              <CircleCheck class="state-icon__lucide state-icon__lucide--accent" :size="48" :stroke-width="2" />
             </div>
             <p class="state-text">{{ t('update.downloadComplete') }}</p>
             <p class="hint-text">{{ t('update.installTip') }}</p>
@@ -207,11 +196,7 @@ function backToAbout() {
           <!-- Error -->
           <template v-if="viewState === 'error'">
             <div class="state-icon">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
+              <CircleX class="state-icon__lucide state-icon__lucide--danger" :size="48" :stroke-width="2" />
             </div>
             <p class="state-text error-text">{{ t('update.error') }}</p>
             <p class="hint-text">{{ errorMessage }}</p>
@@ -334,6 +319,18 @@ function backToAbout() {
 
 .state-icon {
   margin: 8px 0 4px;
+}
+
+.state-icon__lucide {
+  display: block;
+}
+
+.state-icon__lucide--accent {
+  color: var(--accent-color);
+}
+
+.state-icon__lucide--danger {
+  color: #ef4444;
 }
 
 .state-text {

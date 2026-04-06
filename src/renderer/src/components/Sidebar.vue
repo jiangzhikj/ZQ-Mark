@@ -169,7 +169,8 @@ function startResize(e: MouseEvent) {
 }
 
 :global([data-platform='win32']) .sidebar-header,
-:global([data-platform='linux']) .sidebar-header {
+:global([data-platform='linux']) .sidebar-header,
+:global([data-platform='web']) .sidebar-header {
   margin-top: 0;
 }
 

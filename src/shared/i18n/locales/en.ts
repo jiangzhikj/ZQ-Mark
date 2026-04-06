@@ -84,6 +84,12 @@ const en: AppLocale = {
       markdownReference: 'Markdown Reference',
       about: 'About ZQ Mark',
       devTools: 'Developer Tools'
+    },
+    tray: {
+      show: 'Show Main Window',
+      newDocument: 'New Document',
+      newLibrary: 'New Library',
+      quit: 'Quit'
     }
   },
   editor: {

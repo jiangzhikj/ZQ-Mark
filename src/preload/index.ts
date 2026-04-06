@@ -10,12 +10,12 @@ export interface LocalFileResult {
 }
 
 export interface OpenFileResult {
-  filePath: string
-  content: string
+  filePath?: string
+  content?: string
   json?: any
   meta?: any
-  isZq: boolean
-  opened?: 'library-window'
+  isZq?: boolean
+  opened?: 'library-window' | 'library-in-place'
 }
 
 export interface AppSettings {
@@ -36,7 +36,8 @@ export interface ElectronAPI {
   onCheckDirty: (callback: () => boolean) => () => void
   onLoadFile: (callback: (data: { filePath: string; content: string; json?: any; meta?: any; isZq: boolean }) => void) => () => void
   getPendingFile: () => Promise<{ filePath: string; content: string; json?: any; meta?: any; isZq: boolean } | null>
-  showUnsavedDialog: () => Promise<'save' | 'discard' | 'cancel'>
+  onUnsavedDialogShow: (callback: () => void) => () => void
+  sendUnsavedDialogResult: (result: 'save' | 'discard' | 'cancel') => void
   requestClose: () => void
   newDocumentWindow: () => void
   newLibraryWindow: () => void
@@ -122,7 +123,14 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener('load-file', handler)
   },
   getPendingFile: () => ipcRenderer.invoke('get-pending-file'),
-  showUnsavedDialog: () => ipcRenderer.invoke('dialog:unsaved'),
+  onUnsavedDialogShow: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('dialog:unsaved-show', handler)
+    return () => ipcRenderer.removeListener('dialog:unsaved-show', handler)
+  },
+  sendUnsavedDialogResult: (result) => {
+    ipcRenderer.send('dialog:unsaved-result', result)
+  },
   requestClose: () => ipcRenderer.send('request-close'),
   newDocumentWindow: () => ipcRenderer.send('window:new-document'),
   newLibraryWindow: () => ipcRenderer.send('window:new-library'),

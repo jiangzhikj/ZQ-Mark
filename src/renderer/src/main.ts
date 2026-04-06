@@ -1,3 +1,6 @@
+import { patchElectron } from './platform/patch-electron'
+patchElectron()
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'

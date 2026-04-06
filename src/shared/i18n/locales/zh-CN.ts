@@ -7,7 +7,7 @@ const zhCN: AppLocale = {
   menu: {
     app: {
       about: '关于 ZQ Mark',
-      preferences: '偏好设置...',
+      preferences: '设置',
       quit: '退出 ZQ Mark',
       hide: '隐藏 ZQ Mark',
       hideOthers: '隐藏其他',
@@ -84,7 +84,13 @@ const zhCN: AppLocale = {
     markdownReference: 'Markdown 参考',
     about: '关于 ZQ Mark',
     devTools: '开发者工具'
-  }
+  },
+    tray: {
+      show: '显示主窗口',
+      newDocument: '新建文档',
+      newLibrary: '新建文件库',
+      quit: '退出'
+    }
   },
   editor: {
     placeholder: '开始输入 Markdown 内容...',

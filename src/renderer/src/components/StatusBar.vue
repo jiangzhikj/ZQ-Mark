@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { Circle, CircleCheck } from '@/components/icons'
 
 defineProps<{
   characters: number
@@ -15,13 +16,18 @@ const { t } = useI18n()
   <footer class="statusbar">
     <div class="statusbar-left">
       <span :class="['save-indicator', { modified: isModified }]">
-        <svg v-if="!isModified" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-        <svg v-else width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
-          <circle cx="8" cy="8" r="5" />
-        </svg>
+        <CircleCheck
+          v-if="!isModified"
+          :size="12"
+          :stroke-width="2.5"
+        />
+        <Circle
+          v-else
+          class="save-indicator__dot"
+          :size="12"
+          fill="currentColor"
+          :stroke-width="0"
+        />
         {{ isModified ? t('status.modified') : t('status.saved') }}
       </span>
     </div>
