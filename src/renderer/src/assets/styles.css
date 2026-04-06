@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+/* ===== CSS Variables: Light Theme (Apple HIG) ===== */
+:root,
+[data-theme='light'] {
+  --bg-titlebar: rgba(251, 251, 253, 0.85);
+  --bg-sidebar: #fafafa;
+  --bg-sidebar-icon: #e8e8ed;
+  --bg-editor: #ffffff;
+  --bg-statusbar: #f5f5f7;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.07);
+  --bg-input: #ffffff;
+
+  --text-primary: #1d1d1f;
+  --text-secondary: #3a3a3c;
+  --text-tertiary: #8e8e93;
+  --text-placeholder: #c7c7cc;
+
+  --border-color: rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --accent-color: #007aff;
+  --accent-shadow: rgba(0, 122, 255, 0.12);
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.15);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.25);
+
+  --sidebar-width: 240px;
+  --sidebar-icon-width: 44px;
+  --titlebar-height: 52px;
+  --statusbar-height: 26px;
+
+  /* Element Plus compatibility variables for zq-editor */
+  --el-bg-color: var(--bg-editor);
+  --el-bg-color-overlay: var(--bg-editor);
+  --el-border-color: rgba(0, 0, 0, 0.10);
+  --el-border-color-light: rgba(0, 0, 0, 0.06);
+  --el-border-color-lighter: rgba(0, 0, 0, 0.04);
+  --el-color-primary: var(--accent-color);
+  --el-color-primary-light-3: rgba(0, 122, 255, 0.7);
+  --el-color-primary-light-5: rgba(0, 122, 255, 0.5);
+  --el-color-primary-light-7: rgba(0, 122, 255, 0.3);
+  --el-color-primary-light-8: rgba(0, 122, 255, 0.2);
+  --el-color-primary-light-9: rgba(0, 122, 255, 0.1);
+  --el-color-success: #34c759;
+  --el-color-success-light-9: rgba(52, 199, 89, 0.1);
+  --el-color-success-light-7: rgba(52, 199, 89, 0.3);
+  --el-color-warning: #ff9f0a;
+  --el-color-warning-light-3: rgba(255, 159, 10, 0.7);
+  --el-color-warning-light-7: rgba(255, 159, 10, 0.3);
+  --el-color-warning-light-9: rgba(255, 159, 10, 0.1);
+  --el-color-danger: #ff3b30;
+  --el-color-danger-light-9: rgba(255, 59, 48, 0.1);
+  --el-color-danger-light-7: rgba(255, 59, 48, 0.3);
+  --el-color-white: #ffffff;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-placeholder);
+  --el-fill-color: rgba(0, 0, 0, 0.03);
+  --el-fill-color-light: rgba(0, 0, 0, 0.02);
+  --el-fill-color-lighter: rgba(0, 0, 0, 0.015);
+  --el-fill-color-dark: #e8e8ed;
+  --el-fill-color-blank: #ffffff;
+  --el-box-shadow-light: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== CSS Variables: Dark Theme (Apple HIG) ===== */
+[data-theme='dark'] {
+  --bg-titlebar: rgba(28, 28, 30, 0.85);
+  --bg-sidebar: #161618;
+  --bg-sidebar-icon: #2c2c2e;
+  --bg-editor: #1c1c1e;
+  --bg-statusbar: #1c1c1e;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.08);
+  --bg-input: #2c2c2e;
+
+  --text-primary: #f5f5f7;
+  --text-secondary: #aeaeb2;
+  --text-tertiary: #636366;
+  --text-placeholder: #48484a;
+
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --accent-color: #0a84ff;
+  --accent-shadow: rgba(10, 132, 255, 0.18);
+
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+
+  /* Element Plus compatibility variables for zq-editor (dark) */
+  --el-bg-color: var(--bg-editor);
+  --el-bg-color-overlay: #2c2c2e;
+  --el-border-color: rgba(255, 255, 255, 0.10);
+  --el-border-color-light: rgba(255, 255, 255, 0.06);
+  --el-border-color-lighter: rgba(255, 255, 255, 0.04);
+  --el-color-primary: var(--accent-color);
+  --el-color-primary-light-3: rgba(10, 132, 255, 0.7);
+  --el-color-primary-light-5: rgba(10, 132, 255, 0.5);
+  --el-color-primary-light-7: rgba(10, 132, 255, 0.3);
+  --el-color-primary-light-8: rgba(10, 132, 255, 0.2);
+  --el-color-primary-light-9: rgba(10, 132, 255, 0.1);
+  --el-color-success: #30d158;
+  --el-color-success-light-9: rgba(48, 209, 88, 0.15);
+  --el-color-success-light-7: rgba(48, 209, 88, 0.35);
+  --el-color-warning: #ff9f0a;
+  --el-color-warning-light-3: rgba(255, 159, 10, 0.7);
+  --el-color-warning-light-7: rgba(255, 159, 10, 0.35);
+  --el-color-warning-light-9: rgba(255, 159, 10, 0.15);
+  --el-color-danger: #ff453a;
+  --el-color-danger-light-9: rgba(255, 69, 58, 0.15);
+  --el-color-danger-light-7: rgba(255, 69, 58, 0.35);
+  --el-color-white: #ffffff;
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-secondary);
+  --el-text-color-secondary: var(--text-tertiary);
+  --el-text-color-placeholder: var(--text-placeholder);
+  --el-fill-color: rgba(255, 255, 255, 0.05);
+  --el-fill-color-light: rgba(255, 255, 255, 0.03);
+  --el-fill-color-lighter: rgba(255, 255, 255, 0.02);
+  --el-fill-color-dark: #2c2c2e;
+  --el-fill-color-blank: #1c1c1e;
+  --el-box-shadow-light: 0 2px 12px rgba(0, 0, 0, 0.32);
+}
+
+/* ===== Global Reset ===== */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',
+    'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Helvetica Neue', Helvetica, Arial, sans-serif;
+  background: var(--bg-editor);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--accent-color);
+  color: #ffffff;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ===== Platform-specific overrides ===== */
+[data-platform='win32'],
+[data-platform='linux'] {
+  --titlebar-height: 40px;
+}

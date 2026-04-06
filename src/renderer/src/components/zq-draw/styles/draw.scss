@@ -1,0 +1,17 @@
+.zq-draw {
+  --zq-draw-selection-color: #6965db;
+  --zq-draw-selection-bg: rgba(105, 101, 219, 0.1);
+  --zq-draw-snap-color: #6366f1;
+  --zq-draw-handle-fill: #fff;
+  --zq-draw-handle-stroke: #6965db;
+  --zq-draw-toolbar-bg: var(--bg-editor, #fff);
+  --zq-draw-toolbar-border: var(--border-color, #e4e7ed);
+  --zq-draw-toolbar-shadow: 0 2px 8px rgb(0 0 0 / 8%);
+
+  * {
+    box-sizing: border-box;
+  }
+
+  user-select: none;
+  -webkit-user-select: none;
+}

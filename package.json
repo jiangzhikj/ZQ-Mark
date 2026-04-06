@@ -1,0 +1,176 @@
+{
+  "name": "zq-mark",
+  "version": "1.0.1",
+  "description": "A local Markdown editor inspired by Typora",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "build:mac": "electron-vite build && electron-builder --mac --arm64 --x64",
+    "build:mac-arm64": "electron-vite build && electron-builder --mac --arm64",
+    "build:mac-x64": "electron-vite build && electron-builder --mac --x64",
+    "build:win": "electron-vite build && electron-builder --win --x64",
+    "build:linux": "electron-vite build && electron-builder --linux",
+    "build:all": "electron-vite build && electron-builder --mac --arm64 --x64 && electron-builder --win --x64",
+    "start": "electron-vite preview",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.zq.zq-mark",
+    "productName": "ZQ Mark",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "out/**/*",
+      "resources/**/*"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "zq",
+        "name": "ZQ Document",
+        "description": "ZQ Mark Document",
+        "mimeType": "application/x-zq",
+        "role": "Editor"
+      },
+      {
+        "ext": "zql",
+        "name": "ZQ Document Library",
+        "description": "ZQ Mark Document Library",
+        "mimeType": "application/x-zql",
+        "role": "Editor"
+      },
+      {
+        "ext": "md",
+        "name": "Markdown Document",
+        "description": "Markdown Document",
+        "mimeType": "text/markdown",
+        "role": "Editor"
+      },
+      {
+        "ext": "MD",
+        "name": "Markdown Document",
+        "description": "Markdown Document",
+        "mimeType": "text/markdown",
+        "role": "Editor"
+      },
+      {
+        "ext": "markdown",
+        "name": "Markdown Document",
+        "description": "Markdown Document",
+        "mimeType": "text/markdown",
+        "role": "Editor"
+      },
+      {
+        "ext": "txt",
+        "name": "Text Document",
+        "description": "Plain Text Document",
+        "mimeType": "text/plain",
+        "role": "Editor"
+      },
+      {
+        "ext": "html",
+        "name": "HTML Document",
+        "description": "HTML Document",
+        "mimeType": "text/html",
+        "role": "Editor"
+      }
+    ],
+    "mac": {
+      "icon": "build/icon.icns",
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64", "x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64", "x64"]
+        }
+      ],
+      "darkModeSupport": true
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Office"
+    },
+    "npmRebuild": false
+  },
+  "dependencies": {
+    "@electron-toolkit/utils": "^4.0.0",
+    "@tailwindcss/vite": "^4.2.2",
+    "@tiptap/core": "^3.20.4",
+    "@tiptap/extension-bubble-menu": "^3.20.4",
+    "@tiptap/extension-character-count": "^3.20.4",
+    "@tiptap/extension-code-block-lowlight": "^3.20.4",
+    "@tiptap/extension-color": "^3.20.4",
+    "@tiptap/extension-drag-handle": "^3.20.4",
+    "@tiptap/extension-floating-menu": "^3.20.4",
+    "@tiptap/extension-highlight": "^3.20.4",
+    "@tiptap/extension-image": "^3.20.4",
+    "@tiptap/extension-link": "^3.20.4",
+    "@tiptap/extension-mathematics": "^3.20.4",
+    "@tiptap/extension-mention": "^3.20.4",
+    "@tiptap/extension-placeholder": "^3.20.4",
+    "@tiptap/extension-table": "^3.20.4",
+    "@tiptap/extension-table-cell": "^3.20.4",
+    "@tiptap/extension-table-header": "^3.20.4",
+    "@tiptap/extension-table-row": "^3.20.4",
+    "@tiptap/extension-task-item": "^3.20.4",
+    "@tiptap/extension-task-list": "^3.20.4",
+    "@tiptap/extension-text-align": "^3.20.4",
+    "@tiptap/extension-text-style": "^3.20.4",
+    "@tiptap/extension-underline": "^3.20.4",
+    "@tiptap/pm": "^3.20.4",
+    "@tiptap/starter-kit": "^3.20.4",
+    "@tiptap/suggestion": "^3.20.4",
+    "@tiptap/vue-3": "^3.20.4",
+    "adm-zip": "^0.5.17",
+    "archiver": "^7.0.1",
+    "html-docx-js-typescript": "^0.1.5",
+    "katex": "^0.16.44",
+    "lowlight": "^3.3.0",
+    "lucide-vue-next": "^1.0.0",
+    "nanoid": "^5.1.7",
+    "perfect-freehand": "^1.2.3",
+    "pinia": "^3.0.4",
+    "roughjs": "^4.6.6",
+    "sass": "^1.98.0",
+    "tailwindcss": "^4.2.2",
+    "tippy.js": "^6.3.7",
+    "tiptap-extension-global-drag-handle": "^0.1.18",
+    "tiptap-markdown": "^0.9.0",
+    "vue": "^3.5.13",
+    "vue-i18n": "^11.3.0"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
+    "@types/archiver": "^7.0.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "electron": "^35.0.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^3.0.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.5"
+  }
+}

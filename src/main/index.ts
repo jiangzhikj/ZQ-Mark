@@ -1,0 +1,692 @@
+import { app, shell, BrowserWindow, ipcMain, dialog, nativeTheme, protocol, net } from 'electron'
+import { join, basename, extname } from 'path'
+import { readFile, writeFile, mkdir, copyFile } from 'fs/promises'
+import { existsSync } from 'fs'
+import { randomUUID } from 'crypto'
+import { pathToFileURL } from 'url'
+import { buildMenu, registerMenuIPC } from './menu'
+import { runExport } from './export'
+import type { ExportFormat } from './export'
+import {
+  saveZqDocument, openZqDocument,
+  openZqLibrary, saveZqLibrary, createEmptyLibrary, detectZqType,
+  libraryCreateDoc, libraryCreateFolder, libraryRenameItem,
+  libraryDeleteItem, libraryMoveItem, libraryGetDoc, librarySaveDoc
+} from './zq-file'
+import { ASSET_PROTOCOL, localPathToAssetUrl } from './asset-protocol'
+import { messages } from '../shared/i18n'
+import type { SupportedLocale } from '../shared/i18n'
+import { registerUpdaterIPC, checkForUpdate } from './updater'
+import {
+  createWindow, getStateByWebContents, getWindowByPath,
+  forceClose, setLocale, getLocale, showUnsavedDialog, getAllStates
+} from './window-manager'
+
+const MAX_RECENT = 10
+let recentFiles: string[] = []
+
+const SUPPORTED_EXTENSIONS = new Set(['.zq', '.zql', '.md', '.markdown', '.txt', '.html'])
+
+function isSupportedFile(filePath: string): boolean {
+  const ext = extname(filePath).toLowerCase()
+  return SUPPORTED_EXTENSIONS.has(ext)
+}
+
+let pendingFileOpen: string | null = null
+
+async function openFileFromSystem(filePath: string): Promise<void> {
+  if (!filePath || !existsSync(filePath)) return
+
+  const ext = extname(filePath).toLowerCase()
+  const isLibrary = ext === '.zql' || (ext === '.zq' && detectZqType(filePath) === 'library')
+
+  const existing = getWindowByPath(filePath)
+  if (existing) {
+    existing.window.focus()
+    addRecentFile(filePath)
+    return
+  }
+
+  if (isLibrary) {
+    const runtime = await openZqLibrary(filePath)
+    createWindow({ filePath, mode: 'library', libraryRuntime: runtime })
+    addRecentFile(filePath)
+    return
+  }
+
+  if (ext === '.zq') {
+    const { json, meta } = await openZqDocument(filePath)
+    createWindow({
+      filePath,
+      mode: 'document',
+      pendingFile: { filePath, content: '', json, meta, isZq: true }
+    })
+    addRecentFile(filePath)
+    return
+  }
+
+  const content = await readFile(filePath, 'utf-8')
+  createWindow({
+    filePath,
+    mode: 'document',
+    pendingFile: { filePath, content, isZq: false }
+  })
+  addRecentFile(filePath)
+}
+
+function extractFilePathFromArgs(argv: string[]): string | null {
+  for (let i = argv.length - 1; i >= 0; i--) {
+    const arg = argv[i]
+    if (arg.startsWith('-') || arg.startsWith('--')) continue
+    if (isSupportedFile(arg) && existsSync(arg)) return arg
+  }
+  return null
+}
+
+// ─── Single instance lock ───
+
+const gotTheLock = app.requestSingleInstanceLock()
+
+if (!gotTheLock) {
+  app.quit()
+} else {
+  app.on('second-instance', (_event, argv) => {
+    const filePath = extractFilePathFromArgs(argv)
+    if (filePath) {
+      openFileFromSystem(filePath)
+    } else {
+      const allWindows = BrowserWindow.getAllWindows()
+      if (allWindows.length > 0) {
+        const win = allWindows[0]
+        if (win.isMinimized()) win.restore()
+        win.focus()
+      }
+    }
+  })
+}
+
+// ─── App settings ───
+
+interface AppSettings {
+  autoSave: boolean
+  updateUrl: string
+}
+
+const defaultSettings: AppSettings = { autoSave: true, updateUrl: 'https://gitee.com/zq-platform/zq-mark/raw/master' }
+
+function getSettingsPath(): string {
+  return join(app.getPath('userData'), 'settings.json')
+}
+
+function loadSettings(): AppSettings {
+  try {
+    const fs = require('fs')
+    const p = getSettingsPath()
+    if (fs.existsSync(p)) {
+      return { ...defaultSettings, ...JSON.parse(fs.readFileSync(p, 'utf-8')) }
+    }
+  } catch { /* ignore */ }
+  return { ...defaultSettings }
+}
+
+function saveSettings(settings: AppSettings): void {
+  try {
+    const fs = require('fs')
+    fs.writeFileSync(getSettingsPath(), JSON.stringify(settings, null, 2), 'utf-8')
+  } catch { /* ignore */ }
+}
+
+let appSettings = loadSettings()
+
+function loadRecentFiles(): void {
+  try {
+    const stored = require('electron').app.getPath('userData')
+    const fs = require('fs')
+    const p = join(stored, 'recent-files.json')
+    if (fs.existsSync(p)) {
+      recentFiles = JSON.parse(fs.readFileSync(p, 'utf-8'))
+    }
+  } catch { recentFiles = [] }
+}
+
+function saveRecentFiles(): void {
+  try {
+    const stored = app.getPath('userData')
+    const fs = require('fs')
+    fs.writeFileSync(join(stored, 'recent-files.json'), JSON.stringify(recentFiles), 'utf-8')
+  } catch { /* ignore */ }
+}
+
+function addRecentFile(fp: string): void {
+  recentFiles = recentFiles.filter((f) => f !== fp)
+  recentFiles.unshift(fp)
+  if (recentFiles.length > MAX_RECENT) recentFiles = recentFiles.slice(0, MAX_RECENT)
+  saveRecentFiles()
+}
+
+function getSystemLocale(): SupportedLocale {
+  const locale = app.getLocale()
+  if (locale.startsWith('zh-TW') || locale.startsWith('zh-HK') || locale.startsWith('zh-Hant')) return 'zh-TW'
+  if (locale.startsWith('zh')) return 'zh-CN'
+  return 'en'
+}
+
+function getWinFromEvent(event: Electron.IpcMainInvokeEvent): BrowserWindow | null {
+  return BrowserWindow.fromWebContents(event.sender)
+}
+
+// ─── IPC: System ───
+
+ipcMain.handle('get-system-locale', () => getSystemLocale())
+
+ipcMain.handle('get-system-theme', () => {
+  return nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+})
+
+ipcMain.handle('change-locale', (_event, locale: SupportedLocale) => {
+  setLocale(locale)
+  buildMenu(locale)
+})
+
+ipcMain.handle('get-window-mode', (event) => {
+  const state = getStateByWebContents(event.sender)
+  return state?.mode || 'document'
+})
+
+ipcMain.handle('get-pending-file', (event) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.pendingFile) return null
+  const data = state.pendingFile
+  state.pendingFile = null
+  return data
+})
+
+ipcMain.handle('settings:get', () => appSettings)
+
+ipcMain.handle('settings:set', (_event, partial: Partial<AppSettings>) => {
+  appSettings = { ...appSettings, ...partial }
+  saveSettings(appSettings)
+  for (const state of getAllStates()) {
+    state.window.webContents.send('settings-changed', appSettings)
+  }
+  return appSettings
+})
+
+// ─── IPC: Window management ───
+
+ipcMain.on('request-close', (event) => {
+  const state = getStateByWebContents(event.sender)
+  if (state) forceClose(state)
+})
+
+ipcMain.handle('dialog:unsaved', async (event) => {
+  const win = getWinFromEvent(event)
+  if (!win) return 'discard'
+  return showUnsavedDialog(win)
+})
+
+ipcMain.on('window:new-document', () => {
+  createWindow({ mode: 'document', newDoc: true })
+})
+
+ipcMain.on('window:new-library', () => {
+  const runtime = createEmptyLibrary('未命名文件库')
+  createWindow({ mode: 'library', libraryRuntime: runtime })
+})
+
+// ─── IPC: Window controls (Win/Linux frameless) ───
+
+ipcMain.on('window:minimize', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  win?.minimize()
+})
+
+ipcMain.on('window:maximize-toggle', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (!win) return
+  if (win.isMaximized()) {
+    win.unmaximize()
+  } else {
+    win.maximize()
+  }
+})
+
+ipcMain.on('window:close', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  win?.close()
+})
+
+ipcMain.handle('window:is-maximized', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  return win?.isMaximized() || false
+})
+
+ipcMain.handle('get-platform', () => process.platform)
+
+ipcMain.handle('window:create-library', async (event, { name, dirPath }: { name: string; dirPath: string }) => {
+  const title = name || '未命名文件库'
+  const runtime = createEmptyLibrary(title)
+  const savePath = join(dirPath, `${title}.zql`)
+  await saveZqLibrary(savePath, runtime)
+  runtime.filePath = savePath
+
+  const state = getStateByWebContents(event.sender)
+  if (state && !state.filePath && state.mode === 'document') {
+    state.mode = 'library'
+    state.libraryRuntime = runtime
+    state.filePath = savePath
+    addRecentFile(savePath)
+    return { opened: 'in-place', filePath: savePath }
+  }
+
+  createWindow({ filePath: savePath, mode: 'library', libraryRuntime: runtime })
+  addRecentFile(savePath)
+  return { opened: 'new-window', filePath: savePath }
+})
+
+ipcMain.handle('dialog:select-directory', async (event) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory', 'createDirectory']
+  })
+  if (canceled || filePaths.length === 0) return null
+  return filePaths[0]
+})
+
+ipcMain.handle('window:init-library-in-place', (event) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state) return false
+  const runtime = createEmptyLibrary('未命名文件库')
+  state.mode = 'library'
+  state.libraryRuntime = runtime
+  state.filePath = null
+  return true
+})
+
+ipcMain.handle('library:get-name', (event) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return ''
+  return state.libraryRuntime.meta.title || ''
+})
+
+ipcMain.handle('library:set-name', (event, name: string) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return false
+  state.libraryRuntime.meta.title = name
+  state.libraryRuntime.dirty = true
+  return true
+})
+
+// ─── IPC: Open file (auto-detect type) ───
+
+ipcMain.handle('dialog:open-file', async (event) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'ZQ Files', extensions: ['zq', 'zql', 'md', 'html'] },
+      { name: 'Markdown', extensions: ['md', 'markdown', 'txt'] },
+      { name: 'All Files', extensions: ['*'] }
+    ]
+  })
+  if (canceled || filePaths.length === 0) return null
+
+  const fp = filePaths[0]
+  const ext = extname(fp).toLowerCase()
+
+  const isLibrary = ext === '.zql' || (ext === '.zq' && detectZqType(fp) === 'library')
+
+  if (isLibrary) {
+    const existing = getWindowByPath(fp)
+    if (existing) {
+      existing.window.focus()
+      addRecentFile(fp)
+      return { opened: 'library-window', filePath: fp }
+    }
+    const state = getStateByWebContents(event.sender)
+    if (state && !state.filePath && state.mode === 'document') {
+      const runtime = await openZqLibrary(fp)
+      state.mode = 'library'
+      state.libraryRuntime = runtime
+      state.filePath = fp
+      addRecentFile(fp)
+      return { opened: 'library-in-place', filePath: fp }
+    }
+    const runtime = await openZqLibrary(fp)
+    createWindow({ filePath: fp, mode: 'library', libraryRuntime: runtime })
+    addRecentFile(fp)
+    return { opened: 'library-window', filePath: fp }
+  }
+
+  if (ext === '.zq') {
+    const { json, meta } = await openZqDocument(fp)
+    addRecentFile(fp)
+    return { filePath: fp, content: '', json, meta, isZq: true }
+  }
+
+  const content = await readFile(fp, 'utf-8')
+  addRecentFile(fp)
+  return { filePath: fp, content, isZq: false }
+})
+
+ipcMain.handle('recent:get', () => {
+  return recentFiles
+})
+
+ipcMain.handle('recent:open', async (event, fp: string) => {
+  const ext = extname(fp).toLowerCase()
+  const isLibrary = ext === '.zql' || (ext === '.zq' && detectZqType(fp) === 'library')
+
+  if (isLibrary) {
+    const existing = getWindowByPath(fp)
+    if (existing) {
+      existing.window.focus()
+      return { opened: 'library-window', filePath: fp }
+    }
+    const state = getStateByWebContents(event.sender)
+    if (state) {
+      const runtime = await openZqLibrary(fp)
+      state.mode = 'library'
+      state.libraryRuntime = runtime
+      state.filePath = fp
+      addRecentFile(fp)
+      return { opened: 'library-in-place', filePath: fp }
+    }
+    return null
+  }
+
+  if (ext === '.zq') {
+    const { json, meta } = await openZqDocument(fp)
+    addRecentFile(fp)
+    return { filePath: fp, content: '', json, meta, isZq: true }
+  }
+
+  const content = await readFile(fp, 'utf-8')
+  addRecentFile(fp)
+  return { filePath: fp, content, isZq: false }
+})
+
+// ─── IPC: Save document ───
+
+ipcMain.handle('dialog:save-file', async (event, { filePath, content }: { filePath: string | null; content: string }) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+
+  let savePath = filePath
+  if (!savePath) {
+    const { canceled, filePath: chosen } = await dialog.showSaveDialog(win, {
+      filters: [
+        { name: 'Markdown', extensions: ['md'] },
+        { name: 'ZQ Document', extensions: ['zq'] }
+      ],
+      defaultPath: 'untitled.md'
+    })
+    if (canceled || !chosen) return null
+    savePath = chosen
+  }
+  await writeFile(savePath, content, 'utf-8')
+  return savePath
+})
+
+ipcMain.handle('zq:save', async (event, { filePath, json, title, existingMeta }: { filePath: string | null; json: any; title: string; existingMeta?: any }) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+
+  let savePath = filePath
+  if (!savePath) {
+    const { canceled, filePath: chosen } = await dialog.showSaveDialog(win, {
+      filters: [
+        { name: 'ZQ Document', extensions: ['zq'] }
+      ],
+      defaultPath: `${title || 'untitled'}.zq`
+    })
+    if (canceled || !chosen) return null
+    savePath = chosen
+  }
+
+  await saveZqDocument(savePath, json, title, existingMeta || null)
+
+  const state = getStateByWebContents(event.sender)
+  if (state) state.filePath = savePath
+
+  return savePath
+})
+
+// ─── IPC: Library operations ───
+
+ipcMain.handle('library:get-tree', (event) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return []
+  return state.libraryRuntime.index.tree
+})
+
+ipcMain.handle('library:open-doc', (event, docId: string) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return null
+  const json = libraryGetDoc(state.libraryRuntime, docId)
+  if (!json) return null
+  const node = findNodeInTree(state.libraryRuntime.index.tree, docId)
+  return { json, name: node?.name || '' }
+})
+
+ipcMain.handle('library:save-doc', (event, { docId, json }: { docId: string; json: any }) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return false
+  librarySaveDoc(state.libraryRuntime, docId, json)
+  return true
+})
+
+ipcMain.handle('library:save', async (event) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return null
+
+  let savePath = state.libraryRuntime.filePath
+  if (!savePath) {
+    const win = getWinFromEvent(event)
+    if (!win) return null
+    const { canceled, filePath: chosen } = await dialog.showSaveDialog(win, {
+      filters: [{ name: 'ZQ Document Library', extensions: ['zql'] }],
+      defaultPath: `${state.libraryRuntime.meta.title || 'untitled'}.zql`
+    })
+    if (canceled || !chosen) return null
+    savePath = chosen
+  }
+
+  await saveZqLibrary(savePath, state.libraryRuntime)
+  state.filePath = savePath
+  return savePath
+})
+
+ipcMain.handle('library:create-doc', (event, { parentId, name }: { parentId: string | null; name: string }) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return null
+  return libraryCreateDoc(state.libraryRuntime, parentId, name)
+})
+
+ipcMain.handle('library:create-folder', (event, { parentId, name }: { parentId: string | null; name: string }) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return null
+  return libraryCreateFolder(state.libraryRuntime, parentId, name)
+})
+
+ipcMain.handle('library:rename', (event, { id, newName }: { id: string; newName: string }) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return false
+  return libraryRenameItem(state.libraryRuntime, id, newName)
+})
+
+ipcMain.handle('library:delete', (event, { id }: { id: string }) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return false
+  return libraryDeleteItem(state.libraryRuntime, id)
+})
+
+ipcMain.handle('library:move', (event, { id, newParentId, index }: { id: string; newParentId: string | null; index: number }) => {
+  const state = getStateByWebContents(event.sender)
+  if (!state?.libraryRuntime) return false
+  return libraryMoveItem(state.libraryRuntime, id, newParentId, index)
+})
+
+ipcMain.handle('library:is-dirty', (event) => {
+  const state = getStateByWebContents(event.sender)
+  return state?.libraryRuntime?.dirty || false
+})
+
+// ─── IPC: Local file handling for editor ───
+
+const assetsDir = join(app.getPath('userData'), 'editor-assets')
+
+async function ensureAssetsDir() {
+  await mkdir(assetsDir, { recursive: true })
+}
+
+ipcMain.handle('editor:save-dropped-file', async (_event, buffer: ArrayBuffer, fileName: string) => {
+  await ensureAssetsDir()
+  const ext = extname(fileName) || '.bin'
+  const id = randomUUID()
+  const localName = `${id}${ext}`
+  const localPath = join(assetsDir, localName)
+  await writeFile(localPath, Buffer.from(buffer))
+  return { id: localName, path: localPath, url: localPathToAssetUrl(localPath), name: fileName }
+})
+
+ipcMain.handle('editor:open-local-file', async (event, options: { filters?: { name: string; extensions: string[] }[] }) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: options.filters
+  })
+  if (canceled || filePaths.length === 0) return null
+  const filePath = filePaths[0]
+  await ensureAssetsDir()
+  const ext = extname(filePath)
+  const id = randomUUID()
+  const localName = `${id}${ext}`
+  const localPath = join(assetsDir, localName)
+  await copyFile(filePath, localPath)
+  return {
+    id: localName,
+    path: localPath,
+    url: localPathToAssetUrl(localPath),
+    name: basename(filePath),
+    size: 0
+  }
+})
+
+// ─── IPC: Show in Finder ───
+
+ipcMain.handle('shell:show-in-folder', async (_event, filePath: string) => {
+  shell.showItemInFolder(filePath)
+})
+
+// ─── IPC: Export ───
+
+ipcMain.handle('export:run', async (event, options: { format: ExportFormat; html: string; title: string; css?: string }) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+  try {
+    return await runExport(win, options)
+  } catch (err) {
+    console.error('Export failed:', err)
+    return null
+  }
+})
+
+// ─── Theme ───
+
+nativeTheme.on('updated', () => {
+  const theme = nativeTheme.shouldUseDarkColors ? 'dark' : 'light'
+  for (const state of getAllStates()) {
+    state.window.webContents.send('theme-changed', theme)
+  }
+})
+
+// ─── Custom protocol ───
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: ASSET_PROTOCOL,
+    privileges: { secure: true, supportFetchAPI: true, bypassCSP: true, stream: true }
+  }
+])
+
+// ─── Tree helper ───
+
+function findNodeInTree(tree: any[], id: string): any | null {
+  for (const node of tree) {
+    if (node.id === id) return node
+    if (node.children) {
+      const found = findNodeInTree(node.children, id)
+      if (found) return found
+    }
+  }
+  return null
+}
+
+// ─── App lifecycle ───
+
+// macOS: open-file fires before ready when double-clicking a file to launch the app
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  if (app.isReady()) {
+    openFileFromSystem(filePath)
+  } else {
+    pendingFileOpen = filePath
+  }
+})
+
+app.whenReady().then(async () => {
+  protocol.handle(ASSET_PROTOCOL, (request) => {
+    const url = request.url.slice(`${ASSET_PROTOCOL}://`.length)
+    const filePath = decodeURIComponent(url)
+    return net.fetch(pathToFileURL(filePath).href)
+  })
+
+  loadRecentFiles()
+  registerUpdaterIPC()
+  registerMenuIPC()
+
+  const locale = getSystemLocale()
+  setLocale(locale)
+  buildMenu(locale)
+
+  // Auto-check for updates on launch (delayed by 10s) and every 4 hours
+  if (appSettings.updateUrl) {
+    setTimeout(() => checkForUpdate(appSettings.updateUrl), 10000)
+  }
+  setInterval(() => {
+    appSettings = loadSettings()
+    if (appSettings.updateUrl) checkForUpdate(appSettings.updateUrl)
+  }, 4 * 60 * 60 * 1000)
+
+  // Determine if there's a file to open from launch arguments or pending macOS open-file
+  const fileFromArgs = pendingFileOpen || extractFilePathFromArgs(process.argv)
+  if (fileFromArgs) {
+    pendingFileOpen = null
+    await openFileFromSystem(fileFromArgs)
+  } else {
+    createWindow({ mode: 'document' })
+  }
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow({ mode: 'document' })
+    }
+  })
+})
+
+app.on('before-quit', () => {
+  for (const state of getAllStates()) {
+    state.forceQuit = true
+  }
+})
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit()
+  }
+})
