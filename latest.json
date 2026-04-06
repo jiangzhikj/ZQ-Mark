@@ -1,18 +1,18 @@
 {
-  "version": "1.0.2",
-  "notes": "- 新增自动更新功能\n- 修复了文档库保存问题\n- 优化了性能",
+  "version": "1.0.3",
+  "notes": "- 修复了“/”菜单的上下箭头选择的bug\n- 优化了性能",
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.2/ZQ.Mark-1.0.2-arm64.dmg",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.3/ZQ.Mark-1.0.3-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.2/ZQ.Mark-1.0.2.dmg",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.3/ZQ.Mark-1.0.3.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.2/ZQ.Mark.Setup.1.0.2.exe",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.0.3/ZQ.Mark.Setup.1.0.3.exe",
       "size": 78000000
     },
     "linux-x64": {
