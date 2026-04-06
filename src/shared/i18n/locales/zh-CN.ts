@@ -156,7 +156,7 @@ const zhCN: AppLocale = {
     restartHint: '部分设置需要重启应用后生效',
     updateUrl: '更新服务器地址',
     updateUrlDesc: '设置检查更新的服务器地址',
-    updateUrlPlaceholder: 'https://your-server.com/updates'
+    updateUrlPlaceholder: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
   },
   update: {
     currentVersion: '当前版本',
@@ -193,6 +193,9 @@ const zhCN: AppLocale = {
     exporting: '正在导出...',
     success: '导出成功',
     failed: '导出失败'
+  },
+  saveMsg: {
+    success: '文件已保存'
   },
   titlebar: {
     menu: '菜单',
@@ -332,6 +335,8 @@ const zhCN: AppLocale = {
       imageDesc: '插入本地图片',
       video: '视频',
       videoDesc: '插入本地视频',
+      audio: '音频',
+      audioDesc: '插入本地音频',
       attachment: '附件',
       attachmentDesc: '插入本地文件附件',
       emoji: '表情',
@@ -402,6 +407,8 @@ const zhCN: AppLocale = {
     attachment: {
       untitled: '未命名文件',
       download: '下载',
+      open: '打开',
+      openFailed: '无法用系统应用打开此文件',
       delete: '删除'
     },
     toc: {
@@ -417,6 +424,7 @@ const zhCN: AppLocale = {
       fileSizeExceeds: '文件大小超出限制',
       imageUploadFailed: '图片上传失败',
       videoUploadFailed: '视频上传失败',
+      audioUploadFailed: '音频上传失败',
       attachmentUploadFailed: '附件上传失败'
     }
   },

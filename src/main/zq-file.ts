@@ -22,6 +22,8 @@ const ASSET_TYPE_MAP: Record<string, string> = {
   image: 'src',
   videoBlock: 'src',
   video: 'src',
+  audioBlock: 'src',
+  audio: 'src',
   attachmentBlock: 'url',
   attachment: 'url'
 }

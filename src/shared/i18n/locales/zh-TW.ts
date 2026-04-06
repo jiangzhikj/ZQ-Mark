@@ -156,7 +156,7 @@ const zhTW: AppLocale = {
     restartHint: '部分設定需要重新啟動應用程式後生效',
     updateUrl: '更新伺服器位址',
     updateUrlDesc: '設定檢查更新的伺服器位址',
-    updateUrlPlaceholder: 'https://your-server.com/updates'
+    updateUrlPlaceholder: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
   },
   update: {
     currentVersion: '目前版本',
@@ -193,6 +193,9 @@ const zhTW: AppLocale = {
     exporting: '正在匯出...',
     success: '匯出成功',
     failed: '匯出失敗'
+  },
+  saveMsg: {
+    success: '檔案已儲存'
   },
   titlebar: {
     menu: '選單',
@@ -332,6 +335,8 @@ const zhTW: AppLocale = {
       imageDesc: '插入本機圖片',
       video: '影片',
       videoDesc: '插入本機影片',
+      audio: '音訊',
+      audioDesc: '插入本機音訊',
       attachment: '附件',
       attachmentDesc: '插入本機檔案附件',
       emoji: '表情',
@@ -402,6 +407,8 @@ const zhTW: AppLocale = {
     attachment: {
       untitled: '未命名檔案',
       download: '下載',
+      open: '開啟',
+      openFailed: '無法以系統預設程式開啟此檔案',
       delete: '刪除'
     },
     toc: {
@@ -417,6 +424,7 @@ const zhTW: AppLocale = {
       fileSizeExceeds: '檔案大小超出限制',
       imageUploadFailed: '圖片上傳失敗',
       videoUploadFailed: '影片上傳失敗',
+      audioUploadFailed: '音訊上傳失敗',
       attachmentUploadFailed: '附件上傳失敗'
     }
   },

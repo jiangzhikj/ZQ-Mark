@@ -13,6 +13,48 @@ function getTrayIconDir(): string {
   return join(__dirname, '../../build')
 }
 
+/** Windows 通知区：优先多尺寸 .ico；PNG 需 16 / 32 逻辑像素，避免用 mac 模板小图直接糊成一片 */
+function loadWindowsTrayIcon(dir: string): Electron.NativeImage {
+  const trayIco = join(dir, 'tray-icon.ico')
+  if (existsSync(trayIco)) return nativeImage.createFromPath(trayIco)
+
+  const winPng = join(dir, 'tray-icon-win.png')
+  if (existsSync(winPng)) return buildWinPngWithHidpi(dir, winPng)
+
+  const appIco = join(dir, 'icon.ico')
+  if (existsSync(appIco)) return nativeImage.createFromPath(appIco)
+
+  const png = join(dir, 'tray-icon.png')
+  if (existsSync(png)) return buildWinPngWithHidpi(dir, png)
+
+  const fallback = join(dir, 'icon.png')
+  if (existsSync(fallback)) {
+    console.warn('[tray] Windows: using icon.png as last resort')
+    return nativeImage.createFromPath(fallback).resize({ width: 16, height: 16 })
+  }
+
+  console.warn('[tray] Windows: no icon in', dir)
+  return nativeImage.createEmpty()
+}
+
+function buildWinPngWithHidpi(dir: string, path1x: string): Electron.NativeImage {
+  let img = nativeImage.createFromPath(path1x)
+  const { width, height } = img.getSize()
+  if (width > 32 || height > 32) {
+    img = img.resize({ width: 16, height: 16 })
+  }
+  const p2 = join(dir, 'tray-icon@2x.png')
+  if (existsSync(p2)) {
+    let img2 = nativeImage.createFromPath(p2)
+    const s = img2.getSize()
+    if (s.width > 48 || s.height > 48) {
+      img2 = img2.resize({ width: 32, height: 32 })
+    }
+    img.addRepresentation({ scaleFactor: 2, dataURL: img2.toDataURL() })
+  }
+  return img
+}
+
 function loadTrayIcon(): Electron.NativeImage {
   const dir = getTrayIconDir()
 
@@ -30,8 +72,7 @@ function loadTrayIcon(): Electron.NativeImage {
   }
 
   if (process.platform === 'win32') {
-    const ico = join(dir, 'tray-icon.png')
-    if (existsSync(ico)) return nativeImage.createFromPath(ico)
+    return loadWindowsTrayIcon(dir)
   }
 
   const png = join(dir, 'tray-icon.png')

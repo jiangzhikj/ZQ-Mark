@@ -340,6 +340,14 @@ export function createWebElectronApi(): ElectronAPI {
 
     showInFolder: async () => {},
 
+    openAssetUrl: async (url: string) => {
+      if (url.startsWith('blob:') || url.startsWith('data:')) {
+        window.open(url, '_blank', 'noopener,noreferrer')
+        return { ok: true as const }
+      }
+      return { ok: false as const, error: 'unsupported' }
+    },
+
     initLibraryInPlace: async () => {
       webLibraryRuntime = createEmptyLibraryWeb('未命名文件库')
       setWindowMode('library')

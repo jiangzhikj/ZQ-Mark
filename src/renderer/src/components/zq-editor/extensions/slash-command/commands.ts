@@ -240,6 +240,17 @@ export function getSlashCommands(): SlashCommandItem[] {
       },
     },
     {
+      title: $t('zq-editor.slash.audio'),
+      description: $t('zq-editor.slash.audioDesc'),
+      icon: 'Music',
+      category: $t('zq-editor.slash.category.media'),
+      aliases: ['audio', 'music', 'mp3', 'sound'],
+      command: ({ editor, range }) => {
+        editor.chain().focus().deleteRange(range).run();
+        editor.view.dom.dispatchEvent(new CustomEvent('zq-editor:open-file-selector', { detail: { mode: 'audio' }, bubbles: true }));
+      },
+    },
+    {
       title: $t('zq-editor.slash.attachment'),
       description: $t('zq-editor.slash.attachmentDesc'),
       icon: 'Paperclip',

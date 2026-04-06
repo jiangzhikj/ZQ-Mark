@@ -211,6 +211,7 @@ export function useEditor() {
       filePath.value = savePath
       markAsSaved()
       dirtyDocIds.clear()
+      ZqMessage.success(t('saveMsg.success'))
     }
   }
 
@@ -266,6 +267,7 @@ export function useEditor() {
       isZqFormat.value = getExtension(result) === '.zq'
       fileName.value = fileNameFromPath(result)
       markAsSaved()
+      ZqMessage.success(t('saveMsg.success'))
     }
   }
 
@@ -332,6 +334,7 @@ export function useEditor() {
       isZqFormat.value = true
       fileName.value = fileNameFromPath(result)
       markAsSaved()
+      ZqMessage.success(t('saveMsg.success'))
     }
   }
 

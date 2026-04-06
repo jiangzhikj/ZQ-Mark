@@ -81,6 +81,7 @@ export {
   Minimize2,
   Minus,
   Monitor,
+  Music,
   Moon,
   MousePointer2,
   MoveDown,

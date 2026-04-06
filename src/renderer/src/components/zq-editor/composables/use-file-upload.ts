@@ -18,6 +18,19 @@ const VIDEO_TYPES = [
   'video/ogg',
   'video/quicktime',
 ];
+const AUDIO_TYPES = [
+  'audio/mpeg',
+  'audio/mp3',
+  'audio/mp4',
+  'audio/wav',
+  'audio/x-wav',
+  'audio/ogg',
+  'audio/aac',
+  'audio/flac',
+  'audio/webm',
+  'audio/x-m4a',
+  'audio/m4a',
+];
 const DEFAULT_MAX_SIZE = 50 * 1024 * 1024;
 
 export function useFileUpload(
@@ -39,6 +52,8 @@ export function useFileUpload(
       await uploadImage(e, file);
     } else if (VIDEO_TYPES.includes(file.type)) {
       await uploadVideo(e, file);
+    } else if (AUDIO_TYPES.includes(file.type)) {
+      await uploadAudio(e, file);
     } else {
       await uploadAttachment(e, file);
     }
@@ -64,6 +79,15 @@ export function useFileUpload(
       e.chain().focus().setVideoBlock({ src: result.url, id: result.id }).run();
     } catch {
       ZqMessage.error($t('zq-editor.upload.videoUploadFailed'));
+    }
+  }
+
+  async function uploadAudio(e: Editor, file: File) {
+    try {
+      const result = await saveFileLocally(file);
+      e.chain().focus().setAudioBlock({ src: result.url, id: result.id }).run();
+    } catch {
+      ZqMessage.error($t('zq-editor.upload.audioUploadFailed'));
     }
   }
 

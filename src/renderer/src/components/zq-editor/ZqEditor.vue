@@ -107,17 +107,22 @@ async function onOpenImageSelector() {
 async function onOpenFileSelector(e: Event) {
   if (!editor.value) return;
   const detail = (e as CustomEvent).detail;
-  const mode: 'file' | 'video' = detail?.mode || 'file';
+  const mode: 'file' | 'video' | 'audio' = detail?.mode || 'file';
 
   try {
-    const filters = mode === 'video'
-      ? [{ name: 'Videos', extensions: ['mp4', 'webm', 'ogg', 'mov'] }]
-      : [];
+    const filters =
+      mode === 'video'
+        ? [{ name: 'Videos', extensions: ['mp4', 'webm', 'ogg', 'mov'] }]
+        : mode === 'audio'
+          ? [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'webm', 'opus'] }]
+          : [];
     const result = await window.electron.openLocalFile({ filters });
     if (!result) return;
 
     if (mode === 'video') {
       editor.value.chain().focus().setVideoBlock({ src: result.url, id: result.id }).run();
+    } else if (mode === 'audio') {
+      editor.value.chain().focus().setAudioBlock({ src: result.url, id: result.id }).run();
     } else {
       editor.value.chain().focus().setAttachmentBlock({
         id: result.id,

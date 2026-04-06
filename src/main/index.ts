@@ -1,6 +1,6 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, nativeTheme, protocol, net } from 'electron'
 import { join, basename, extname } from 'path'
-import { readFile, writeFile, mkdir, copyFile } from 'fs/promises'
+import { readFile, writeFile, mkdir, copyFile, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { randomUUID } from 'crypto'
 import { pathToFileURL } from 'url'
@@ -13,7 +13,7 @@ import {
   libraryCreateDoc, libraryCreateFolder, libraryRenameItem,
   libraryDeleteItem, libraryMoveItem, libraryGetDoc, librarySaveDoc
 } from './zq-file'
-import { ASSET_PROTOCOL, localPathToAssetUrl } from './asset-protocol'
+import { ASSET_PROTOCOL, localPathToAssetUrl, assetUrlToLocalPath } from './asset-protocol'
 import { messages } from '../shared/i18n'
 import type { SupportedLocale } from '../shared/i18n'
 import { registerUpdaterIPC, checkForUpdate } from './updater'
@@ -113,7 +113,25 @@ interface AppSettings {
   updateUrl: string
 }
 
-const defaultSettings: AppSettings = { autoSave: true, updateUrl: 'https://gitee.com/zq-platform/zq-mark/raw/master' }
+/** Base URL for `{base}/latest.json` (GitHub raw, repo root). */
+const defaultSettings: AppSettings = {
+  autoSave: true,
+  updateUrl: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
+}
+
+/** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */
+const LEGACY_UPDATE_URLS = [
+  'https://gitee.com/zq-platform/zq-mark/raw/master',
+  'https://raw.githubusercontent.com/zq-platform/zq-mark/master'
+]
+
+function migrateUpdateUrl(url: string): string {
+  const trimmed = url.trim().replace(/\/$/, '')
+  if (LEGACY_UPDATE_URLS.includes(trimmed)) {
+    return defaultSettings.updateUrl
+  }
+  return url
+}
 
 function getSettingsPath(): string {
   return join(app.getPath('userData'), 'settings.json')
@@ -124,7 +142,14 @@ function loadSettings(): AppSettings {
     const fs = require('fs')
     const p = getSettingsPath()
     if (fs.existsSync(p)) {
-      return { ...defaultSettings, ...JSON.parse(fs.readFileSync(p, 'utf-8')) }
+      const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'))
+      const merged: AppSettings = { ...defaultSettings, ...parsed }
+      const before = merged.updateUrl
+      merged.updateUrl = migrateUpdateUrl(merged.updateUrl)
+      if (merged.updateUrl !== before) {
+        saveSettings(merged)
+      }
+      return merged
     }
   } catch { /* ignore */ }
   return { ...defaultSettings }
@@ -546,7 +571,14 @@ ipcMain.handle('editor:save-dropped-file', async (_event, buffer: ArrayBuffer, f
   const localName = `${id}${ext}`
   const localPath = join(assetsDir, localName)
   await writeFile(localPath, Buffer.from(buffer))
-  return { id: localName, path: localPath, url: localPathToAssetUrl(localPath), name: fileName }
+  const byteLength = buffer.byteLength
+  return {
+    id: localName,
+    path: localPath,
+    url: localPathToAssetUrl(localPath),
+    name: fileName,
+    size: byteLength
+  }
 })
 
 ipcMain.handle('editor:open-local-file', async (event, options: { filters?: { name: string; extensions: string[] }[] }) => {
@@ -564,12 +596,13 @@ ipcMain.handle('editor:open-local-file', async (event, options: { filters?: { na
   const localName = `${id}${ext}`
   const localPath = join(assetsDir, localName)
   await copyFile(filePath, localPath)
+  const { size } = await stat(localPath)
   return {
     id: localName,
     path: localPath,
     url: localPathToAssetUrl(localPath),
     name: basename(filePath),
-    size: 0
+    size
   }
 })
 
@@ -577,6 +610,13 @@ ipcMain.handle('editor:open-local-file', async (event, options: { filters?: { na
 
 ipcMain.handle('shell:show-in-folder', async (_event, filePath: string) => {
   shell.showItemInFolder(filePath)
+})
+
+ipcMain.handle('shell:open-asset-url', async (_event, url: string) => {
+  const filePath = assetUrlToLocalPath(url)
+  if (!filePath) return { ok: false as const, error: 'invalid-url' }
+  const err = await shell.openPath(filePath)
+  return err === '' ? { ok: true as const } : { ok: false as const, error: err }
 })
 
 // ─── IPC: Export ───
@@ -637,8 +677,10 @@ app.on('open-file', (event, filePath) => {
 
 app.whenReady().then(async () => {
   protocol.handle(ASSET_PROTOCOL, (request) => {
-    const url = request.url.slice(`${ASSET_PROTOCOL}://`.length)
-    const filePath = decodeURIComponent(url)
+    const filePath = assetUrlToLocalPath(request.url)
+    if (!filePath) {
+      return new Response('Bad Request', { status: 400 })
+    }
     return net.fetch(pathToFileURL(filePath).href)
   })
 

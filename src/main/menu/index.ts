@@ -27,10 +27,11 @@ function buildAppMenu(m: MenuLocale): MenuItemConstructorOptions {
   }
 }
 
+/** Win/Linux 弹出菜单里仅 role 的项不显示快捷键，需同时写 accelerator */
 function buildFileMenu(m: MenuLocale): MenuItemConstructorOptions {
   const submenu: MenuItemConstructorOptions[] = [
     { label: m.file.new, accelerator: 'CmdOrCtrl+N', click: () => sendAction('file:new') },
-    { label: m.file.newLibrary, click: () => sendAction('file:newLibrary') },
+    { label: m.file.newLibrary, accelerator: 'CmdOrCtrl+Shift+N', click: () => sendAction('file:newLibrary') },
     { label: m.file.open, accelerator: 'CmdOrCtrl+O', click: () => sendAction('file:open') },
     { type: 'separator' },
     { label: m.file.save, accelerator: 'CmdOrCtrl+S', click: () => sendAction('file:save') },
@@ -54,7 +55,7 @@ function buildFileMenu(m: MenuLocale): MenuItemConstructorOptions {
     { type: 'separator' }
   ]
 
-  submenu.push({ label: m.file.close, role: 'close' })
+  submenu.push({ label: m.file.close, role: 'close', accelerator: 'CmdOrCtrl+W' })
 
   return { label: m.file.label, submenu }
 }
@@ -63,13 +64,13 @@ function buildEditMenu(m: MenuLocale): MenuItemConstructorOptions {
   return {
     label: m.edit.label,
     submenu: [
-      { label: m.edit.undo, role: 'undo' },
-      { label: m.edit.redo, role: 'redo' },
+      { label: m.edit.undo, role: 'undo', accelerator: 'CmdOrCtrl+Z' },
+      { label: m.edit.redo, role: 'redo', accelerator: 'CmdOrCtrl+Shift+Z' },
       { type: 'separator' },
-      { label: m.edit.cut, role: 'cut' },
-      { label: m.edit.copy, role: 'copy' },
-      { label: m.edit.paste, role: 'paste' },
-      { label: m.edit.selectAll, role: 'selectAll' },
+      { label: m.edit.cut, role: 'cut', accelerator: 'CmdOrCtrl+X' },
+      { label: m.edit.copy, role: 'copy', accelerator: 'CmdOrCtrl+C' },
+      { label: m.edit.paste, role: 'paste', accelerator: 'CmdOrCtrl+V' },
+      { label: m.edit.selectAll, role: 'selectAll', accelerator: 'CmdOrCtrl+A' },
       { type: 'separator' },
       { label: m.edit.find, accelerator: 'CmdOrCtrl+F', click: () => sendAction('edit:find') },
       { label: m.edit.replace, accelerator: 'CmdOrCtrl+H', click: () => sendAction('edit:replace') }
@@ -78,6 +79,7 @@ function buildEditMenu(m: MenuLocale): MenuItemConstructorOptions {
 }
 
 function buildViewMenu(m: MenuLocale): MenuItemConstructorOptions {
+  const fullscreenAccel = process.platform === 'darwin' ? 'Ctrl+Cmd+F' : 'F11'
   return {
     label: m.view.label,
     submenu: [
@@ -85,11 +87,11 @@ function buildViewMenu(m: MenuLocale): MenuItemConstructorOptions {
       { type: 'separator' },
       { label: m.view.sourceCode, accelerator: 'CmdOrCtrl+/', click: () => sendAction('view:sourceCode') },
       { type: 'separator' },
-      { label: m.view.zoomIn, role: 'zoomIn' },
-      { label: m.view.zoomOut, role: 'zoomOut' },
-      { label: m.view.actualSize, role: 'resetZoom' },
+      { label: m.view.zoomIn, role: 'zoomIn', accelerator: 'CmdOrCtrl+=' },
+      { label: m.view.zoomOut, role: 'zoomOut', accelerator: 'CmdOrCtrl+-' },
+      { label: m.view.actualSize, role: 'resetZoom', accelerator: 'CmdOrCtrl+0' },
       { type: 'separator' },
-      { label: m.view.fullscreen, role: 'togglefullscreen' }
+      { label: m.view.fullscreen, role: 'togglefullscreen', accelerator: fullscreenAccel }
     ]
   }
 }

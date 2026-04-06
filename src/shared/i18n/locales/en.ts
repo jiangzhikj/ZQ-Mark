@@ -156,7 +156,7 @@ const en: AppLocale = {
     restartHint: 'Some settings require a restart to take effect',
     updateUrl: 'Update Server URL',
     updateUrlDesc: 'Set the server URL for checking updates',
-    updateUrlPlaceholder: 'https://your-server.com/updates'
+    updateUrlPlaceholder: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
   },
   update: {
     currentVersion: 'Current Version',
@@ -193,6 +193,9 @@ const en: AppLocale = {
     exporting: 'Exporting...',
     success: 'Export successful',
     failed: 'Export failed'
+  },
+  saveMsg: {
+    success: 'File saved'
   },
   titlebar: {
     menu: 'Menu',
@@ -332,6 +335,8 @@ const en: AppLocale = {
       imageDesc: 'Insert a local image',
       video: 'Video',
       videoDesc: 'Insert a local video',
+      audio: 'Audio',
+      audioDesc: 'Insert a local audio file',
       attachment: 'Attachment',
       attachmentDesc: 'Insert a local file attachment',
       emoji: 'Emoji',
@@ -402,6 +407,8 @@ const en: AppLocale = {
     attachment: {
       untitled: 'Untitled file',
       download: 'Download',
+      open: 'Open',
+      openFailed: 'Could not open this file with the default app',
       delete: 'Delete'
     },
     toc: {
@@ -417,6 +424,7 @@ const en: AppLocale = {
       fileSizeExceeds: 'File size exceeds limit',
       imageUploadFailed: 'Image upload failed',
       videoUploadFailed: 'Video upload failed',
+      audioUploadFailed: 'Audio upload failed',
       attachmentUploadFailed: 'Attachment upload failed'
     }
   },

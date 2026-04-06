@@ -727,6 +727,7 @@ onUnmounted(() => {
       <template v-if="showWelcome">
         <TitleBar
           file-name=""
+          hide-default-title
           :is-modified="false"
           :sidebar-visible="false"
           @toggle-sidebar="toggleSidebar"

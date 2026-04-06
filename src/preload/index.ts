@@ -48,6 +48,7 @@ export interface ElectronAPI {
   openLocalFile: (options: { filters?: { name: string; extensions: string[] }[] }) => Promise<LocalFileResult | null>
   exportFile: (options: { format: string; html: string; title: string; css?: string }) => Promise<string | null>
   showInFolder: (filePath: string) => Promise<void>
+  openAssetUrl: (url: string) => Promise<{ ok: boolean; error?: string }>
   initLibraryInPlace: () => Promise<boolean>
   createLibrary: (data: { name: string; dirPath: string }) => Promise<{ opened: string; filePath: string } | null>
   selectDirectory: () => Promise<string | null>
@@ -141,6 +142,7 @@ const api: ElectronAPI = {
   openLocalFile: (options) => ipcRenderer.invoke('editor:open-local-file', options),
   exportFile: (options) => ipcRenderer.invoke('export:run', options),
   showInFolder: (filePath) => ipcRenderer.invoke('shell:show-in-folder', filePath),
+  openAssetUrl: (url) => ipcRenderer.invoke('shell:open-asset-url', url),
   initLibraryInPlace: () => ipcRenderer.invoke('window:init-library-in-place'),
   createLibrary: (data) => ipcRenderer.invoke('window:create-library', data),
   selectDirectory: () => ipcRenderer.invoke('dialog:select-directory'),

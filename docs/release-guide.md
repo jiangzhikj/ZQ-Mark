@@ -8,8 +8,8 @@
 4. [图标制作方法](#4-%E5%9B%BE%E6%A0%87%E5%88%B6%E4%BD%9C%E6%96%B9%E6%B3%95)
 5. [package.json 构建配置](#5-packagejson-%E6%9E%84%E5%BB%BA%E9%85%8D%E7%BD%AE)
 6. [构建命令](#6-%E6%9E%84%E5%BB%BA%E5%91%BD%E4%BB%A4)
-7. [通过 Gitee 发布更新](#7-%E9%80%9A%E8%BF%87-gitee-%E5%8F%91%E5%B8%83%E6%9B%B4%E6%96%B0)
-8. [完整发布流程](#8-%E5%AE%8C%E6%95%B4%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B)
+7. [通过 GitHub 发布更新](#7-%E9%80%9A%E8%BF%87-github-%E5%8F%91%E5%B8%83%E6%9B%B4%E6%96%B0)
+8. [完整发布流程（基于 GitHub）](#8-%E5%AE%8C%E6%95%B4%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B%EF%BC%88%E5%9F%BA%E4%BA%8E-github%EF%BC%89)
 
 ---
 
@@ -338,9 +338,9 @@ npm run build:linux
 
 ---
 
-## 7. 通过 Gitee 发布更新
+## 7. 通过 GitHub 发布更新
 
-本项目使用 **Gitee Releases** 作为更新文件托管平台。应用的自动更新机制会从 Gitee Release 附件中下载 `latest.json` 和安装包。
+本项目使用 **GitHub Releases** 作为安装包托管；`latest.json` 可放在仓库内通过 **raw** 地址固定拉取。应用会从配置的 `{updateUrl}/latest.json` 读取清单，再按其中的直链下载各平台安装包。
 
 ### 7.1 原理说明
 
@@ -351,12 +351,12 @@ npm run build:linux
 3. 用户点击下载后，从 `latest.json` 中记录的 URL 下载对应平台安装包
 4. 下载完成后用户手动安装
 
-Gitee Release 的附件提供了直链下载能力，完美适配此机制。
+GitHub Release 资源提供稳定直链（`releases/download/...`），与仓库根目录的 raw `latest.json` 搭配即可。
 
-### 7.2 Gitee 仓库准备
+### 7.2 GitHub 仓库准备
 
-1. 在 Gitee 上创建一个仓库（公开仓库，附件可免登录下载）
-2. 仓库名称：`zq-mark`（用户名：`zq-platform`）
+1. 在 GitHub 上创建公开仓库（或使用已有仓库），例如：`jiangzhikj/ZQ-Mark`
+2. 在仓库根目录维护 `latest.json`（或通过 Release 附件提供，见下文）
 
 ### 7.3 latest.json 格式
 
@@ -367,19 +367,19 @@ Gitee Release 的附件提供了直链下载能力，完美适配此机制。
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-arm64.dmg",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x64.dmg",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x64.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-Setup-1.1.0-x64.exe",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-Setup-1.1.0-x64.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x86_64.AppImage",
+      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x86_64.AppImage",
       "size": 95000000
     }
   }
@@ -399,84 +399,82 @@ Gitee Release 的附件提供了直链下载能力，完美适配此机制。
 | Linux | x64 | `linux-x64` |
 | Linux | ARM64 | `linux-arm64` |
 
-### 7.5 在 Gitee 上创建 Release 的详细步骤
+### 7.5 在 GitHub 上创建 Release 的详细步骤
 
-#### Step A：进入仓库 Release 页面
+#### Step A：进入仓库 Releases 页面
 
-1. 打开 Gitee 仓库页面
-2. 点击右侧 **"发行版"**（Releases）标签
-3. 点击 **"新建发行版"**
+1. 打开 GitHub 仓库页面
+2. 点击右侧 **Releases**（或 **发行版**）
+3. 点击 **Create a new release** / **Draft a new release**
 
 #### Step B：填写 Release 信息
 
 | 字段 | 说明 | 示例 |
 | --- | --- | --- |
-| **标签名** | 版本号，以 `v` 开头 | `v1.1.0` |
-| **发行版标题** | 版本标题 | `ZQ Mark v1.1.0` |
-| **发行版描述** | 更新说明（Markdown 格式） | `- 新功能...\n- 修复...` |
+| **Choose a tag** | 版本标签，以 `v` 开头 | `v1.1.0` |
+| **Release title** | 标题 | `ZQ Mark v1.1.0` |
+| **Describe this release** | 更新说明（Markdown） | `- 新功能...\n- 修复...` |
 
 #### Step C：上传附件
 
-在 Release 编辑页底部的 **"上传附件"** 区域，上传以下文件：
+在 **Attach binaries** 区域上传构建产物：
 
-1. **`latest.json`** — 版本清单文件（**必须**）
-2. **各平台安装包**（根据需要上传）：
+1. **各平台安装包**（按需上传）：
    - `ZQ-Mark-{version}-arm64.dmg` — macOS Apple Silicon
    - `ZQ-Mark-{version}-x64.dmg` — macOS Intel
    - `ZQ-Mark-Setup-{version}-x64.exe` — Windows x64
    - `ZQ-Mark-{version}-x86_64.AppImage` — Linux x64
 
-> **注意**：Gitee 免费版单个附件大小限制为 **100 MB**。如果安装包超过此限制，可以考虑使用压缩后的 zip 包，或升级 Gitee 付费版。
+（可选）也可把 `latest.json` 作为 Release 资产上传；若采用下文 **方案 A**，则清单放在仓库代码里即可。
+
+> **注意**：GitHub 对单个文件大小有上限（一般 Release 资源约 **2 GB**），通常足够覆盖安装包；若需更大对象需使用 Git LFS 等方案。
 
 #### Step D：发布
 
-点击 **"创建发行版"** 按钮完成发布。
+点击 **Publish release** 完成发布。
 
 ### 7.6 获取更新地址
 
-Release 创建完成后，附件会获得一个直链下载 URL，格式为：
+Release 资产直链格式为：
 
 ```
-https://gitee.com/zq-platform/zq-mark/releases/download/<标签名>/<文件名>
+https://github.com/jiangzhikj/ZQ-Mark/releases/download/<标签名>/<文件名>
 ```
 
-你需要在 `latest.json` 的 `platforms.*.url` 中填入各安装包的完整直链地址。
+在 `latest.json` 的 `platforms.*.url` 中填入各平台安装包的完整直链。
 
-**应用中配置的更新地址**应该是 `latest.json` 所在目录的 URL（不含文件名）：
+若把 `latest.json` 放在 **某一 Release 的资产**里，则应用中的 **更新地址** 需指向该 Release 资产所在目录（不含文件名），例如：
 
 ```
-https://gitee.com/zq-platform/zq-mark/releases/download/v1.1.0
+https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0
 ```
 
-用户在 **设置 → 关于** 页面填入此地址即可。应用会自动在此地址后拼接 `/latest.json` 进行版本检查。
+应用会在其后拼接 `/latest.json` 拉取清单。
 
-> **重要提示**：每次发布新版本时，更新地址中的版本号会变化。建议有以下两种方案：
->
-> 1. **方案 A（推荐）**：在仓库中维护一个固定的 `latest.json` 文件（放在仓库代码中而非 Release 附件中），使用 Gitee 的原始文件链接（raw 链接），如：`https://gitee.com/zq-platform/zq-mark/raw/master`（已内置为应用默认值）。每次发布新版本时更新仓库中的 `latest.json`，只需把安装包传到 Release 附件。
-> 2. **方案 B**：每次发布后将新的 Release 附件地址告知用户，用户手动更新设置中的地址。
+> **重要提示**：每次发布若把 `latest.json` 放在带版本号的 Release 目录下，更新地址会随版本变化。**推荐方案 A**：在仓库根目录维护 `latest.json`，更新地址固定为 GitHub **raw** 根路径（应用内置默认值），仅更新仓库内 JSON 与各平台 `platforms.*.url` 指向新 Release 资产即可。
 
 ### 7.7 推荐的发布方案（方案 A 详解）
 
-推荐使用**仓库 raw 链接 + Release 附件**的组合方式：
+推荐使用 **仓库 raw + Release 二进制**：
 
 ```plaintext
-Gitee 仓库: zq-platform/zq-mark
-├── latest.json          ← 放在仓库代码根目录（每次发布时更新此文件）
+GitHub 仓库: jiangzhikj/ZQ-Mark
+├── latest.json          ← 放在仓库根目录（每次发版更新）
 └── README.md
 
-Release v1.1.0 附件:
+Release v1.1.0 资产:
 ├── ZQ-Mark-1.1.0-arm64.dmg
 ├── ZQ-Mark-Setup-1.1.0-x64.exe
 └── ...
 ```
 
-**用户只需填写一次更新地址，后续发布无需用户修改**：
+**用户只需配置一次更新地址**（与内置默认一致时可不填）：
 
 ```
-https://gitee.com/zq-platform/zq-mark/raw/master
+https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master
 ```
 
-`latest.json` 中的安装包 URL 指向对应 Release 的附件直链。
+`latest.json` 里各平台的 `url` 指向对应 GitHub Release 下载直链。
 
 ### 7.8 更新流程图
 
@@ -488,7 +486,7 @@ https://gitee.com/zq-platform/zq-mark/raw/master
           └────────┬────────┘
                    │
      GET {updateUrl}/latest.json
-     (从 Gitee raw 或 Release 附件获取)
+     (从 GitHub raw 或 Release 资产获取)
                    │
          ┌─────────▼──────────┐
          │  比较 version 字段   │
@@ -501,7 +499,7 @@ https://gitee.com/zq-platform/zq-mark/raw/master
             │
      用户点击"下载"
             │
-   从 Gitee Release 附件
+   从 GitHub Release 直链
    下载对应平台安装包
    (显示实时进度条)
             │
@@ -517,7 +515,7 @@ https://gitee.com/zq-platform/zq-mark/raw/master
 
 ---
 
-## 8. 完整发布流程（基于 Gitee）
+## 8. 完整发布流程（基于 GitHub）
 
 ### Step 1：更新版本号
 
@@ -548,18 +546,18 @@ npm run build:win
 npm run build:linux
 ```
 
-### Step 4：在 Gitee 创建新 Release
+### Step 4：在 GitHub 创建新 Release
 
-1. 进入 Gitee 仓库 → 发行版 → 新建发行版
-2. 填写标签名（如 `v1.1.0`）、标题和更新说明
-3. 上传 `dist/` 下生成的各平台安装包作为附件
-4. 点击"创建发行版"
+1. 进入 GitHub 仓库 → Releases → Draft a new release
+2. 填写 tag（如 `v1.1.0`）、标题与更新说明
+3. 上传 `dist/` 下生成的各平台安装包作为 Release 资产
+4. 点击 **Publish release**
 
 ### Step 5：更新仓库中的 latest.json
 
-1. 从 Gitee Release 页面复制各附件的直链 URL
-2. 编辑仓库根目录的 `latest.json`，更新版本号、更新说明、各平台下载链接
-3. 提交并推送到 Gitee
+1. 在 GitHub Release 页面复制各资产的浏览器下载 URL（即 `releases/download/...` 直链）
+2. 编辑仓库根目录的 `latest.json`，更新版本号、说明与各平台 `url`
+3. 提交并推送到 GitHub
 
 ```bash
 git add latest.json
@@ -570,14 +568,14 @@ git push
 ### Step 6：验证
 
 1. 打开旧版本应用
-2. 进入 **设置 → 关于**，确认更新地址正确（默认已内置，无需手动填写）：
+2. 进入 **设置 → 关于**，确认更新地址正确（默认已内置为 GitHub raw，一般无需改）：
    ```
-   https://gitee.com/zq-platform/zq-mark/raw/master
+   https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master
    ```
-3. 点击"检查更新"
-4. 确认弹出更新对话框，显示新版本和更新说明
-5. 点击下载，验证进度条正常工作
-6. 下载完成后点击安装，确认安装包能正常打开
+3. 点击「检查更新」
+4. 确认弹出更新对话框，显示新版本与说明
+5. 点击下载，确认进度正常
+6. 下载完成后点击安装，确认安装包可打开
 
 ---
 

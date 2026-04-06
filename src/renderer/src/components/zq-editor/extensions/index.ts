@@ -30,6 +30,7 @@ import { createSlashSuggestion, SlashCommand } from './slash-command';
 import { TableOfContents } from './table-of-contents';
 import { ToggleBlock } from './toggle-list';
 import { VideoBlock } from './video';
+import { AudioBlock } from './audio';
 
 export interface EditorExtensionOptions {
   placeholder?: string;
@@ -133,6 +134,7 @@ export function createEditorExtensions(
     Callout,
     ImageBlock,
     VideoBlock,
+    AudioBlock,
     AttachmentBlock,
     ToggleBlock,
     ColumnsBlock,

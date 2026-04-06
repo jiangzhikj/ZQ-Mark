@@ -8,6 +8,8 @@ const ASSET_TYPE_MAP: Record<string, string> = {
   image: 'src',
   videoBlock: 'src',
   video: 'src',
+  audioBlock: 'src',
+  audio: 'src',
   attachmentBlock: 'url',
   attachment: 'url'
 }
@@ -50,7 +52,21 @@ function buildAssetBlobMap(files: Record<string, Uint8Array>): Map<string, Blob>
                   ? 'image/svg+xml'
                   : ext === 'mp4'
                     ? 'video/mp4'
-                    : 'application/octet-stream'
+                    : ext === 'mp3' || ext === 'mpeg'
+                      ? 'audio/mpeg'
+                      : ext === 'wav'
+                        ? 'audio/wav'
+                        : ext === 'ogg'
+                          ? 'audio/ogg'
+                          : ext === 'm4a' || ext === 'aac'
+                            ? 'audio/mp4'
+                            : ext === 'flac'
+                              ? 'audio/flac'
+                              : ext === 'opus'
+                                ? 'audio/opus'
+                                : ext === 'webm'
+                                  ? 'video/webm'
+                                  : 'application/octet-stream'
       m.set(shortName, new Blob([data], { type: mime }))
     }
   }
@@ -132,9 +148,11 @@ export async function buildZqZipBytes(
           const ext =
             node.type === 'videoBlock' || node.type === 'video'
               ? 'mp4'
-              : node.type === 'attachmentBlock' || node.type === 'attachment'
-                ? 'bin'
-                : 'png'
+              : node.type === 'audioBlock' || node.type === 'audio'
+                ? 'mp3'
+                : node.type === 'attachmentBlock' || node.type === 'attachment'
+                  ? 'bin'
+                  : 'png'
           let fname = `a_${Object.keys(assetEntries).length}.${ext}`
           while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
           assetEntries[`assets/${fname}`] = data

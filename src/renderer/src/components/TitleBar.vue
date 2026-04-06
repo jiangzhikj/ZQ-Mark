@@ -1,19 +1,29 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Menu, Minus, Square, SquareStack, X } from '@/components/icons'
 
-defineProps<{
-  fileName: string
-  isModified: boolean
-  sidebarVisible: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    fileName: string
+    isModified: boolean
+    sidebarVisible: boolean
+    /** 为 true 且 fileName 为空时，中间不显示「未命名」（如欢迎页） */
+    hideDefaultTitle?: boolean
+  }>(),
+  { hideDefaultTitle: false }
+)
 
 const emit = defineEmits<{
   toggleSidebar: []
 }>()
 
 const { t } = useI18n()
+
+const centerTitle = computed(() => {
+  if (props.hideDefaultTitle && !props.fileName) return ''
+  return props.fileName || t('editor.untitled')
+})
 
 const platform = ref('darwin')
 const isMaximized = ref(false)
@@ -81,7 +91,7 @@ function onClose() {
     <div v-else class="titlebar-left titlebar-left--mac" />
 
     <div class="titlebar-center">
-      <span class="file-name">{{ fileName || t('editor.untitled') }}</span>
+      <span class="file-name">{{ centerTitle }}</span>
       <span v-if="isModified" class="modified-indicator">&mdash; {{ t('status.modified') }}</span>
     </div>
 

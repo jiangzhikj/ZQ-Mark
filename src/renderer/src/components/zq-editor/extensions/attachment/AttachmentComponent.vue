@@ -3,6 +3,7 @@ import { computed } from 'vue';
 
 import {
   Download,
+  ExternalLink,
   FileArchive,
   FileAudio,
   FileCode,
@@ -13,6 +14,7 @@ import {
   File as GenericFile,
   Trash2,
 } from '@/components/icons';
+import { ZqMessage } from '@/components/ui';
 import { $t } from '../../utils/i18n';
 
 import { NodeViewWrapper } from '@tiptap/vue-3';
@@ -40,6 +42,12 @@ const fileType = computed(() => props.node.attrs.type || '');
 
 const resolvedUrl = computed(() => props.node.attrs.url || '');
 
+const extFromName = computed(() => {
+  const n = name.value;
+  const i = n.lastIndexOf('.');
+  return i >= 0 ? n.slice(i + 1).toLowerCase() : '';
+});
+
 const fileIconMap: Record<string, any> = {
   image: FileImage,
   video: FileVideo,
@@ -60,13 +68,73 @@ const fileIcon = computed(() => {
   if (t.includes('doc') || t.includes('word')) return fileIconMap.doc;
   if (t.includes('xls') || t.includes('sheet')) return fileIconMap.xls;
   if (t.includes('zip') || t.includes('rar') || t.includes('7z')) return fileIconMap.zip;
+
+  const ex = extFromName.value;
+  if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'].includes(ex))
+    return fileIconMap.image;
+  if (['mp4', 'webm', 'mov', 'm4v', 'ogv', 'mkv'].includes(ex)) return fileIconMap.video;
+  if (['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac', 'wma'].includes(ex))
+    return fileIconMap.audio;
+  if (ex === 'pdf') return fileIconMap.pdf;
+  if (['doc', 'docx', 'odt', 'rtf'].includes(ex)) return fileIconMap.doc;
+  if (['xls', 'xlsx', 'csv', 'ods'].includes(ex)) return fileIconMap.xls;
+  if (['zip', 'rar', '7z', 'tar', 'gz', 'tgz'].includes(ex)) return fileIconMap.zip;
+  if (
+    ['js', 'ts', 'tsx', 'jsx', 'vue', 'py', 'json', 'html', 'css', 'md', 'c', 'cpp', 'h', 'rs', 'go'].includes(ex)
+  )
+    return fileIconMap.code;
   return GenericFile;
 });
 
-function handleDownload() {
+async function handleDownload() {
   const url = resolvedUrl.value;
-  if (url) {
-    window.open(url, '_blank');
+  const fileName = name.value;
+  if (!url) return;
+
+  if (url.startsWith('blob:') || url.startsWith('data:')) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    a.rel = 'noopener';
+    a.click();
+    return;
+  }
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const blob = await res.blob();
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = fileName;
+    a.rel = 'noopener';
+    a.click();
+    URL.revokeObjectURL(objUrl);
+  } catch {
+    // fetch 失败时不再调用 window.open（非法 URL 会抛 SyntaxError）
+  }
+}
+
+async function handleOpen() {
+  const url = resolvedUrl.value;
+  if (!url) return;
+
+  try {
+    const api = window.electron?.openAssetUrl;
+    if (api) {
+      const r = await api(url);
+      if (r?.ok) return;
+      ZqMessage.warning($t('zq-editor.attachment.openFailed'));
+      return;
+    }
+    if (url.startsWith('blob:') || url.startsWith('data:')) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    ZqMessage.warning($t('zq-editor.attachment.openFailed'));
+  } catch {
+    ZqMessage.error($t('zq-editor.attachment.openFailed'));
   }
 }
 </script>
@@ -78,18 +146,38 @@ function handleDownload() {
     data-type="attachment"
   >
     <div class="zq-attachment__body" contenteditable="false">
-      <div class="zq-attachment__icon">
-        <component :is="fileIcon" class="h-5 w-5" />
-      </div>
-      <div class="zq-attachment__info">
-        <span class="zq-attachment__name">{{ name }}</span>
-        <span class="zq-attachment__size">{{ size }}</span>
+      <div class="zq-attachment__main" @dblclick="handleOpen">
+        <div class="zq-attachment__icon">
+          <component :is="fileIcon" class="h-5 w-5" />
+        </div>
+        <div class="zq-attachment__info">
+          <span class="zq-attachment__name">{{ name }}</span>
+          <span class="zq-attachment__size">{{ size }}</span>
+        </div>
       </div>
       <div class="zq-attachment__actions">
-        <button class="zq-attachment__btn" :title="$t('zq-editor.attachment.download')" @click="handleDownload">
+        <button
+          type="button"
+          class="zq-attachment__btn"
+          :title="$t('zq-editor.attachment.open')"
+          @click="handleOpen"
+        >
+          <ExternalLink class="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          class="zq-attachment__btn"
+          :title="$t('zq-editor.attachment.download')"
+          @click="handleDownload"
+        >
           <Download class="h-4 w-4" />
         </button>
-        <button class="zq-attachment__btn zq-attachment__btn--danger" :title="$t('zq-editor.attachment.delete')" @click="deleteNode">
+        <button
+          type="button"
+          class="zq-attachment__btn zq-attachment__btn--danger"
+          :title="$t('zq-editor.attachment.delete')"
+          @click="deleteNode"
+        >
           <Trash2 class="h-4 w-4" />
         </button>
       </div>
@@ -120,6 +208,15 @@ function handleDownload() {
 
 .zq-attachment__body:hover {
   background: var(--el-fill-color-light);
+}
+
+.zq-attachment__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
 }
 
 .zq-attachment__icon {

@@ -194,6 +194,9 @@ export interface AppLocale {
     success: string
     failed: string
   }
+  saveMsg: {
+    success: string
+  }
   titlebar: {
     menu: string
     minimize: string

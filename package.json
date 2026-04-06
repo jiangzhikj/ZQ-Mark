@@ -135,7 +135,9 @@
           "tray-icon@2x.png",
           "tray-iconTemplate.png",
           "tray-iconTemplate@2x.png",
-          "tray-iconTemplate@3x.png"
+          "tray-iconTemplate@3x.png",
+          "tray-icon.ico",
+          "tray-icon-win.png"
         ]
       }
     ]
