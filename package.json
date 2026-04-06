@@ -1,6 +1,6 @@
 {
   "name": "zq-mark",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A local Markdown editor inspired by Typora",
   "main": "./out/main/index.js",
   "scripts": {
