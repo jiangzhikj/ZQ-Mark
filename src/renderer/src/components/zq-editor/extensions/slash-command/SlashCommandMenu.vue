@@ -29,8 +29,6 @@ import {
 
 import type { SlashCommandItem } from './commands';
 
-import { groupCommandsByCategory } from './commands';
-
 interface Props {
   items: SlashCommandItem[];
   command: (item: SlashCommandItem) => void;
@@ -66,11 +64,26 @@ const iconMap: Record<string, any> = {
   Pencil,
 };
 
-const groupedItems = computed(() =>
-  groupCommandsByCategory(props.items || []),
-);
-
 const flatItems = computed(() => props.items || []);
+
+/** 与 flatItems 顺序一致，仅插入分类标题；避免「分组 Map 展开顺序」与 flat 顺序不一致导致方向键高亮乱跳 */
+const slashRows = computed(() => {
+  const items = flatItems.value;
+  const rows: Array<
+    | { kind: 'category'; label: string }
+    | { kind: 'item'; item: SlashCommandItem; index: number }
+  > = [];
+  let prevCategory: string | null = null;
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]!;
+    if (item.category !== prevCategory) {
+      rows.push({ kind: 'category', label: item.category });
+      prevCategory = item.category;
+    }
+    rows.push({ kind: 'item', item, index: i });
+  }
+  return rows;
+});
 
 function selectItem(index: number) {
   const item = flatItems.value[index];
@@ -112,9 +125,17 @@ function onKeyDown(event: KeyboardEvent) {
 
 watch(
   () => props.items,
-  () => {
-    selectedIndex.value = 0;
+  (items) => {
+    const len = items?.length ?? 0;
+    if (len === 0) {
+      selectedIndex.value = 0;
+      return;
+    }
+    if (selectedIndex.value >= len) {
+      selectedIndex.value = len - 1;
+    }
   },
+  { deep: true },
 );
 
 onMounted(() => {
@@ -131,29 +152,28 @@ defineExpose({ onKeyDown });
 <template>
   <div ref="menuRef" class="zq-slash-menu">
     <template v-if="flatItems.length > 0">
-      <template v-for="[category, items] in groupedItems" :key="category">
-        <div class="zq-slash-menu__category">{{ category }}</div>
+      <template v-for="(row, ri) in slashRows" :key="row.kind === 'category' ? `c-${row.label}-${ri}` : `i-${row.index}-${row.item.title}`">
+        <div v-if="row.kind === 'category'" class="zq-slash-menu__category">
+          {{ row.label }}
+        </div>
         <button
-          v-for="item in items"
-          :key="item.title"
+          v-else
+          type="button"
           class="zq-slash-menu__item"
-          :class="{
-            'is-selected':
-              flatItems.indexOf(item) === selectedIndex,
-          }"
-          @click="selectItem(flatItems.indexOf(item))"
-          @mouseenter="selectedIndex = flatItems.indexOf(item)"
+          :class="{ 'is-selected': row.index === selectedIndex }"
+          @click="selectItem(row.index)"
+          @mouseenter="selectedIndex = row.index"
         >
           <span class="zq-slash-menu__icon">
             <component
-              :is="iconMap[item.icon]"
-              v-if="iconMap[item.icon]"
+              :is="iconMap[row.item.icon]"
+              v-if="iconMap[row.item.icon]"
               class="h-4 w-4"
             />
           </span>
           <span class="zq-slash-menu__text">
-            <span class="zq-slash-menu__title">{{ item.title }}</span>
-            <span class="zq-slash-menu__desc">{{ item.description }}</span>
+            <span class="zq-slash-menu__title">{{ row.item.title }}</span>
+            <span class="zq-slash-menu__desc">{{ row.item.description }}</span>
           </span>
         </button>
       </template>
