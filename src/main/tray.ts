@@ -8,24 +8,43 @@ import { createEmptyLibrary } from './zq-file'
 
 let tray: Tray | null = null
 
-function getTrayIconPath(): string {
-  if (app.isPackaged) {
-    const base = join(process.resourcesPath, 'icons')
-    if (process.platform === 'win32') return join(base, 'icon.ico')
-    return join(base, 'icon.png')
-  }
-  const root = join(__dirname, '../../build')
-  if (process.platform === 'win32') return join(root, 'icon.ico')
-  return join(root, 'icon.png')
+function getTrayIconDir(): string {
+  if (app.isPackaged) return join(process.resourcesPath, 'icons')
+  return join(__dirname, '../../build')
 }
 
 function loadTrayIcon(): Electron.NativeImage {
-  const path = getTrayIconPath()
-  if (!existsSync(path)) {
-    console.warn('[tray] Icon not found:', path)
-    return nativeImage.createEmpty()
+  const dir = getTrayIconDir()
+
+  if (process.platform === 'darwin') {
+    const p1x = join(dir, 'tray-iconTemplate.png')
+    const p2x = join(dir, 'tray-iconTemplate@2x.png')
+    if (existsSync(p1x)) {
+      const img = nativeImage.createFromPath(p1x)
+      if (existsSync(p2x)) {
+        img.addRepresentation({ scaleFactor: 2, dataURL: nativeImage.createFromPath(p2x).toDataURL() })
+      }
+      img.setTemplateImage(true)
+      return img
+    }
   }
-  return nativeImage.createFromPath(path)
+
+  if (process.platform === 'win32') {
+    const ico = join(dir, 'tray-icon.png')
+    if (existsSync(ico)) return nativeImage.createFromPath(ico)
+  }
+
+  const png = join(dir, 'tray-icon.png')
+  if (existsSync(png)) return nativeImage.createFromPath(png)
+
+  const fallback = join(dir, 'icon.png')
+  if (existsSync(fallback)) {
+    console.warn('[tray] Using fallback icon.png')
+    return nativeImage.createFromPath(fallback).resize({ width: 16, height: 16 })
+  }
+
+  console.warn('[tray] No tray icon found in:', dir)
+  return nativeImage.createEmpty()
 }
 
 function showOrCreateMainWindow(): void {

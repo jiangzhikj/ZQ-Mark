@@ -126,12 +126,13 @@ function buildHelpMenu(m: MenuLocale, includePreferences?: boolean): MenuItemCon
 }
 
 function buildPopupTemplate(m: MenuLocale): MenuItemConstructorOptions[] {
-  // Win/Linux 无菜单栏，仅靠 popup；多顶级项时最后一项可能不显示，故将「设置」放入「帮助」子菜单
   return [
     buildFileMenu(m),
     buildEditMenu(m),
     buildViewMenu(m),
-    buildHelpMenu(m, true)
+    buildHelpMenu(m),
+    // { type: 'separator' },
+    { label: m.app.preferences, accelerator: 'CmdOrCtrl+,', click: () => sendAction('app:preferences') }
   ]
 }
 

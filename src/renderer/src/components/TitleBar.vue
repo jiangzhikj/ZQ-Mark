@@ -65,7 +65,7 @@ function onClose() {
 
 <template>
   <header class="titlebar" :class="{ 'titlebar--win': !isMac }">
-    <!-- Win/Linux/Web: hamburger menu button on left -->
+    <!-- Win/Linux/Web: hamburger menu on left -->
     <div v-if="!isMac" class="titlebar-left">
       <button
         ref="menuBtnRef"
@@ -77,13 +77,15 @@ function onClose() {
         <Menu :size="16" :stroke-width="1.4" />
       </button>
     </div>
+    <!-- macOS: traffic-light placeholder on left -->
+    <div v-else class="titlebar-left titlebar-left--mac" />
 
     <div class="titlebar-center">
       <span class="file-name">{{ fileName || t('editor.untitled') }}</span>
       <span v-if="isModified" class="modified-indicator">&mdash; {{ t('status.modified') }}</span>
     </div>
 
-    <!-- Win/Linux: window control buttons on right（网页版无系统窗口） -->
+    <!-- Win/Linux: window control buttons on right -->
     <div v-if="!isMac && !isWeb" class="window-controls">
       <button class="win-btn win-btn--minimize" :title="t('titlebar.minimize')" @click="onMinimize">
         <Minus :size="10" :stroke-width="1.2" />
@@ -97,7 +99,20 @@ function onClose() {
       </button>
     </div>
 
-    <!-- macOS: empty right slot to balance layout -->
+    <!-- macOS: hamburger menu on right -->
+    <div v-else-if="isMac" class="titlebar-right">
+      <button
+        ref="menuBtnRef"
+        class="menu-btn"
+        type="button"
+        :title="t('titlebar.menu')"
+        @click="onMenuClick"
+      >
+        <Menu :size="16" :stroke-width="1.4" />
+      </button>
+    </div>
+
+    <!-- Web: empty right slot -->
     <div v-else class="titlebar-right" />
   </header>
 </template>
@@ -127,6 +142,10 @@ function onClose() {
   z-index: 1;
 }
 
+.titlebar-left--mac {
+  margin-left: 68px;
+}
+
 .titlebar-center {
   display: flex;
   align-items: center;
@@ -150,7 +169,11 @@ function onClose() {
 }
 
 .titlebar-right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   min-width: 40px;
+  z-index: 1;
 }
 
 /* ─── Hamburger menu button (Win/Linux) ─── */

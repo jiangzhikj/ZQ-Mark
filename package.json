@@ -130,7 +130,12 @@
         "filter": [
           "icon.ico",
           "icon.png",
-          "icon.icns"
+          "icon.icns",
+          "tray-icon.png",
+          "tray-icon@2x.png",
+          "tray-iconTemplate.png",
+          "tray-iconTemplate@2x.png",
+          "tray-iconTemplate@3x.png"
         ]
       }
     ]
