@@ -82,6 +82,7 @@ const settingsVisible = ref(false)
 const aboutDialogVisible = ref(false)
 const updateDialogVisible = ref(false)
 const updateUrl = ref('')
+const telemetryEnabled = ref(true)
 const codeTheme = ref('intellij')
 const editorRef = ref<InstanceType<typeof ZqEditor>>()
 const localeMode = ref<'system' | string>('system')
@@ -350,6 +351,10 @@ function onChangeTheme(mode: string) {
 
 async function onChangeAutoSave(enabled: boolean) {
   await window.electron.setSettings({ autoSave: enabled })
+}
+
+async function onChangeTelemetry(enabled: boolean) {
+  await window.electron.setSettings({ telemetryEnabled: enabled })
 }
 
 async function onChangeCodeTheme(theme: string) {
@@ -675,6 +680,7 @@ onMounted(async () => {
 
   const settings = await window.electron.getSettings()
   updateUrl.value = settings.updateUrl || ''
+  telemetryEnabled.value = settings.telemetryEnabled !== false
   codeTheme.value = settings.codeTheme || 'intellij'
   document.documentElement.setAttribute('data-code-theme', codeTheme.value)
 
@@ -699,6 +705,7 @@ onMounted(async () => {
 
   cleanupSettingsChanged = window.electron.onSettingsChanged((s) => {
     updateUrl.value = s.updateUrl || ''
+    telemetryEnabled.value = s.telemetryEnabled !== false
     if (s.codeTheme && s.codeTheme !== codeTheme.value) {
       codeTheme.value = s.codeTheme
       document.documentElement.setAttribute('data-code-theme', s.codeTheme)
@@ -844,10 +851,12 @@ onUnmounted(() => {
       :current-theme="themeMode"
       :auto-save="autoSaveEnabled"
       :code-theme="codeTheme"
+      :telemetry-enabled="telemetryEnabled"
       @close="settingsVisible = false"
       @change-locale="onChangeLocale"
       @change-theme="onChangeTheme"
       @change-auto-save="onChangeAutoSave"
+      @change-telemetry="onChangeTelemetry"
       @change-code-theme="onChangeCodeTheme"
       @check-update="triggerCheckUpdate"
     />

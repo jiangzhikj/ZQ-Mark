@@ -154,6 +154,8 @@ const zhTW: AppLocale = {
     themeSystem: '跟隨系統',
     autoSave: '自動儲存',
     autoSaveDesc: '編輯後自動儲存檔案',
+    telemetry: '匿名使用統計',
+    telemetryDesc: '上報匿名版本與平台資訊，用於統計裝機與活躍，不含檔案或個人身分資訊',
     restartHint: '部分設定需要重新啟動應用程式後生效',
     updateUrl: '更新伺服器位址',
     updateUrlDesc: '設定檢查更新的伺服器位址',

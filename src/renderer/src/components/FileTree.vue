@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { FilePlus, FolderPlus } from 'lucide-vue-next'
+import { FilePlus, FolderPlus, LibraryBig } from '@/components/icons'
 import FileTreeItem from './FileTreeItem.vue'
 import { ContextMenu } from './ui'
 import type { ContextMenuItem } from './ui'
@@ -144,7 +144,12 @@ function findParentId(tree: LibraryNode[], childId: string, parentId: string | n
 
     <div class="file-tree-content" @contextmenu.self="onBackgroundContextMenu">
       <div v-if="tree.length === 0" class="file-tree-empty">
-        {{ t('library.emptyLibrary') }}
+        <div class="file-tree-empty__inner">
+          <div class="file-tree-empty__icon-wrap" aria-hidden="true">
+            <LibraryBig class="file-tree-empty__icon" :size="40" :stroke-width="1.35" />
+          </div>
+          <p class="file-tree-empty__text">{{ t('library.emptyLibrary') }}</p>
+        </div>
       </div>
       <FileTreeItem
         v-for="node in tree"
@@ -237,6 +242,9 @@ function findParentId(tree: LibraryNode[], childId: string, parentId: string | n
 
 .file-tree-content {
   flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   padding: 0 0 4px;
 }
@@ -260,11 +268,48 @@ function findParentId(tree: LibraryNode[], childId: string, parentId: string | n
 }
 
 .file-tree-empty {
-  padding: 24px 16px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  min-height: 120px;
+}
+
+.file-tree-empty__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 240px;
+  transform: translateY(-58px);
+}
+
+.file-tree-empty__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: var(--bg-hover);
+  /* border: 1px solid var(--border-color); */
+  color: var(--text-tertiary);
+  box-shadow: none;
+}
+
+.file-tree-empty__icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.file-tree-empty__text {
+  margin: 0;
   font-size: 12px;
   color: var(--text-tertiary);
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.65;
   white-space: pre-line;
 }
 </style>

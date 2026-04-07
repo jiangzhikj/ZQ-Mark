@@ -2,6 +2,7 @@
 import { ref, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Editor } from '@tiptap/vue-3'
+import { ListTree } from '@/components/icons'
 
 const props = defineProps<{
   editor?: Editor
@@ -180,7 +181,12 @@ onBeforeUnmount(() => {
 <template>
   <div class="outline-panel">
     <div v-if="headings.length === 0" class="outline-empty">
-      {{ t('sidebar.noHeadings') }}
+      <div class="outline-empty__inner">
+        <div class="outline-empty__icon-wrap" aria-hidden="true">
+          <ListTree class="outline-empty__icon" :size="40" :stroke-width="1.35" />
+        </div>
+        <p class="outline-empty__text">{{ t('sidebar.noHeadings') }}</p>
+      </div>
     </div>
     <nav v-else class="outline-list">
       <button
@@ -204,38 +210,82 @@ onBeforeUnmount(() => {
 <style scoped>
 .outline-panel {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 4px 0;
 }
 
-.outline-panel::-webkit-scrollbar {
+.outline-list::-webkit-scrollbar {
   width: 5px;
 }
 
-.outline-panel::-webkit-scrollbar-track {
+.outline-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.outline-panel::-webkit-scrollbar-thumb {
+.outline-list::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.2s;
 }
 
-.outline-panel:hover::-webkit-scrollbar-thumb {
+.outline-list:hover::-webkit-scrollbar-thumb {
   background: var(--scrollbar-thumb);
 }
 
 .outline-empty {
-  padding: 24px 16px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 16px;
+  min-height: 140px;
+}
+
+.outline-empty__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  max-width: 220px;
+  transform: translateY(-58px);
+}
+
+.outline-empty__icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: var(--bg-hover);
+  /* border: 1px solid var(--border-color); */
+  color: var(--text-tertiary);
+  box-shadow: none;
+}
+
+.outline-empty__icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.outline-empty__text {
+  margin: 0;
   font-size: 12px;
   color: var(--text-tertiary);
   text-align: center;
-  line-height: 1.6;
+  line-height: 1.65;
   white-space: pre-line;
 }
 
 .outline-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   margin: 0 20px;

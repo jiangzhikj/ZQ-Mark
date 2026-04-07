@@ -17,6 +17,7 @@ import { ASSET_PROTOCOL, localPathToAssetUrl, assetUrlToLocalPath } from './asse
 import { messages } from '../shared/i18n'
 import type { SupportedLocale } from '../shared/i18n'
 import { registerUpdaterIPC, checkForUpdate } from './updater'
+import { reportInstallationTelemetry } from './telemetry'
 import {
   createWindow, getStateByWebContents, getWindowByPath,
   forceClose, setLocale, getLocale, getAllStates
@@ -112,13 +113,16 @@ interface AppSettings {
   autoSave: boolean
   updateUrl: string
   codeTheme: string
+  /** 是否向服务端上报匿名装机与活跃统计 */
+  telemetryEnabled: boolean
 }
 
 /** Base URL for `{base}/latest.json`. */
 const defaultSettings: AppSettings = {
   autoSave: true,
   updateUrl: 'https://minio-api.fuadmin.cn/zq-mark',
-  codeTheme: 'intellij'
+  codeTheme: 'intellij',
+  telemetryEnabled: true
 }
 
 /** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */
@@ -696,6 +700,9 @@ app.whenReady().then(async () => {
   setLocale(locale)
   buildMenu(locale)
   createTray(locale)
+
+  appSettings = loadSettings()
+  void reportInstallationTelemetry(appSettings.telemetryEnabled !== false)
 
   // Auto-check for updates on launch (delayed by 10s) and every 4 hours
   if (appSettings.updateUrl) {

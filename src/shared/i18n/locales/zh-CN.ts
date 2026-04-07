@@ -154,6 +154,8 @@ const zhCN: AppLocale = {
     themeSystem: '跟随系统',
     autoSave: '自动保存',
     autoSaveDesc: '编辑后自动保存文件',
+    telemetry: '匿名使用统计',
+    telemetryDesc: '上报匿名版本与平台信息，用于统计装机与活跃，不含文件或个人身份信息',
     restartHint: '部分设置需要重启应用后生效',
     updateUrl: '更新服务器地址',
     updateUrlDesc: '设置检查更新的服务器地址',

@@ -19,10 +19,18 @@
 [data-theme='dark'][data-code-theme='github']         { --zq-code-bg: #0d1117; --zq-code-header-bg: #161b22; --zq-code-border: #30363d; --zq-code-text: #c9d1d9; }
 [data-theme='dark'][data-code-theme='solarized-light']{ --zq-code-bg: #002b36; --zq-code-header-bg: #073642; --zq-code-border: #094f5c; --zq-code-text: #839496; }
 
+/* 设置页预览：仅带 data-code-theme，与 html 的 data-theme 组合时对齐暗色下的浅色主题变量 */
+[data-theme='dark'] .code-preview-area[data-code-theme='intellij']       { --zq-code-bg: #2b2b2b; --zq-code-header-bg: #313335; --zq-code-border: #404040; --zq-code-text: #a9b7c6; }
+[data-theme='dark'] .code-preview-area[data-code-theme='github']         { --zq-code-bg: #0d1117; --zq-code-header-bg: #161b22; --zq-code-border: #30363d; --zq-code-text: #c9d1d9; }
+[data-theme='dark'] .code-preview-area[data-code-theme='solarized-light']{ --zq-code-bg: #002b36; --zq-code-header-bg: #073642; --zq-code-border: #094f5c; --zq-code-text: #839496; }
+
 // ════════════════════════════════════════════════
 // IntelliJ IDEA (Light)
 // ════════════════════════════════════════════════
-[data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='intellij'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #8C8C8C;
@@ -93,7 +101,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='intellij'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #808080;
@@ -155,7 +166,10 @@
 // ════════════════════════════════════════════════
 // GitHub (Light)
 // ════════════════════════════════════════════════
-[data-code-theme='github'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='github'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='github'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #6a737d;
@@ -217,7 +231,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='github'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='github'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='github'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #8b949e;
@@ -270,7 +287,10 @@
 // ════════════════════════════════════════════════
 // One Dark (Atom)
 // ════════════════════════════════════════════════
-[data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='one-dark'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #5c6370;
@@ -331,7 +351,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='one-dark'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #5c6370;
@@ -383,7 +406,10 @@
 // ════════════════════════════════════════════════
 // Monokai
 // ════════════════════════════════════════════════
-[data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='monokai'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #75715e;
@@ -444,7 +470,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='monokai'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #75715e;
@@ -496,7 +525,10 @@
 // ════════════════════════════════════════════════
 // Dracula
 // ════════════════════════════════════════════════
-[data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='dracula'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #6272a4;
@@ -557,7 +589,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='dracula'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #6272a4;
@@ -609,7 +644,10 @@
 // ════════════════════════════════════════════════
 // Solarized Light
 // ════════════════════════════════════════════════
-[data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='solarized-light'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #93a1a1;
@@ -670,7 +708,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='solarized-light'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #586e75;
@@ -722,7 +763,10 @@
 // ════════════════════════════════════════════════
 // Nord
 // ════════════════════════════════════════════════
-[data-code-theme='nord'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='nord'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='nord'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #616e88;
@@ -783,7 +827,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='nord'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='nord'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='nord'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #616e88;
@@ -835,7 +882,10 @@
 // ════════════════════════════════════════════════
 // Night Owl
 // ════════════════════════════════════════════════
-[data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='night-owl'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #637777;
@@ -896,7 +946,10 @@
   }
 }
 
-[data-theme='dark'][data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror {
+:is(
+  [data-theme='dark'][data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='night-owl'] .zq-code-theme-preview
+) {
   .hljs-comment,
   .hljs-quote {
     color: #637777;
@@ -950,26 +1003,74 @@
 // lowlight uses hljs-variable + language_ for built-ins like `console`
 // These compound selectors have higher specificity than the single-class rules above
 // ════════════════════════════════════════════════
-[data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #871094; }
-[data-theme='dark'][data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #A9B7C6; }
+:is(
+  [data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='intellij'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #871094; }
+:is(
+  [data-theme='dark'][data-code-theme='intellij'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='intellij'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #A9B7C6; }
 
-[data-code-theme='github'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #e36209; }
-[data-theme='dark'][data-code-theme='github'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #ffa657; }
+:is(
+  [data-code-theme='github'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='github'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #e36209; }
+:is(
+  [data-theme='dark'][data-code-theme='github'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='github'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #ffa657; }
 
-[data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #e6c07b; }
-[data-theme='dark'][data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #e6c07b; }
+:is(
+  [data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='one-dark'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #e6c07b; }
+:is(
+  [data-theme='dark'][data-code-theme='one-dark'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='one-dark'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #e6c07b; }
 
-[data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #66d9ef; }
-[data-theme='dark'][data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #66d9ef; }
+:is(
+  [data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='monokai'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #66d9ef; }
+:is(
+  [data-theme='dark'][data-code-theme='monokai'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='monokai'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #66d9ef; }
 
-[data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #8be9fd; }
-[data-theme='dark'][data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #8be9fd; }
+:is(
+  [data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='dracula'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #8be9fd; }
+:is(
+  [data-theme='dark'][data-code-theme='dracula'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='dracula'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #8be9fd; }
 
-[data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #b58900; }
-[data-theme='dark'][data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #b58900; }
+:is(
+  [data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='solarized-light'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #b58900; }
+:is(
+  [data-theme='dark'][data-code-theme='solarized-light'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='solarized-light'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #b58900; }
 
-[data-code-theme='nord'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #d08770; }
-[data-theme='dark'][data-code-theme='nord'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #d08770; }
+:is(
+  [data-code-theme='nord'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='nord'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #d08770; }
+:is(
+  [data-theme='dark'][data-code-theme='nord'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='nord'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #d08770; }
 
-[data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #addb67; }
-[data-theme='dark'][data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror .hljs-variable.language_ { color: #addb67; }
+:is(
+  [data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror,
+  .code-preview-area[data-code-theme='night-owl'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #addb67; }
+:is(
+  [data-theme='dark'][data-code-theme='night-owl'] .zq-editor__wrapper .ProseMirror,
+  [data-theme='dark'] .code-preview-area[data-code-theme='night-owl'] .zq-code-theme-preview
+) .hljs-variable.language_ { color: #addb67; }

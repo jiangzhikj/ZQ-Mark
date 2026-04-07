@@ -194,7 +194,7 @@
     "@types/adm-zip": "^0.5.8",
     "@types/archiver": "^7.0.0",
     "@vitejs/plugin-vue": "^5.2.3",
-    "electron": "^35.7.5",
+    "electron": "42.0.0-alpha.5",
     "electron-builder": "^25.1.8",
     "electron-vite": "^3.0.0",
     "typescript": "^5.8.2",

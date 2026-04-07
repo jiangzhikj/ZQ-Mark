@@ -154,6 +154,8 @@ export interface AppLocale {
     themeSystem: string
     autoSave: string
     autoSaveDesc: string
+    telemetry: string
+    telemetryDesc: string
     restartHint: string
     updateUrl: string
     updateUrlDesc: string

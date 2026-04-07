@@ -22,6 +22,7 @@ export interface AppSettings {
   autoSave: boolean
   updateUrl: string
   codeTheme: string
+  telemetryEnabled: boolean
 }
 
 export interface ElectronAPI {

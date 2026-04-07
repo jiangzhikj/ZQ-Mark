@@ -47,7 +47,8 @@ const LOCALE_KEY = 'zq-web-user-locale'
 const defaultSettings = (): AppSettings => ({
   autoSave: true,
   updateUrl: '',
-  codeTheme: 'intellij'
+  codeTheme: 'intellij',
+  telemetryEnabled: true
 })
 
 function readSettings(): AppSettings {

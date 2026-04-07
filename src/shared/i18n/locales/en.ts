@@ -154,6 +154,9 @@ const en: AppLocale = {
     themeSystem: 'System',
     autoSave: 'Auto Save',
     autoSaveDesc: 'Automatically save files after editing',
+    telemetry: 'Anonymous usage statistics',
+    telemetryDesc:
+      'Send anonymous version and platform info for install and activity counts. No files or personal data.',
     restartHint: 'Some settings require a restart to take effect',
     updateUrl: 'Update Server URL',
     updateUrlDesc: 'Set the server URL for checking updates',

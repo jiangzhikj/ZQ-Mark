@@ -27,7 +27,7 @@ type UpdateEventPayload =
   | { type: 'downloaded'; filePath: string }
   | { type: 'error'; message: string }
 
-function getPlatformKey(): string {
+export function getPlatformKey(): string {
   switch (process.platform) {
     case 'darwin':
       return process.arch === 'arm64' ? 'darwin-arm64' : 'darwin-x64'

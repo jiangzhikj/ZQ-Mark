@@ -163,15 +163,19 @@
   color: var(--el-text-color-secondary);
 }
 
-// Code
+// Code（仅行内 code：`pre > code` 为代码块，由 CodeBlockComponent + code-themes 着色，勿套用行内样式）
+// 行内 code：与 GitHub / VS Code 等常见 Markdown 一致——浅底、正文色、等宽，无警示红
 .zq-editor__wrapper .ProseMirror {
-  code {
-    background-color: var(--el-fill-color-light);
-    padding: 0.125rem 0.375rem;
+  :not(pre) > code {
+    padding: 0.2em 0.4em;
+    margin: 0 0.05em;
     border-radius: 4px;
     font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-    font-size: 0.875em;
-    color: var(--el-color-danger);
+    font-size: 0.9em;
+    line-height: 1.45;
+    color: var(--el-text-color-primary);
+    background-color: var(--el-fill-color-light);
+    border: 1px solid var(--el-border-color-lighter);
   }
 
   pre:not(.zq-codeblock__pre) {
