@@ -11,6 +11,7 @@ import { InputDialog, ConfirmDialog, ZqScrollbar } from '@/components/ui'
 import type { InputDialogField, InputDialogResult } from '@/components/ui'
 import AboutDialog from '@/components/AboutDialog.vue'
 import UpdateDialog from '@/components/UpdateDialog.vue'
+import SaveFormatDialog from '@/components/SaveFormatDialog.vue'
 import WebAppMenu from '@/components/WebAppMenu.vue'
 import { ZqEditor } from '@/components/zq-editor'
 import { useTheme } from '@/composables/useTheme'
@@ -51,7 +52,7 @@ const {
   newLibrary,
   loadFileResult,
   setWindowMode,
-  setBeforeSaveMd,
+  setSaveFormatResolver,
   setUnsavedDialog,
   loadMoreLines,
   loadAllLines
@@ -161,8 +162,10 @@ const sourceContent = ref('')
 const sourceTextareaRef = ref<HTMLTextAreaElement>()
 let suppressSourceSync = false
 
-const saveMdConfirmVisible = ref(false)
-let saveMdResolve: ((choice: 'md' | 'zq' | 'cancel') => void) | null = null
+const saveFormatDialogVisible = ref(false)
+let saveFormatResolve: ((choice: 'md' | 'zq' | 'cancel') => void) | null = null
+const saveFormatAskDialog = ref(true)
+const saveFormatDefault = ref<'md' | 'zq'>('md')
 
 const unsavedDialogVisible = ref(false)
 let unsavedResolve: ((choice: 'save' | 'discard' | 'cancel') => void) | null = null
@@ -176,29 +179,35 @@ function showUnsavedDialogPromise(): Promise<'save' | 'discard' | 'cancel'> {
 
 setUnsavedDialog(() => showUnsavedDialogPromise())
 
-setBeforeSaveMd(() => {
+setSaveFormatResolver(async () => {
+  const settings = await window.electron.getSettings()
+  const ask = settings.saveFormatAskDialog !== false
+  const def = settings.saveFormatDefault === 'zq' ? 'zq' : 'md'
+  if (!ask) {
+    return def
+  }
   return new Promise<'md' | 'zq' | 'cancel'>((resolve) => {
-    saveMdResolve = resolve
-    saveMdConfirmVisible.value = true
+    saveFormatResolve = resolve
+    saveFormatDialogVisible.value = true
   })
 })
 
-function onSaveMdCancel() {
-  saveMdConfirmVisible.value = false
-  saveMdResolve?.('cancel')
-  saveMdResolve = null
+function onSaveFormatCancel() {
+  saveFormatDialogVisible.value = false
+  saveFormatResolve?.('cancel')
+  saveFormatResolve = null
 }
 
-function onSaveMdContinue() {
-  saveMdConfirmVisible.value = false
-  saveMdResolve?.('md')
-  saveMdResolve = null
-}
-
-function onSaveMdAsZq() {
-  saveMdConfirmVisible.value = false
-  saveMdResolve?.('zq')
-  saveMdResolve = null
+async function onSaveFormatPick(payload: { format: 'md' | 'zq'; remember: boolean }) {
+  saveFormatDialogVisible.value = false
+  if (payload.remember) {
+    await window.electron.setSettings({
+      saveFormatAskDialog: false,
+      saveFormatDefault: payload.format
+    })
+  }
+  saveFormatResolve?.(payload.format)
+  saveFormatResolve = null
 }
 
 function onUnsavedSave() {
@@ -361,6 +370,16 @@ async function onChangeCodeTheme(theme: string) {
   codeTheme.value = theme
   document.documentElement.setAttribute('data-code-theme', theme)
   await window.electron.setSettings({ codeTheme: theme })
+}
+
+async function onChangeSaveFormatAsk(enabled: boolean) {
+  saveFormatAskDialog.value = enabled
+  await window.electron.setSettings({ saveFormatAskDialog: enabled })
+}
+
+async function onChangeSaveFormatDefault(format: 'md' | 'zq') {
+  saveFormatDefault.value = format
+  await window.electron.setSettings({ saveFormatDefault: format })
 }
 
 function onEditorReady(editor: any) {
@@ -683,6 +702,8 @@ onMounted(async () => {
   telemetryEnabled.value = settings.telemetryEnabled !== false
   codeTheme.value = settings.codeTheme || 'intellij'
   document.documentElement.setAttribute('data-code-theme', codeTheme.value)
+  saveFormatAskDialog.value = settings.saveFormatAskDialog !== false
+  saveFormatDefault.value = settings.saveFormatDefault === 'zq' ? 'zq' : 'md'
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
     if (action === 'view:toggleSidebar') {
@@ -709,6 +730,12 @@ onMounted(async () => {
     if (s.codeTheme && s.codeTheme !== codeTheme.value) {
       codeTheme.value = s.codeTheme
       document.documentElement.setAttribute('data-code-theme', s.codeTheme)
+    }
+    if (s.saveFormatAskDialog !== undefined) {
+      saveFormatAskDialog.value = s.saveFormatAskDialog !== false
+    }
+    if (s.saveFormatDefault !== undefined) {
+      saveFormatDefault.value = s.saveFormatDefault === 'zq' ? 'zq' : 'md'
     }
   })
 
@@ -852,12 +879,16 @@ onUnmounted(() => {
       :auto-save="autoSaveEnabled"
       :code-theme="codeTheme"
       :telemetry-enabled="telemetryEnabled"
+      :save-format-ask-dialog="saveFormatAskDialog"
+      :save-format-default="saveFormatDefault"
       @close="settingsVisible = false"
       @change-locale="onChangeLocale"
       @change-theme="onChangeTheme"
       @change-auto-save="onChangeAutoSave"
       @change-telemetry="onChangeTelemetry"
       @change-code-theme="onChangeCodeTheme"
+      @change-save-format-ask="onChangeSaveFormatAsk"
+      @change-save-format-default="onChangeSaveFormatDefault"
       @check-update="triggerCheckUpdate"
     />
     <InputDialog
@@ -885,17 +916,10 @@ onUnmounted(() => {
       @confirm="onConfirmSourceMode"
       @cancel="onCancelSourceMode"
     />
-    <ConfirmDialog
-      :visible="saveMdConfirmVisible"
-      :title="$t('dialog.saveMdTitle')"
-      :message="$t('dialog.saveMdMessage')"
-      :cancel-text="$t('dialog.cancel')"
-      :alternate-text="$t('dialog.saveMdContinue')"
-      :confirm-text="$t('dialog.saveMdSaveAsZq')"
-      width="440px"
-      @cancel="onSaveMdCancel"
-      @alternate="onSaveMdContinue"
-      @confirm="onSaveMdAsZq"
+    <SaveFormatDialog
+      :visible="saveFormatDialogVisible"
+      @pick="onSaveFormatPick"
+      @cancel="onSaveFormatCancel"
     />
     <ConfirmDialog
       :visible="unsavedDialogVisible"

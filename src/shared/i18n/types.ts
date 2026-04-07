@@ -163,6 +163,12 @@ export interface AppLocale {
     editor: string
     codeTheme: string
     codeThemeDesc: string
+    saveFormatAsk: string
+    saveFormatAskDesc: string
+    saveFormatDefaultLabel: string
+    saveFormatDefaultHint: string
+    saveFormatMd: string
+    saveFormatZq: string
   }
   update: {
     currentVersion: string
@@ -220,10 +226,18 @@ export interface AppLocale {
     sourceModeTitle: string
     sourceModeMessage: string
     sourceModeConfirm: string
-    saveMdTitle: string
-    saveMdMessage: string
-    saveMdContinue: string
-    saveMdSaveAsZq: string
+    saveFormatTitle: string
+    saveFormatSubtitle: string
+    saveFormatMdBadge: string
+    saveFormatZqBadge: string
+    saveFormatMdTitle: string
+    saveFormatMdBody: string
+    saveFormatZqTitle: string
+    saveFormatZqBody: string
+    saveFormatRemember: string
+    saveFormatRememberHint: string
+    saveFormatSaveAsMd: string
+    saveFormatSaveAsZq: string
   }
   largeFile: {
     truncatedWarning: string

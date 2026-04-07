@@ -34,7 +34,7 @@ let _pendingContent: string | null = null
 let _pendingJSON: any = null
 let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let _suppressUpdate = false
-let _beforeSaveMd: (() => Promise<'md' | 'zq' | 'cancel'>) | null = null
+let _resolveSaveFormat: (() => Promise<'md' | 'zq' | 'cancel'>) | null = null
 
 let _unsavedDialog: (() => Promise<'save' | 'discard' | 'cancel'>) | null = null
 const AUTO_SAVE_DELAY = 1500
@@ -319,18 +319,6 @@ export function useEditor() {
     }
   }
 
-  async function confirmAndSaveMd(path: string | null) {
-    if (_beforeSaveMd) {
-      const choice = await _beforeSaveMd()
-      if (choice === 'cancel') return
-      if (choice === 'zq') {
-        await saveAsZq(null)
-        return
-      }
-    }
-    await doSaveMd(path)
-  }
-
   async function saveFile() {
     if (windowMode.value === 'library') {
       await saveLibraryDoc()
@@ -344,20 +332,21 @@ export function useEditor() {
       return
     }
 
-    if (!filePath.value) {
-      await saveAsZq(null)
-      return
+    const choice = _resolveSaveFormat ? await _resolveSaveFormat() : 'md'
+    if (choice === 'cancel') return
+    if (choice === 'zq') {
+      await saveAsZq(filePath.value)
+    } else {
+      await doSaveMd(filePath.value)
     }
-
-    await confirmAndSaveMd(filePath.value)
   }
 
   async function saveAsMd() {
-    await confirmAndSaveMd(null)
+    await doSaveMd(null)
   }
 
-  function setBeforeSaveMd(fn: () => Promise<'md' | 'zq' | 'cancel'>) {
-    _beforeSaveMd = fn
+  function setSaveFormatResolver(fn: () => Promise<'md' | 'zq' | 'cancel'>) {
+    _resolveSaveFormat = fn
   }
 
   function setUnsavedDialog(fn: () => Promise<'save' | 'discard' | 'cancel'>) {
@@ -568,7 +557,7 @@ export function useEditor() {
     saveFile,
     saveAsMd,
     saveAsZq,
-    setBeforeSaveMd,
+    setSaveFormatResolver,
     setUnsavedDialog,
     newFile,
     newLibrary,

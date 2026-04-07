@@ -162,7 +162,13 @@ const zhCN: AppLocale = {
     updateUrlPlaceholder: 'https://minio-api.fuadmin.cn/zq-mark',
     editor: '编辑器',
     codeTheme: '代码样式',
-    codeThemeDesc: '选择代码块的语法高亮主题'
+    codeThemeDesc: '选择代码块的语法高亮主题',
+    saveFormatAsk: '保存时询问格式',
+    saveFormatAskDesc: '保存单文件时弹出对话框，在 Markdown 与 ZQ 文档之间选择',
+    saveFormatDefaultLabel: '不询问时默认使用',
+    saveFormatDefaultHint: '关闭上方开关后，保存将直接使用此处选择的格式。在弹窗中勾选「记住选择」也会同步关闭询问并记录格式。',
+    saveFormatMd: 'Markdown（.md）',
+    saveFormatZq: 'ZQ 文档（.zq）'
   },
   update: {
     currentVersion: '当前版本',
@@ -220,10 +226,20 @@ const zhCN: AppLocale = {
     sourceModeTitle: '切换到源码模式',
     sourceModeMessage: '切换到源码模式后，部分富文本样式（如颜色、字号、对齐等）可能会丢失。是否继续？',
     sourceModeConfirm: '继续切换',
-    saveMdTitle: '保存格式提醒',
-    saveMdMessage: 'Markdown 格式仅支持基础样式，颜色、字号、对齐、图片、附件、视频等内容可能丢失。建议保存为 ZQ 格式以完整保留所有内容和样式。',
-    saveMdContinue: '仍然保存为 MD',
-    saveMdSaveAsZq: '保存为 ZQ'
+    saveFormatTitle: '选择保存格式',
+    saveFormatSubtitle: '两种格式都可用。若文档含复杂排版、嵌入资源或富文本样式，更建议使用 ZQ 文档作为主副本。',
+    saveFormatMdBadge: '通用 · 纯文本',
+    saveFormatZqBadge: '推荐 · 完整保留',
+    saveFormatMdTitle: 'Markdown（.md）',
+    saveFormatMdBody:
+      '仅保留 Markdown 能表达的语义：标题、列表、链接等。颜色、字号、对齐、分栏、表格样式、画板、音视频与附件等往往会丢失或退化为普通文字/链接，图片也常变为外链路径。',
+    saveFormatZqTitle: 'ZQ 文档（.zq）',
+    saveFormatZqBody:
+      'ZQ Mark 原生格式，在单个压缩包内保存正文结构与 assets（图片、附件等）。可完整保留所见即所得样式与嵌入内容，适合作为本应用中的长期存档与主副本。',
+    saveFormatRemember: '记住我的选择，下次不再询问',
+    saveFormatRememberHint: '可在「偏好设置 → 通用」中重新开启询问或更改默认格式。',
+    saveFormatSaveAsMd: '保存为 Markdown',
+    saveFormatSaveAsZq: '保存为 ZQ 文档'
   },
   largeFile: {
     truncatedWarning: '文件过大，已截断加载以避免卡顿',

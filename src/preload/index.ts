@@ -23,6 +23,8 @@ export interface AppSettings {
   updateUrl: string
   codeTheme: string
   telemetryEnabled: boolean
+  saveFormatAskDialog: boolean
+  saveFormatDefault: 'md' | 'zq'
 }
 
 export interface ElectronAPI {

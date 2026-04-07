@@ -163,7 +163,14 @@ const en: AppLocale = {
     updateUrlPlaceholder: 'https://minio-api.fuadmin.cn/zq-mark',
     editor: 'Editor',
     codeTheme: 'Code Theme',
-    codeThemeDesc: 'Select the syntax highlighting theme for code blocks'
+    codeThemeDesc: 'Select the syntax highlighting theme for code blocks',
+    saveFormatAsk: 'Ask format on save',
+    saveFormatAskDesc: 'When saving a single document, show a dialog to choose Markdown or ZQ Document',
+    saveFormatDefaultLabel: 'Default when not asking',
+    saveFormatDefaultHint:
+      'When the switch above is off, saves use the format selected here. Checking “remember my choice” in the dialog also turns off asking and stores the format.',
+    saveFormatMd: 'Markdown (.md)',
+    saveFormatZq: 'ZQ Document (.zq)'
   },
   update: {
     currentVersion: 'Current Version',
@@ -221,10 +228,21 @@ const en: AppLocale = {
     sourceModeTitle: 'Switch to Source Mode',
     sourceModeMessage: 'Some rich text styles (such as colors, font sizes, alignment, etc.) may be lost after switching to source mode. Continue?',
     sourceModeConfirm: 'Continue',
-    saveMdTitle: 'Save Format Reminder',
-    saveMdMessage: 'Markdown only supports basic formatting. Colors, font sizes, alignment, images, attachments, and videos may be lost. We recommend saving as ZQ format to fully preserve all content and styles.',
-    saveMdContinue: 'Save as MD Anyway',
-    saveMdSaveAsZq: 'Save as ZQ'
+    saveFormatTitle: 'Choose save format',
+    saveFormatSubtitle:
+      'Both formats work. For complex layout, embedded assets, or rich styling, ZQ Document is better as the primary copy.',
+    saveFormatMdBadge: 'Portable · Plain text',
+    saveFormatZqBadge: 'Recommended · Full fidelity',
+    saveFormatMdTitle: 'Markdown (.md)',
+    saveFormatMdBody:
+      'Great for Git, other editors, and static sites. Only Markdown semantics are kept: headings, lists, links, etc. Colors, font sizes, alignment, columns, table styling, drawings, media, and attachments are often lost or reduced to plain text/links; images may become external paths only.',
+    saveFormatZqTitle: 'ZQ Document (.zq)',
+    saveFormatZqBody:
+      'Native ZQ Mark format: one archive with document structure and assets (images, attachments, etc.). Preserves WYSIWYG styling and embeds—ideal for long-term archival and the main copy in this app.',
+    saveFormatRemember: 'Remember my choice and don’t ask again',
+    saveFormatRememberHint: 'You can turn this prompt back on or change the default under Preferences → General.',
+    saveFormatSaveAsMd: 'Save as Markdown',
+    saveFormatSaveAsZq: 'Save as ZQ Document'
   },
   largeFile: {
     truncatedWarning: 'File is too large and has been truncated to avoid freezing',

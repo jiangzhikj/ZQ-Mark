@@ -115,6 +115,10 @@ interface AppSettings {
   codeTheme: string
   /** 是否向服务端上报匿名装机与活跃统计 */
   telemetryEnabled: boolean
+  /** 单文件保存时是否弹出 Markdown / ZQ 格式选择 */
+  saveFormatAskDialog: boolean
+  /** 关闭询问后默认保存格式 */
+  saveFormatDefault: 'md' | 'zq'
 }
 
 /** Base URL for `{base}/latest.json`. */
@@ -122,7 +126,9 @@ const defaultSettings: AppSettings = {
   autoSave: true,
   updateUrl: 'https://minio-api.fuadmin.cn/zq-mark',
   codeTheme: 'intellij',
-  telemetryEnabled: true
+  telemetryEnabled: true,
+  saveFormatAskDialog: true,
+  saveFormatDefault: 'md'
 }
 
 /** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */

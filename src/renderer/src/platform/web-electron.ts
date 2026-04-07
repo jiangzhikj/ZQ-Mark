@@ -48,7 +48,9 @@ const defaultSettings = (): AppSettings => ({
   autoSave: true,
   updateUrl: '',
   codeTheme: 'intellij',
-  telemetryEnabled: true
+  telemetryEnabled: true,
+  saveFormatAskDialog: true,
+  saveFormatDefault: 'md'
 })
 
 function readSettings(): AppSettings {

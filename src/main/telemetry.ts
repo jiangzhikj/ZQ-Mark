@@ -96,15 +96,14 @@ async function postInstallationPayload(main: Record<string, string>, eventLabel:
   })
   const controller = new AbortController()
   const t = setTimeout(() => controller.abort(), 15_000)
-  const headers = {
-    'Content-Type': 'application/json; charset=utf-8',
-    Authorization: `Bearer ${INSTALLATION_TOKEN}`,
-    'User-Agent': `zq-mark/${app.getVersion()}`
-  }
   try {
     const res = await net.fetch(INSTALLATION_DATA_URL, {
       method: 'POST',
-      headers: headers,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        Authorization: `Bearer ${INSTALLATION_TOKEN}`,
+        'User-Agent': `zq-mark/${app.getVersion()}`
+      },
       body,
       signal: controller.signal
     })
@@ -123,9 +122,7 @@ async function postInstallationPayload(main: Record<string, string>, eventLabel:
         event: eventLabel,
         status: res.status,
         statusText: res.statusText,
-        bodyPreview: bodyPreview || '(empty)',
-        headers: headers,
-        body: body
+        bodyPreview: bodyPreview || '(empty)'
       })
     }
     return ok
