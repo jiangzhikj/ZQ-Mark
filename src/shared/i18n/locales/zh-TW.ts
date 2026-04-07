@@ -82,6 +82,7 @@ const zhTW: AppLocale = {
     help: {
       label: '說明',
       markdownReference: 'Markdown 參考',
+      checkUpdate: '檢查更新...',
       about: '關於 ZQ Mark',
       devTools: '開發者工具'
     },
@@ -156,7 +157,10 @@ const zhTW: AppLocale = {
     restartHint: '部分設定需要重新啟動應用程式後生效',
     updateUrl: '更新伺服器位址',
     updateUrlDesc: '設定檢查更新的伺服器位址',
-    updateUrlPlaceholder: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
+    updateUrlPlaceholder: 'https://minio-api.fuadmin.cn/zq-mark',
+    editor: '編輯器',
+    codeTheme: '代碼樣式',
+    codeThemeDesc: '選擇代碼區塊的語法高亮主題'
   },
   update: {
     currentVersion: '目前版本',
@@ -167,6 +171,7 @@ const zhTW: AppLocale = {
     newVersion: '新版本',
     releaseNotes: '更新說明',
     downloading: '正在下載更新...',
+    downloadNow: '下載更新',
     downloadProgress: '下載進度',
     downloadSpeed: '下載速度',
     downloadComplete: '下載完成',
@@ -217,6 +222,15 @@ const zhTW: AppLocale = {
     saveMdMessage: 'Markdown 格式僅支援基礎樣式，顏色、字型大小、對齊、圖片、附件、影片等內容可能遺失。建議儲存為 ZQ 格式以完整保留所有內容和樣式。',
     saveMdContinue: '仍然儲存為 MD',
     saveMdSaveAsZq: '儲存為 ZQ'
+  },
+  largeFile: {
+    truncatedWarning: '檔案過大，已截斷載入以避免卡頓',
+    loadedLines: '已載入 {loaded} 行',
+    totalLines: '共 {total} 行',
+    loadMore: '載入更多',
+    loadAll: '載入全部（可能卡頓）',
+    loading: '正在載入...',
+    loadSuccess: '已載入至 {loaded} 行'
   },
   'zq-editor': {
     placeholder: '輸入 / 喚起命令選單...',

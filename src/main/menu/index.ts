@@ -111,6 +111,10 @@ function buildHelpMenu(m: MenuLocale, includePreferences?: boolean): MenuItemCon
     },
     { type: 'separator' },
     {
+      label: m.help.checkUpdate,
+      click: () => sendAction('help:checkUpdate')
+    },
+    {
       label: m.help.about,
       click: () => sendAction('help:about')
     },

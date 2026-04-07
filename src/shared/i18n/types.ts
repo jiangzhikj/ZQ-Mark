@@ -76,6 +76,7 @@ export interface MenuLocale {
   help: {
     label: string
     markdownReference: string
+    checkUpdate: string
     about: string
     devTools: string
   }
@@ -157,6 +158,9 @@ export interface AppLocale {
     updateUrl: string
     updateUrlDesc: string
     updateUrlPlaceholder: string
+    editor: string
+    codeTheme: string
+    codeThemeDesc: string
   }
   update: {
     currentVersion: string
@@ -167,6 +171,7 @@ export interface AppLocale {
     newVersion: string
     releaseNotes: string
     downloading: string
+    downloadNow: string
     downloadProgress: string
     downloadSpeed: string
     downloadComplete: string
@@ -217,6 +222,15 @@ export interface AppLocale {
     saveMdMessage: string
     saveMdContinue: string
     saveMdSaveAsZq: string
+  }
+  largeFile: {
+    truncatedWarning: string
+    loadedLines: string
+    totalLines: string
+    loadMore: string
+    loadAll: string
+    loading: string
+    loadSuccess: string
   }
   'zq-editor': ZqEditorLocale
   draw: DrawLocale

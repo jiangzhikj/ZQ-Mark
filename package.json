@@ -1,7 +1,7 @@
 {
   "name": "zq-mark",
-  "version": "1.0.2",
-  "description": "A local Markdown editor inspired by Typora",
+  "version": "1.0.3",
+  "description": "A local Markdown editor inspired",
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",

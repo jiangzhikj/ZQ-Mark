@@ -10,6 +10,7 @@ import WelcomeScreen from '@/components/WelcomeScreen.vue'
 import { InputDialog, ConfirmDialog, ZqScrollbar } from '@/components/ui'
 import type { InputDialogField, InputDialogResult } from '@/components/ui'
 import AboutDialog from '@/components/AboutDialog.vue'
+import UpdateDialog from '@/components/UpdateDialog.vue'
 import WebAppMenu from '@/components/WebAppMenu.vue'
 import { ZqEditor } from '@/components/zq-editor'
 import { useTheme } from '@/composables/useTheme'
@@ -39,6 +40,10 @@ const {
   stats,
   windowMode,
   autoSaveEnabled,
+  largeFileTruncated,
+  largeFileLoadedLines,
+  largeFileTotalLines,
+  largeFileLoading,
   registerEditorApi,
   onEditorUpdate,
   switchLibraryDoc,
@@ -47,7 +52,9 @@ const {
   loadFileResult,
   setWindowMode,
   setBeforeSaveMd,
-  setUnsavedDialog
+  setUnsavedDialog,
+  loadMoreLines,
+  loadAllLines
 } = useEditor()
 
 const {
@@ -73,7 +80,9 @@ const {
 const sidebarVisible = ref(true)
 const settingsVisible = ref(false)
 const aboutDialogVisible = ref(false)
+const updateDialogVisible = ref(false)
 const updateUrl = ref('')
+const codeTheme = ref('intellij')
 const editorRef = ref<InstanceType<typeof ZqEditor>>()
 const localeMode = ref<'system' | string>('system')
 const tiptapEditor = ref<Editor>()
@@ -316,6 +325,13 @@ function openSettings() {
   settingsVisible.value = true
 }
 
+function triggerCheckUpdate() {
+  updateDialogVisible.value = true
+  if (updateUrl.value) {
+    window.electron.updateCheck(updateUrl.value)
+  }
+}
+
 async function onChangeLocale(newLocale: string) {
   localeMode.value = newLocale
   if (newLocale === 'system') {
@@ -334,6 +350,12 @@ function onChangeTheme(mode: string) {
 
 async function onChangeAutoSave(enabled: boolean) {
   await window.electron.setSettings({ autoSave: enabled })
+}
+
+async function onChangeCodeTheme(theme: string) {
+  codeTheme.value = theme
+  document.documentElement.setAttribute('data-code-theme', theme)
+  await window.electron.setSettings({ codeTheme: theme })
 }
 
 function onEditorReady(editor: any) {
@@ -572,6 +594,7 @@ let cleanupMenuAction: (() => void) | null = null
 let cleanupLoadFile: (() => void) | null = null
 let cleanupSettingsChanged: (() => void) | null = null
 let cleanupUnsavedFromMain: (() => void) | null = null
+let cleanupUpdateListener: (() => void) | null = null
 
 function onWebLocaleChanged(e: Event) {
   const d = (e as CustomEvent<string>).detail
@@ -652,6 +675,8 @@ onMounted(async () => {
 
   const settings = await window.electron.getSettings()
   updateUrl.value = settings.updateUrl || ''
+  codeTheme.value = settings.codeTheme || 'intellij'
+  document.documentElement.setAttribute('data-code-theme', codeTheme.value)
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
     if (action === 'view:toggleSidebar') {
@@ -660,6 +685,8 @@ onMounted(async () => {
       toggleSourceMode()
     } else if (action === 'app:preferences') {
       openSettings()
+    } else if (action === 'help:checkUpdate') {
+      triggerCheckUpdate()
     } else if (action === 'help:about') {
       aboutDialogVisible.value = true
     }
@@ -672,12 +699,22 @@ onMounted(async () => {
 
   cleanupSettingsChanged = window.electron.onSettingsChanged((s) => {
     updateUrl.value = s.updateUrl || ''
+    if (s.codeTheme && s.codeTheme !== codeTheme.value) {
+      codeTheme.value = s.codeTheme
+      document.documentElement.setAttribute('data-code-theme', s.codeTheme)
+    }
   })
 
   cleanupUnsavedFromMain = window.electron.onUnsavedDialogShow(() => {
     showUnsavedDialogPromise().then((r) => {
       window.electron.sendUnsavedDialogResult(r)
     })
+  })
+
+  cleanupUpdateListener = window.electron.onUpdateEvent((payload) => {
+    if (payload.type === 'available') {
+      updateDialogVisible.value = true
+    }
   })
 
   if (platform === 'web') {
@@ -694,6 +731,7 @@ onUnmounted(() => {
   cleanupLoadFile?.()
   cleanupSettingsChanged?.()
   cleanupUnsavedFromMain?.()
+  cleanupUpdateListener?.()
   cleanupWebLocale?.()
   cleanupBeforeUnload?.()
   if (webPersistTimer) {
@@ -775,6 +813,21 @@ onUnmounted(() => {
                 @change="onEditorChange"
               />
             </ZqScrollbar>
+            <div v-if="largeFileTruncated" class="large-file-banner">
+              <span class="large-file-banner__text">
+                {{ $t('largeFile.truncatedWarning') }}
+                —
+                {{ $t('largeFile.loadedLines', { loaded: largeFileLoadedLines }) }}
+                / {{ $t('largeFile.totalLines', { total: largeFileTotalLines }) }}
+              </span>
+              <template v-if="largeFileLoading">
+                <span class="large-file-banner__loading">{{ $t('largeFile.loading') }}</span>
+              </template>
+              <template v-else>
+                <button class="large-file-banner__btn" @click="loadMoreLines">{{ $t('largeFile.loadMore') }}</button>
+                <!-- <button class="large-file-banner__btn large-file-banner__btn--secondary" @click="loadAllLines">{{ $t('largeFile.loadAll') }}</button> -->
+              </template>
+            </div>
           </div>
           <StatusBar
             :characters="stats.characters"
@@ -790,11 +843,13 @@ onUnmounted(() => {
       :current-locale="localeMode"
       :current-theme="themeMode"
       :auto-save="autoSaveEnabled"
+      :code-theme="codeTheme"
       @close="settingsVisible = false"
       @change-locale="onChangeLocale"
       @change-theme="onChangeTheme"
       @change-auto-save="onChangeAutoSave"
-      @check-update="aboutDialogVisible = true"
+      @change-code-theme="onChangeCodeTheme"
+      @check-update="triggerCheckUpdate"
     />
     <InputDialog
       :visible="inputDialogVisible"
@@ -805,8 +860,12 @@ onUnmounted(() => {
     />
     <AboutDialog
       :visible="aboutDialogVisible"
-      :update-url="updateUrl"
       @close="aboutDialogVisible = false"
+    />
+    <UpdateDialog
+      :visible="updateDialogVisible"
+      :update-url="updateUrl"
+      @close="updateDialogVisible = false"
     />
     <ConfirmDialog
       :visible="sourceModeConfirmVisible"
@@ -866,11 +925,14 @@ onUnmounted(() => {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg-editor);
+  
 }
 
 .editor-area :deep(.zq-scrollbar) {
   flex: 1;
   min-height: 0;
+  margin-right: 6px;
+
 }
 
 .library-empty-state {
@@ -923,5 +985,51 @@ onUnmounted(() => {
   white-space: pre-line;
   text-align: center;
   line-height: 1.6;
+}
+
+.large-file-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--bg-warning, #fef3cd);
+  color: var(--text-warning, #856404);
+  font-size: 13px;
+  flex-shrink: 0;
+  margin: 0 16px;
+  border-radius: 8px;
+}
+
+.large-file-banner__text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.large-file-banner__loading {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.large-file-banner__btn {
+  padding: 3px 12px;
+  border: 1px solid var(--border-warning, #ffc107);
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.large-file-banner__btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.large-file-banner__btn--secondary {
+  opacity: 0.7;
 }
 </style>

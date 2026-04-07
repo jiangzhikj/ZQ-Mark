@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { FolderOpen, FilePlus, Library, FileText, Clock } from 'lucide-vue-next'
+import ZqScrollbar from '@/components/ui/ZqScrollbar.vue'
 
 import logoIcon from '@/assets/icon/icon.svg'
 
@@ -36,6 +37,7 @@ function getFileDir(fp: string): string {
 
 <template>
   <div class="welcome-screen">
+    <ZqScrollbar height="100%">
     <div class="welcome-content">
       <div class="welcome-logo">
         <img :src="logoIcon" class="logo-icon" width="56" height="56" alt="ZQ Mark" />
@@ -80,21 +82,24 @@ function getFileDir(fp: string): string {
           <span>{{ t('welcome.recentProjects') }}</span>
         </div>
         <div class="recent-list">
-          <button
-            v-for="fp in recentFiles"
-            :key="fp"
-            class="recent-item"
-            @click="emit('open-recent', fp)"
-          >
-            <FileText :size="16" class="recent-icon" />
-            <div class="recent-info">
-              <span class="recent-name">{{ getFileName(fp) }}</span>
-              <span class="recent-path">{{ getFileDir(fp) }}</span>
-            </div>
-          </button>
+          <ZqScrollbar height="250px">
+            <button
+              v-for="fp in recentFiles"
+              :key="fp"
+              class="recent-item"
+              @click="emit('open-recent', fp)"
+            >
+              <FileText :size="16" class="recent-icon" />
+              <div class="recent-info">
+                <span class="recent-name">{{ getFileName(fp) }}</span>
+                <span class="recent-path">{{ getFileDir(fp) }}</span>
+              </div>
+            </button>
+          </ZqScrollbar>
         </div>
       </div>
     </div>
+    </ZqScrollbar>
   </div>
 </template>
 
@@ -102,11 +107,13 @@ function getFileDir(fp: string): string {
 .welcome-screen {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--bg-editor);
   -webkit-app-region: drag;
-  overflow-y: auto;
+  overflow: hidden;
+}
+
+.welcome-screen :deep(.zq-scrollbar) {
+  flex: 1;
 }
 
 .welcome-content {
@@ -115,6 +122,8 @@ function getFileDir(fp: string): string {
   align-items: center;
   gap: 40px;
   padding: 40px 0;
+  min-height: 100%;
+  justify-content: center;
   -webkit-app-region: no-drag;
 }
 
@@ -220,34 +229,9 @@ function getFileDir(fp: string): string {
 }
 
 .recent-list {
-  display: flex;
-  flex-direction: column;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  max-height: 250px;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.recent-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.recent-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.recent-list::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 3px;
-}
-
-.recent-list:hover::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb, rgba(0, 0, 0, 0.12));
-}
-
-.recent-list::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover, rgba(0, 0, 0, 0.22));
+  overflow: hidden;
 }
 
 .recent-item {

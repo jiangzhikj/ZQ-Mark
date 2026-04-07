@@ -191,55 +191,8 @@
   }
 }
 
-// Syntax highlighting (lowlight / highlight.js)
+// Syntax highlighting – base styles (shared by all themes)
 .zq-editor__wrapper .ProseMirror {
-  .hljs-comment,
-  .hljs-quote {
-    color: var(--el-text-color-placeholder);
-    font-style: italic;
-  }
-
-  .hljs-keyword,
-  .hljs-selector-tag,
-  .hljs-type {
-    color: var(--el-color-primary);
-  }
-
-  .hljs-string,
-  .hljs-template-variable,
-  .hljs-addition {
-    color: #22863a;
-  }
-
-  .hljs-number,
-  .hljs-literal,
-  .hljs-variable,
-  .hljs-template-tag,
-  .hljs-tag .hljs-attr {
-    color: #005cc5;
-  }
-
-  .hljs-title,
-  .hljs-section,
-  .hljs-attribute,
-  .hljs-name {
-    color: #6f42c1;
-  }
-
-  .hljs-built_in,
-  .hljs-builtin-name {
-    color: #e36209;
-  }
-
-  .hljs-deletion {
-    color: var(--el-color-danger);
-  }
-
-  .hljs-selector-id,
-  .hljs-selector-class {
-    color: #6f42c1;
-  }
-
   .hljs-emphasis {
     font-style: italic;
   }
@@ -253,38 +206,7 @@
   }
 }
 
-[data-theme='dark'] .zq-editor__wrapper .ProseMirror {
-  .hljs-string,
-  .hljs-template-variable,
-  .hljs-addition {
-    color: #85e89d;
-  }
-
-  .hljs-number,
-  .hljs-literal,
-  .hljs-variable,
-  .hljs-template-tag,
-  .hljs-tag .hljs-attr {
-    color: #79b8ff;
-  }
-
-  .hljs-title,
-  .hljs-section,
-  .hljs-attribute,
-  .hljs-name {
-    color: #b392f0;
-  }
-
-  .hljs-built_in,
-  .hljs-builtin-name {
-    color: #ffab70;
-  }
-
-  .hljs-selector-id,
-  .hljs-selector-class {
-    color: #b392f0;
-  }
-}
+// Theme-specific syntax colours are loaded via JS import in ZqEditor.vue
 
 // Horizontal rule
 .zq-editor__wrapper .ProseMirror hr {

@@ -111,18 +111,22 @@ if (!gotTheLock) {
 interface AppSettings {
   autoSave: boolean
   updateUrl: string
+  codeTheme: string
 }
 
-/** Base URL for `{base}/latest.json` (GitHub raw, repo root). */
+/** Base URL for `{base}/latest.json`. */
 const defaultSettings: AppSettings = {
   autoSave: true,
-  updateUrl: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
+  updateUrl: 'https://minio-api.fuadmin.cn/zq-mark',
+  codeTheme: 'intellij'
 }
 
 /** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */
 const LEGACY_UPDATE_URLS = [
   'https://gitee.com/zq-platform/zq-mark/raw/master',
-  'https://raw.githubusercontent.com/zq-platform/zq-mark/master'
+  'https://raw.githubusercontent.com/zq-platform/zq-mark/master',
+  'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master',
+  'https://minio-api.fuadmin.cn/zq-mark'
 ]
 
 function migrateUpdateUrl(url: string): string {

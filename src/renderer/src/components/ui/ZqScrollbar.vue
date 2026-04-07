@@ -14,6 +14,7 @@ defineProps<{
 .zq-scrollbar {
   overflow-y: auto;
   overflow-x: hidden;
+  /* margin-right: 8px; */
 }
 
 .zq-scrollbar::-webkit-scrollbar {

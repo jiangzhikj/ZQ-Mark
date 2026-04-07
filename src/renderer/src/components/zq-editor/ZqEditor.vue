@@ -25,6 +25,7 @@ import TableHandles from './menus/TableHandles.vue';
 
 import 'katex/dist/katex.min.css';
 import './styles/editor.scss';
+import './styles/code-themes.scss';
 
 interface Props {
   modelValue?: JSONContent | string;

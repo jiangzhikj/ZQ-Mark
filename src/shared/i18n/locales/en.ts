@@ -82,6 +82,7 @@ const en: AppLocale = {
     help: {
       label: 'Help',
       markdownReference: 'Markdown Reference',
+      checkUpdate: 'Check for Updates...',
       about: 'About ZQ Mark',
       devTools: 'Developer Tools'
     },
@@ -156,7 +157,10 @@ const en: AppLocale = {
     restartHint: 'Some settings require a restart to take effect',
     updateUrl: 'Update Server URL',
     updateUrlDesc: 'Set the server URL for checking updates',
-    updateUrlPlaceholder: 'https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master'
+    updateUrlPlaceholder: 'https://minio-api.fuadmin.cn/zq-mark',
+    editor: 'Editor',
+    codeTheme: 'Code Theme',
+    codeThemeDesc: 'Select the syntax highlighting theme for code blocks'
   },
   update: {
     currentVersion: 'Current Version',
@@ -167,6 +171,7 @@ const en: AppLocale = {
     newVersion: 'New Version',
     releaseNotes: 'Release Notes',
     downloading: 'Downloading update...',
+    downloadNow: 'Download Now',
     downloadProgress: 'Download Progress',
     downloadSpeed: 'Speed',
     downloadComplete: 'Download Complete',
@@ -217,6 +222,15 @@ const en: AppLocale = {
     saveMdMessage: 'Markdown only supports basic formatting. Colors, font sizes, alignment, images, attachments, and videos may be lost. We recommend saving as ZQ format to fully preserve all content and styles.',
     saveMdContinue: 'Save as MD Anyway',
     saveMdSaveAsZq: 'Save as ZQ'
+  },
+  largeFile: {
+    truncatedWarning: 'File is too large and has been truncated to avoid freezing',
+    loadedLines: '{loaded} lines loaded',
+    totalLines: '{total} lines total',
+    loadMore: 'Load More',
+    loadAll: 'Load All (may freeze)',
+    loading: 'Loading...',
+    loadSuccess: 'Loaded up to line {loaded}'
   },
   'zq-editor': {
     placeholder: 'Type / for commands...',

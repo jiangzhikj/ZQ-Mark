@@ -206,6 +206,9 @@ onUnmounted(() => {
           >
             {{ t('menu.help.markdownReference') }}
           </a>
+          <button type="button" class="web-menu-item" @click="run('help:checkUpdate')">
+            {{ t('menu.help.checkUpdate') }}
+          </button>
           <button type="button" class="web-menu-item" @click="run('help:about')">
             {{ t('menu.help.about') }}
           </button>

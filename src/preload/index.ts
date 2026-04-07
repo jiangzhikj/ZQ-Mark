@@ -21,6 +21,7 @@ export interface OpenFileResult {
 export interface AppSettings {
   autoSave: boolean
   updateUrl: string
+  codeTheme: string
 }
 
 export interface ElectronAPI {

@@ -10,6 +10,15 @@ const zqMeta = ref<any>(null)
 const editVersion = ref(0)
 const savedVersion = ref(0)
 
+const LARGE_FILE_LINE_THRESHOLD = 20000
+const LOAD_MORE_LINES = 5000
+
+const largeFileTruncated = ref(false)
+const largeFileLoadedLines = ref(0)
+const largeFileTotalLines = ref(0)
+const largeFileLoading = ref(false)
+let _fullContent: string | null = null
+
 const windowMode = ref<'document' | 'library'>('document')
 const libraryDocId = ref<string | null>(null)
 const dirtyDocIds = new Set<string>()
@@ -30,8 +39,8 @@ let _beforeSaveMd: (() => Promise<'md' | 'zq' | 'cancel'>) | null = null
 let _unsavedDialog: (() => Promise<'save' | 'discard' | 'cancel'>) | null = null
 const AUTO_SAVE_DELAY = 1500
 
-function t(key: string): string {
-  return (i18n.global as any).t(key)
+function t(key: string, params?: Record<string, unknown>): string {
+  return (i18n.global as any).t(key, params)
 }
 
 /** 显示用文件名（支持 `web:xxx.md` 与 Windows 路径） */
@@ -45,6 +54,34 @@ function getExtension(path: string): string {
   const name = fileNameFromPath(path)
   const idx = name.lastIndexOf('.')
   return idx >= 0 ? name.slice(idx).toLowerCase() : ''
+}
+
+function truncateByLines(content: string, maxLines: number): { truncated: string; totalLines: number } {
+  const lines = content.split('\n')
+  const totalLines = lines.length
+  if (totalLines <= maxLines) return { truncated: content, totalLines }
+  return { truncated: lines.slice(0, maxLines).join('\n'), totalLines }
+}
+
+function applyTruncation(content: string): string {
+  const { truncated, totalLines } = truncateByLines(content, LARGE_FILE_LINE_THRESHOLD)
+  if (totalLines > LARGE_FILE_LINE_THRESHOLD) {
+    _fullContent = content
+    largeFileTruncated.value = true
+    largeFileTotalLines.value = totalLines
+    largeFileLoadedLines.value = LARGE_FILE_LINE_THRESHOLD
+    return truncated
+  }
+  resetTruncation()
+  return content
+}
+
+function resetTruncation() {
+  _fullContent = null
+  largeFileTruncated.value = false
+  largeFileLoadedLines.value = 0
+  largeFileTotalLines.value = 0
+  largeFileLoading.value = false
 }
 
 export function useEditor() {
@@ -125,7 +162,12 @@ export function useEditor() {
         markAsSaved()
       }
     } else {
-      const md = _getMarkdown?.() || ''
+      let md = _getMarkdown?.() || ''
+      if (largeFileTruncated.value && _fullContent) {
+        const editedPart = md
+        const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
+        md = editedPart + '\n' + remainingLines.join('\n')
+      }
       const result = await window.electron.saveFile({ filePath: filePath.value, content: md })
       if (result) markAsSaved()
     }
@@ -243,7 +285,8 @@ export function useEditor() {
     } else {
       isZqFormat.value = false
       zqMeta.value = null
-      const md = result.content ?? ''
+      const fullMd = result.content ?? ''
+      const md = applyTruncation(fullMd)
       markdownContent.value = md
       if (_setContent) {
         _setContent(md)
@@ -257,7 +300,12 @@ export function useEditor() {
   }
 
   async function doSaveMd(path: string | null) {
-    const md = _getMarkdown?.() || ''
+    let md = _getMarkdown?.() || ''
+    if (largeFileTruncated.value && _fullContent) {
+      const editedPart = md
+      const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
+      md = editedPart + '\n' + remainingLines.join('\n')
+    }
     const result = await window.electron.saveFile({
       filePath: path,
       content: md
@@ -354,6 +402,7 @@ export function useEditor() {
     if (result.isZq && result.json) {
       isZqFormat.value = true
       zqMeta.value = result.meta || null
+      resetTruncation()
       if (_setContentJSON) {
         _setContentJSON(result.json)
       } else {
@@ -362,7 +411,8 @@ export function useEditor() {
     } else {
       isZqFormat.value = false
       zqMeta.value = null
-      const md = result.content ?? ''
+      const fullMd = result.content ?? ''
+      const md = applyTruncation(fullMd)
       markdownContent.value = md
       if (_setContent) {
         _setContent(md)
@@ -456,6 +506,47 @@ export function useEditor() {
     }
   })
 
+  async function loadMoreLines() {
+    if (!_fullContent || !largeFileTruncated.value || largeFileLoading.value) return
+    largeFileLoading.value = true
+    ZqMessage.info(t('largeFile.loading'))
+    await new Promise(r => setTimeout(r, 50))
+    const newTarget = largeFileLoadedLines.value + LOAD_MORE_LINES
+    await _loadUpToLine(newTarget)
+    largeFileLoading.value = false
+    ZqMessage.success(t('largeFile.loadSuccess', { loaded: largeFileLoadedLines.value }))
+  }
+
+  async function loadAllLines() {
+    if (!_fullContent || !largeFileTruncated.value || largeFileLoading.value) return
+    largeFileLoading.value = true
+    ZqMessage.info(t('largeFile.loading'))
+    await new Promise(r => setTimeout(r, 50))
+    await _loadUpToLine(largeFileTotalLines.value)
+    largeFileLoading.value = false
+    ZqMessage.success(t('largeFile.loadSuccess', { loaded: largeFileLoadedLines.value || largeFileTotalLines.value }))
+  }
+
+  async function _loadUpToLine(targetLines: number) {
+    if (!_fullContent) return
+    const lines = _fullContent.split('\n')
+    const total = lines.length
+    const loadTo = Math.min(targetLines, total)
+    const content = lines.slice(0, loadTo).join('\n')
+
+    _suppressUpdate = true
+    if (_setContent) {
+      _setContent(content)
+    }
+    _suppressUpdate = false
+    markdownContent.value = content
+    largeFileLoadedLines.value = loadTo
+
+    if (loadTo >= total) {
+      resetTruncation()
+    }
+  }
+
   return {
     markdownContent,
     filePath,
@@ -467,6 +558,10 @@ export function useEditor() {
     windowMode,
     libraryDocId,
     autoSaveEnabled,
+    largeFileTruncated,
+    largeFileLoadedLines,
+    largeFileTotalLines,
+    largeFileLoading,
     registerEditorApi,
     onEditorUpdate,
     openFile,
@@ -480,6 +575,8 @@ export function useEditor() {
     switchLibraryDoc,
     saveLibraryDoc,
     loadFileResult,
-    setWindowMode
+    setWindowMode,
+    loadMoreLines,
+    loadAllLines
   }
 }

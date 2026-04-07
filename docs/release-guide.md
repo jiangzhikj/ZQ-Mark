@@ -362,29 +362,34 @@ GitHub Release 资源提供稳定直链（`releases/download/...`），与仓库
 
 ```json
 {
-  "version": "1.1.0",
-  "notes": "- 新增自动更新功能\n- 修复了文档库保存问题\n- 优化了性能",
+  "version": "1.0.3",
+  "notes": "- 修复了\"/\"菜单的上下箭头选择的bug\n- 优化了性能",
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-arm64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark-1.0.3-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark-1.0.3.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-Setup-1.1.0-x64.exe",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark%20Setup%201.0.3.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0/ZQ-Mark-1.1.0-x86_64.AppImage",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark-1.0.3-x86_64.AppImage",
       "size": 95000000
     }
   }
 }
 ```
+
+> **说明**：
+> - `latest.json` 放在固定路径 `zq-mark/` 下，应用请求 `https://minio-api.fuadmin.cn/zq-mark/latest.json`
+> - 安装包按版本号放在 `v{version}/` 目录下，`url` 指向具体版本的文件
+> - 安装包同时托管在 [GitHub Releases](https://github.com/jiangzhikj/ZQ-Mark/releases) 作为备用下载源
 
 ### 7.4 平台标识符
 
@@ -455,26 +460,36 @@ https://github.com/jiangzhikj/ZQ-Mark/releases/download/v1.1.0
 
 ### 7.7 推荐的发布方案（方案 A 详解）
 
-推荐使用 **仓库 raw + Release 二进制**：
+推荐使用 **MinIO 对象存储 + GitHub Release 备份**：
 
 ```plaintext
-GitHub 仓库: jiangzhikj/ZQ-Mark
-├── latest.json          ← 放在仓库根目录（每次发版更新）
-└── README.md
+MinIO: minio-api.fuadmin.cn/zq-mark/
+├── latest/
+│   └── latest.json                    ← 版本清单（固定路径，每次发版覆盖更新）
+├── v1.0.3/
+│   ├── latest.json                    ← 该版本的清单备份
+│   ├── ZQ Mark-1.0.3-arm64.dmg       ← macOS Apple Silicon
+│   ├── ZQ Mark-1.0.3.dmg             ← macOS Intel
+│   ├── ZQ Mark Setup 1.0.3.exe       ← Windows x64
+│   └── ZQ Mark-1.0.3-x86_64.AppImage ← Linux x64
+├── v1.1.0/
+│   └── ...                            ← 下一个版本
+└── ...
 
-Release v1.1.0 资产:
-├── ZQ-Mark-1.1.0-arm64.dmg
-├── ZQ-Mark-Setup-1.1.0-x64.exe
+GitHub Release (备用): github.com/jiangzhikj/ZQ-Mark/releases
+├── 同上安装包作为备用下载源
 └── ...
 ```
+
+> **关键**：应用内置的更新地址固定为 `https://minio-api.fuadmin.cn/zq-mark/latest`，每次发版只需将新的 `latest.json` 上传到 `latest/` 目录覆盖即可，代码无需修改。安装包按版本号存放在各自的 `v{version}/` 目录下。
 
 **用户只需配置一次更新地址**（与内置默认一致时可不填）：
 
 ```
-https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master
+https://minio-api.fuadmin.cn/zq-mark/latest
 ```
 
-`latest.json` 里各平台的 `url` 指向对应 GitHub Release 下载直链。
+`latest.json` 里各平台的 `url` 指向对应版本的 MinIO 下载直链（也可使用 GitHub Release 直链作为备用）。
 
 ### 7.8 更新流程图
 
@@ -486,7 +501,7 @@ https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master
           └────────┬────────┘
                    │
      GET {updateUrl}/latest.json
-     (从 GitHub raw 或 Release 资产获取)
+     (从 MinIO 或 GitHub 获取)
                    │
          ┌─────────▼──────────┐
          │  比较 version 字段   │
@@ -499,7 +514,7 @@ https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master
             │
      用户点击"下载"
             │
-   从 GitHub Release 直链
+   从 MinIO (或 GitHub Release) 直链
    下载对应平台安装包
    (显示实时进度条)
             │
@@ -553,24 +568,21 @@ npm run build:linux
 3. 上传 `dist/` 下生成的各平台安装包作为 Release 资产
 4. 点击 **Publish release**
 
-### Step 5：更新仓库中的 latest.json
+### Step 5：上传安装包与 latest.json 到 MinIO
 
-1. 在 GitHub Release 页面复制各资产的浏览器下载 URL（即 `releases/download/...` 直链）
-2. 编辑仓库根目录的 `latest.json`，更新版本号、说明与各平台 `url`
-3. 提交并推送到 GitHub
+1. 将 `dist/` 下生成的各平台安装包上传到 MinIO 的 `zq-mark/v{version}/` 目录
+2. 编辑 `latest.json`，更新版本号、说明与各平台 `url`（指向 `v{version}/` 下的文件）
+3. 将 `latest.json` 上传到 MinIO 的 **`zq-mark/latest/`** 目录（覆盖旧文件）
+4. （可选）同时在 `zq-mark/v{version}/` 下备份一份 `latest.json`
 
-```bash
-git add latest.json
-git commit -m "release: v1.1.0"
-git push
-```
+> 代码中的 `defaultSettings.updateUrl` 固定为 `https://minio-api.fuadmin.cn/zq-mark`，**发版时无需修改代码**。
 
 ### Step 6：验证
 
 1. 打开旧版本应用
-2. 进入 **设置 → 关于**，确认更新地址正确（默认已内置为 GitHub raw，一般无需改）：
+2. 进入 **设置 → 关于**，确认更新地址正确（默认已内置为 MinIO，一般无需改）：
    ```
-   https://raw.githubusercontent.com/jiangzhikj/ZQ-Mark/master
+   https://minio-api.fuadmin.cn/zq-mark/latest
    ```
 3. 点击「检查更新」
 4. 确认弹出更新对话框，显示新版本与说明
@@ -618,6 +630,9 @@ NSIS 安装向导支持更多定制：
 未签名的应用：
 
 - **macOS**：用户首次打开需要右键 → 打开，或在系统设置中允许
+xattr -cr /Applications/ZQ\ Mark.app
+
+
 - **Windows**：SmartScreen 会弹出"未知发布者"警告，用户需点击"仍要运行"
 
 当前项目未配置代码签名，更新功能采用手动安装方式（`shell.openPath`），无需签名也可正常工作。
