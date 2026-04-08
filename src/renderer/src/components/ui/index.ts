@@ -21,4 +21,4 @@ export { default as ContextMenu } from './ContextMenu.vue'
 export type { ContextMenuItem } from './ContextMenu.vue'
 
 // Form
-export { ZqInput, ZqFormItem, ZqDirPicker } from './form'
+export { ZqInput, ZqFormItem, ZqDirPicker, ZqCheckbox, ZqSwitch } from './form'

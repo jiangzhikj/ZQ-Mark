@@ -49,6 +49,9 @@ const defaultSettings = (): AppSettings => ({
   updateUrl: '',
   codeTheme: 'intellij',
   telemetryEnabled: true,
+  saveFormatAskDialog: true,
+  saveFormatDefault: 'md',
+  telemetryEnabled: true,
   drawioUiLayout: 'full',
 })
 

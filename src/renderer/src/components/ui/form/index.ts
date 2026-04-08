@@ -1,3 +1,5 @@
 export { default as ZqInput } from './ZqInput.vue'
 export { default as ZqFormItem } from './ZqFormItem.vue'
 export { default as ZqDirPicker } from './ZqDirPicker.vue'
+export { default as ZqCheckbox } from './ZqCheckbox.vue'
+export { default as ZqSwitch } from './ZqSwitch.vue'

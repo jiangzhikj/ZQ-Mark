@@ -8,6 +8,7 @@ import {
   Settings,
   X,
 } from '@/components/icons'
+import { ZqScrollbar } from '@/components/ui'
 import SettingsAppearanceTab from './settings/SettingsAppearanceTab.vue'
 import SettingsEditorTab from './settings/SettingsEditorTab.vue'
 import SettingsGeneralTab from './settings/SettingsGeneralTab.vue'
@@ -21,6 +22,8 @@ const props = defineProps<{
   codeTheme: string
   telemetryEnabled: boolean
   drawioUiLayout: 'full' | 'minimal'
+  saveFormatAskDialog: boolean
+  saveFormatDefault: 'md' | 'zq'
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +33,8 @@ const emit = defineEmits<{
   changeAutoSave: [enabled: boolean]
   changeTelemetry: [enabled: boolean]
   changeCodeTheme: [theme: string]
+  changeSaveFormatAsk: [enabled: boolean]
+  changeSaveFormatDefault: [format: 'md' | 'zq']
   changeDrawioUiLayout: [layout: 'full' | 'minimal']
   checkUpdate: []
 }>()
@@ -44,6 +49,8 @@ const selectedAutoSave = ref(props.autoSave)
 const selectedTelemetryEnabled = ref(props.telemetryEnabled)
 const selectedCodeTheme = ref(props.codeTheme)
 const selectedDrawioUiLayout = ref(props.drawioUiLayout)
+const selectedSaveFormatAsk = ref(props.saveFormatAskDialog)
+const selectedSaveFormatDefault = ref(props.saveFormatDefault)
 
 watch(() => props.currentLocale, (v) => {
   selectedLocale.value = v
@@ -62,6 +69,12 @@ watch(() => props.codeTheme, (v) => {
 })
 watch(() => props.drawioUiLayout, (v) => {
   selectedDrawioUiLayout.value = v
+})
+watch(() => props.saveFormatAskDialog, (v) => {
+  selectedSaveFormatAsk.value = v
+})
+watch(() => props.saveFormatDefault, (v) => {
+  selectedSaveFormatDefault.value = v
 })
 
 function onLocaleChange(code: string) {
@@ -97,6 +110,16 @@ function onDrawioUiLayoutChange(layout: 'full' | 'minimal') {
 function onCheckUpdate() {
   emit('checkUpdate')
   emit('close')
+}
+
+function onSaveFormatAskToggle(enabled: boolean) {
+  selectedSaveFormatAsk.value = enabled
+  emit('changeSaveFormatAsk', enabled)
+}
+
+function onSaveFormatDefaultChange(format: 'md' | 'zq') {
+  selectedSaveFormatDefault.value = format
+  emit('changeSaveFormatDefault', format)
 }
 
 watch(() => props.visible, (v) => {
@@ -151,26 +174,32 @@ watch(() => props.visible, (v) => {
             </button>
           </nav>
 
-          <div class="settings-content">
+          <div class="settings-main">
             <button type="button" class="close-btn" @click="emit('close')">
               <X :size="14" :stroke-width="1.5" />
             </button>
 
-            <SettingsGeneralTab
-              v-show="activeTab === 'general'"
-              :selected-locale="selectedLocale"
-              :selected-auto-save="selectedAutoSave"
-              :telemetry-enabled="selectedTelemetryEnabled"
-              @change-locale="onLocaleChange"
-              @change-auto-save="onAutoSaveToggle"
-              @change-telemetry="onTelemetryToggle"
-            />
+            <ZqScrollbar class="settings-main-scroll">
+              <div class="settings-content">
+                <SettingsGeneralTab
+                  v-show="activeTab === 'general'"
+                  :selected-locale="selectedLocale"
+                  :selected-auto-save="selectedAutoSave"
+                  :telemetry-enabled="selectedTelemetryEnabled"
+                  :save-format-ask-dialog="selectedSaveFormatAsk"
+                  :save-format-default="selectedSaveFormatDefault"
+                  @change-locale="onLocaleChange"
+                  @change-auto-save="onAutoSaveToggle"
+                  @change-telemetry="onTelemetryToggle"
+                  @change-save-format-ask="onSaveFormatAskToggle"
+                  @change-save-format-default="onSaveFormatDefaultChange"
+                />
 
-            <SettingsAppearanceTab
-              v-show="activeTab === 'appearance'"
-              :selected-theme="selectedTheme"
-              @change-theme="onThemeChange"
-            />
+                <SettingsAppearanceTab
+                  v-show="activeTab === 'appearance'"
+                  :selected-theme="selectedTheme"
+                  @change-theme="onThemeChange"
+                />
 
             <SettingsEditorTab
               v-show="activeTab === 'editor'"
@@ -179,12 +208,19 @@ watch(() => props.visible, (v) => {
               @update:code-theme="onCodeThemeChange"
               @update:drawio-ui-layout="onDrawioUiLayoutChange"
             />
+                <SettingsEditorTab
+                  v-show="activeTab === 'editor'"
+                  :code-theme="selectedCodeTheme"
+                  @update:code-theme="onCodeThemeChange"
+                />
 
-            <SettingsAboutTab
-              v-show="activeTab === 'about'"
-              :visible="visible"
-              @check-update="onCheckUpdate"
-            />
+                <SettingsAboutTab
+                  v-show="activeTab === 'about'"
+                  :visible="visible"
+                  @check-update="onCheckUpdate"
+                />
+              </div>
+            </ZqScrollbar>
           </div>
         </div>
       </div>
@@ -261,11 +297,22 @@ watch(() => props.visible, (v) => {
   font-weight: 500;
 }
 
-.settings-content {
+.settings-main {
   flex: 1;
-  padding: 24px;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   position: relative;
+}
+
+.settings-window :deep(.settings-main-scroll) {
+  flex: 1;
+  min-height: 0;
+}
+
+.settings-content {
+  padding: 20px;
+  margin: 6px;
 }
 
 .close-btn {
@@ -458,36 +505,54 @@ watch(() => props.visible, (v) => {
   gap: 16px;
 }
 
-.settings-content :deep(.settings-panel .toggle-switch) {
-  position: relative;
-  width: 40px;
-  height: 22px;
-  border: none;
-  border-radius: 11px;
-  background: var(--border-color);
+.settings-content :deep(.settings-panel .save-format-default) {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.settings-content :deep(.settings-panel .save-format-default__label) {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.settings-content :deep(.settings-panel .save-format-default__options) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-content :deep(.settings-panel .format-pill) {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-sidebar);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s ease;
-  flex-shrink: 0;
-  padding: 0;
+  transition: all 0.12s ease;
 }
 
-.settings-content :deep(.settings-panel .toggle-switch.active) {
-  background: var(--accent-color);
+.settings-content :deep(.settings-panel .format-pill:hover) {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
 }
 
-.settings-content :deep(.settings-panel .toggle-knob) {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease;
+.settings-content :deep(.settings-panel .format-pill.selected) {
+  border-color: var(--accent-color);
+  background: var(--accent-shadow);
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
-.settings-content :deep(.settings-panel .toggle-switch.active .toggle-knob) {
-  transform: translateX(18px);
+.settings-content :deep(.settings-panel .save-format-default__hint) {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-tertiary);
 }
 </style>

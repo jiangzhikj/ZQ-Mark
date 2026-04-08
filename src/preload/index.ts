@@ -28,6 +28,8 @@ export interface AppSettings {
    * minimal 为侧栏精简的嵌入布局（历史行为）
    */
   drawioUiLayout: 'full' | 'minimal'
+  saveFormatAskDialog: boolean
+  saveFormatDefault: 'md' | 'zq'
 }
 
 export interface ElectronAPI {
