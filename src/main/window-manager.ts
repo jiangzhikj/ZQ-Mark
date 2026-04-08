@@ -28,6 +28,84 @@ export interface WindowState {
 const windows = new Map<number, WindowState>()
 let currentLocale: SupportedLocale = 'zh-CN'
 
+/** draw.io 独立子窗口：仅 Electron，不参与 WindowState / 关窗脏检查 */
+export interface DrawioStandaloneSession {
+  parentId: number
+  token: string
+  xml: string
+}
+
+const drawioStandaloneSessions = new Map<number, DrawioStandaloneSession>()
+
+export function getDrawioStandaloneSession(
+  winId: number,
+): DrawioStandaloneSession | undefined {
+  return drawioStandaloneSessions.get(winId)
+}
+
+export function deleteDrawioStandaloneSession(winId: number): void {
+  drawioStandaloneSessions.delete(winId)
+}
+
+/**
+ * 在独立 BrowserWindow 中打开 draw.io 编辑页（与主窗口同源 renderer + preload）
+ */
+export function createDrawioStandaloneWindow(session: DrawioStandaloneSession): BrowserWindow {
+  const isMac = process.platform === 'darwin'
+
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 820,
+    minWidth: 640,
+    minHeight: 400,
+    show: false,
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 15, y: 15 } }
+      : { frame: false }),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+    },
+  })
+
+  drawioStandaloneSessions.set(win.id, session)
+
+  win.on('closed', () => {
+    drawioStandaloneSessions.delete(win.id)
+  })
+
+  win.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  win.on('ready-to-show', () => {
+    win.show()
+  })
+
+  const query: Record<string, string> = {
+    windowId: String(win.id),
+    mode: 'document',
+    drawioStandalone: '1',
+    drawioToken: session.token,
+    parentWindowId: String(session.parentId),
+    /** 与主窗口 vue-i18n / change-locale 一致，供子窗口初始化 iframe lang */
+    appLocale: getLocale(),
+  }
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    const url = new URL(process.env['ELECTRON_RENDERER_URL'])
+    for (const [k, v] of Object.entries(query)) {
+      url.searchParams.set(k, v)
+    }
+    win.loadURL(url.toString())
+  } else {
+    win.loadFile(join(__dirname, '../renderer/index.html'), { query })
+  }
+
+  return win
+}
+
 export function setLocale(locale: SupportedLocale): void {
   currentLocale = locale
 }

@@ -140,6 +140,24 @@ body,
   overflow: hidden;
 }
 
+/**
+ * draw.io 全屏对话框 Teleport 到 body，与 #app 同级；Electron 下左侧（与 sidebar 同宽）
+ * 仍可能命中 #app 内元素，导致 iframe 内菜单无法点击。全屏打开时让主壳不接收指针事件。
+ */
+html.zq-drawio-dialog-fullscreen-open #app {
+  pointer-events: none;
+}
+
+/**
+ * Electron：`-webkit-app-region: drag` 参与窗口级命中，常与 DOM 层叠无关，会挡住下层 iframe。
+ * `Sidebar.vue` 的 `.sidebar-header` 为整段可拖区；全屏 draw.io 时必须取消，否则与侧栏同宽的
+ * draw.io 顶栏菜单（文件/编辑/…）无法点击，右侧「帮助」等不受影响。
+ */
+html.zq-drawio-dialog-fullscreen-open aside.sidebar,
+html.zq-drawio-dialog-fullscreen-open .sidebar-header {
+  -webkit-app-region: no-drag !important;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',

@@ -19,8 +19,16 @@ import type { SupportedLocale } from '../shared/i18n'
 import { registerUpdaterIPC, checkForUpdate } from './updater'
 import { reportInstallationTelemetry } from './telemetry'
 import {
-  createWindow, getStateByWebContents, getWindowByPath,
-  forceClose, setLocale, getLocale, getAllStates
+  createWindow,
+  getStateByWebContents,
+  getWindowByPath,
+  forceClose,
+  setLocale,
+  getLocale,
+  getAllStates,
+  createDrawioStandaloneWindow,
+  getDrawioStandaloneSession,
+  deleteDrawioStandaloneSession,
 } from './window-manager'
 import { createTray, rebuildTrayMenu, destroyTray } from './tray'
 
@@ -115,6 +123,7 @@ interface AppSettings {
   codeTheme: string
   /** 是否向服务端上报匿名装机与活跃统计 */
   telemetryEnabled: boolean
+  drawioUiLayout: 'full' | 'minimal'
 }
 
 /** Base URL for `{base}/latest.json`. */
@@ -122,7 +131,8 @@ const defaultSettings: AppSettings = {
   autoSave: true,
   updateUrl: 'https://minio-api.fuadmin.cn/zq-mark',
   codeTheme: 'intellij',
-  telemetryEnabled: true
+  telemetryEnabled: true,
+  drawioUiLayout: 'full',
 }
 
 /** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */
@@ -291,6 +301,68 @@ ipcMain.handle('window:is-maximized', (event) => {
 })
 
 ipcMain.handle('get-platform', () => process.platform)
+
+ipcMain.handle('drawio:get-index-url', () => {
+  const indexPath = app.isPackaged
+    ? join(process.resourcesPath, 'drawio', 'index.html')
+    : join(__dirname, '../../resources/drawio/index.html')
+  if (!existsSync(indexPath)) {
+    console.warn('[drawio] bundled webapp not found:', indexPath)
+    return null
+  }
+  return localPathToAssetUrl(indexPath)
+})
+
+ipcMain.handle(
+  'drawio:open-standalone',
+  (
+    event,
+    opts: { xml: string; token: string },
+  ): { ok: boolean } => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    if (!parent) return { ok: false }
+    createDrawioStandaloneWindow({
+      parentId: parent.id,
+      token: opts.token,
+      xml: opts.xml,
+    })
+    return { ok: true }
+  },
+)
+
+ipcMain.handle(
+  'drawio:get-standalone-initial',
+  (event): { xml: string; token: string } | null => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const s = getDrawioStandaloneSession(win.id)
+    if (!s) return null
+    return { xml: s.xml, token: s.token }
+  },
+)
+
+ipcMain.handle(
+  'drawio:standalone-commit',
+  (
+    event,
+    payload: { xml: string; preview: string; token: string },
+  ): { ok: boolean } => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return { ok: false }
+    const s = getDrawioStandaloneSession(win.id)
+    if (!s || s.token !== payload.token) return { ok: false }
+    const parent = BrowserWindow.fromId(s.parentId)
+    if (parent && !parent.isDestroyed()) {
+      parent.webContents.send('drawio:standalone-commit', {
+        token: payload.token,
+        xml: payload.xml,
+        preview: payload.preview,
+      })
+    }
+    deleteDrawioStandaloneSession(win.id)
+    return { ok: true }
+  },
+)
 
 ipcMain.handle('window:create-library', async (event, { name, dirPath }: { name: string; dirPath: string }) => {
   const title = name || '未命名文件库'

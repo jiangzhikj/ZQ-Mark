@@ -1,22 +1,22 @@
 {
-  "version": "1.0.3",
-  "notes": "- 修改了\"/\"更新地址\n- 优化了性能\n- 修复了一些bug",
+  "version": "1.0.4",
+  "notes": "- 添加了代码主题的设置\n- 优化了大文件Markdown的支持\n- 调整了优化了一些样式\n- 修复了一些bug",
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark-1.0.3-arm64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark-1.0.4-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark-1.0.3.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark-1.0.4.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark%20Setup%201.0.3.exe",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark%20Setup%201.0.4.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.3/ZQ%20Mark-1.0.3-x86_64.AppImage",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark-1.0.4-x86_64.AppImage",
       "size": 95000000
     }
   }

@@ -163,7 +163,12 @@ const en: AppLocale = {
     updateUrlPlaceholder: 'https://minio-api.fuadmin.cn/zq-mark',
     editor: 'Editor',
     codeTheme: 'Code Theme',
-    codeThemeDesc: 'Select the syntax highlighting theme for code blocks'
+    codeThemeDesc: 'Select the syntax highlighting theme for code blocks',
+    drawioUiLayout: 'Diagram editor layout',
+    drawioUiLayoutDesc:
+      'Standard matches the default diagrams.net layout. Compact uses the minimal embedded toolbar.',
+    drawioUiLayoutFull: 'Standard',
+    drawioUiLayoutMinimal: 'Compact'
   },
   update: {
     currentVersion: 'Current Version',
@@ -285,8 +290,22 @@ const en: AppLocale = {
       replaceAll: 'Replace all'
     },
     link: {
+      textLabel: 'Text',
+      textPlaceholder: 'Text to display',
+      urlLabel: 'URL',
       placeholder: 'Enter URL...',
       confirm: 'Confirm',
+      cancel: 'Cancel'
+    },
+    math: {
+      title: 'Math formula',
+      latexLabel: 'LaTeX',
+      placeholder: 'e.g. \\sum_{i=1}^n i = \\frac{n(n+1)}{2}',
+      previewLabel: 'Preview',
+      modeInline: 'Inline',
+      modeBlock: 'Block',
+      hint: '⌘/Ctrl + Enter to insert · Esc to cancel (keeps / text if cancelled)',
+      insert: 'Insert',
       cancel: 'Cancel'
     },
     color: {
@@ -334,6 +353,8 @@ const en: AppLocale = {
       blockquoteDesc: 'Create a quote block',
       codeBlock: 'Code block',
       codeBlockDesc: 'Insert a code block',
+      link: 'Link',
+      linkDesc: 'Insert a hyperlink',
       divider: 'Divider',
       dividerDesc: 'Insert a horizontal divider',
       table: 'Table',
@@ -347,7 +368,7 @@ const en: AppLocale = {
       callout: 'Callout',
       calloutDesc: 'Insert a callout block',
       inlineMath: 'Math formula',
-      inlineMathDesc: 'Insert LaTeX math formula',
+      inlineMathDesc: 'Open editor, type LaTeX with live preview, then insert',
       image: 'Image',
       imageDesc: 'Insert a local image',
       video: 'Video',
@@ -360,6 +381,8 @@ const en: AppLocale = {
       emojiDesc: 'Insert an emoji',
       draw: 'Drawing',
       drawDesc: 'Insert a freehand drawing canvas',
+      drawio: 'Diagram (draw.io)',
+      drawioDesc: 'Insert a diagrams.net flowchart or diagram (desktop app only)',
       noResult: 'No results'
     },
     draw: {
@@ -370,6 +393,22 @@ const en: AppLocale = {
       clickToEdit: 'Click to add a drawing',
       fullscreen: 'Fullscreen',
       exitFullscreen: 'Exit fullscreen'
+    },
+    drawio: {
+      title: 'Diagram',
+      edit: 'Edit diagram',
+      delete: 'Delete diagram',
+      done: 'Done',
+      clickToEdit: 'Double-click to preview, or use the toolbar to edit',
+      hintHasDiagram: 'Double-click to preview, or use the toolbar to edit',
+      fullscreen: 'Fullscreen',
+      exitFullscreen: 'Exit fullscreen',
+      openStandalone: 'Edit in separate window',
+      switchToEdit: 'Edit',
+      switchToPreview: 'Preview',
+      previewEmpty: 'Nothing to preview yet. Edit and save first.',
+      desktopOnly: 'Diagrams are only available in the ZQ Mark desktop app.',
+      missingBundle: 'Built-in draw.io files were not found. Reinstall the app or run npm run sync:drawio.',
     },
     table: {
       sizePicker: 'Select table size',

@@ -1,6 +1,6 @@
 import i18n from '@/i18n';
 
-const FLAT_SECTIONS = ['slash', 'bubble', 'blockMenu', 'turnInto', 'search', 'link', 'color', 'codeBlock', 'table', 'image', 'attachment', 'toc', 'toggle', 'upload', 'draw']
+const FLAT_SECTIONS = ['slash', 'bubble', 'blockMenu', 'turnInto', 'search', 'link', 'math', 'color', 'codeBlock', 'table', 'image', 'attachment', 'toc', 'toggle', 'upload', 'draw', 'drawio']
 
 export function $t(key: string, ...args: any[]): string {
   if (key.startsWith('zq-editor.')) {

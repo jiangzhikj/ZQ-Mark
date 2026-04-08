@@ -548,17 +548,12 @@ function openLinkEditor() {
     0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
-/* Link editor overlay */
+/* Link editor overlay（视觉样式在 LinkEditor 根节点上，此处仅定位） */
 .zq-bubble-toolbar__link-overlay {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2000;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 10px;
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.15);
 }
 </style>

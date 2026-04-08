@@ -15,7 +15,16 @@ export function assetUrlToLocalPath(url: string): string | null {
   const scheme = `${ASSET_PROTOCOL}:`
   if (!url.startsWith(scheme)) return null
 
-  const afterScheme = url.slice(scheme.length)
+  /** 查询串（如 iframe 的 ?embed=1）不能参与路径解析，否则 fileURLToPath 失败 → ERR_FILE_NOT_FOUND */
+  let pathOnly = url
+  const q = pathOnly.indexOf('?')
+  const hash = pathOnly.indexOf('#')
+  if (q >= 0 || hash >= 0) {
+    const end = [q >= 0 ? q : Infinity, hash >= 0 ? hash : Infinity].reduce((a, b) => Math.min(a, b))
+    pathOnly = pathOnly.slice(0, end)
+  }
+
+  const afterScheme = pathOnly.slice(scheme.length)
   // 新格式：local-asset:///C:/Users/... （与 file:/// 一一对应）
   if (afterScheme.startsWith('///')) {
     try {
@@ -27,9 +36,9 @@ export function assetUrlToLocalPath(url: string): string | null {
 
   // 旧格式：local-asset://C:%5CUsers%5C...（encodeURI 路径，非合法 file URL）
   const legacyPrefix = `${ASSET_PROTOCOL}://`
-  if (url.startsWith(legacyPrefix)) {
+  if (pathOnly.startsWith(legacyPrefix)) {
     try {
-      return decodeURIComponent(url.slice(legacyPrefix.length))
+      return decodeURIComponent(pathOnly.slice(legacyPrefix.length))
     } catch {
       return null
     }

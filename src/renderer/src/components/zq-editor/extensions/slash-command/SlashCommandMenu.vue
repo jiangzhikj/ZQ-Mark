@@ -25,6 +25,7 @@ import {
   Smile,
   Table,
   Video,
+  Workflow,
 } from '@/components/icons';
 
 import type { SlashCommandItem } from './commands';
@@ -62,6 +63,7 @@ const iconMap: Record<string, any> = {
   Smile,
   PenTool,
   Pencil,
+  Workflow,
 };
 
 const flatItems = computed(() => props.items || []);

@@ -48,7 +48,8 @@ const defaultSettings = (): AppSettings => ({
   autoSave: true,
   updateUrl: '',
   codeTheme: 'intellij',
-  telemetryEnabled: true
+  telemetryEnabled: true,
+  drawioUiLayout: 'full',
 })
 
 function readSettings(): AppSettings {
@@ -501,6 +502,13 @@ export function createWebElectronApi(): ElectronAPI {
     popupMenu: () => {
       window.dispatchEvent(new CustomEvent('web:app-menu-open'))
     },
-    onMaximizeChange: () => () => {}
+    onMaximizeChange: () => () => {},
+
+    getDrawioIndexUrl: async () => null,
+
+    openDrawioStandalone: async () => ({ ok: false }),
+    getDrawioStandaloneInitial: async () => null,
+    drawioStandaloneCommit: async () => ({ ok: false }),
+    onDrawioStandaloneCommit: () => () => {}
   }
 }

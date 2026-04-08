@@ -1,5 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  provide,
+  type ComponentPublicInstance
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Editor } from '@tiptap/vue-3'
 import TitleBar from '@/components/TitleBar.vue'
@@ -7,6 +16,11 @@ import Sidebar from '@/components/Sidebar.vue'
 import StatusBar from '@/components/StatusBar.vue'
 import Settings from '@/components/Settings.vue'
 import WelcomeScreen from '@/components/WelcomeScreen.vue'
+import DrawioStandaloneView from '@/components/zq-editor/extensions/drawio/DrawioStandaloneView.vue'
+import {
+  DRAWIO_UI_LAYOUT_INJECT_KEY,
+  type DrawioUiLayout
+} from '@/components/zq-editor/extensions/drawio/drawio-embed'
 import { InputDialog, ConfirmDialog, ZqScrollbar } from '@/components/ui'
 import type { InputDialogField, InputDialogResult } from '@/components/ui'
 import AboutDialog from '@/components/AboutDialog.vue'
@@ -84,6 +98,8 @@ const updateDialogVisible = ref(false)
 const updateUrl = ref('')
 const telemetryEnabled = ref(true)
 const codeTheme = ref('intellij')
+const drawioUiLayout = ref<DrawioUiLayout>('full')
+provide(DRAWIO_UI_LAYOUT_INJECT_KEY, drawioUiLayout)
 const editorRef = ref<InstanceType<typeof ZqEditor>>()
 const localeMode = ref<'system' | string>('system')
 const tiptapEditor = ref<Editor>()
@@ -92,7 +108,17 @@ const editorAreaRef = computed(() => {
   const el = editorScrollbarRef.value?.$el
   return el instanceof HTMLElement ? el : undefined
 })
-const isNewDocWindow = new URLSearchParams(window.location.search).get('newDoc') === '1'
+const urlSearchParams = new URLSearchParams(window.location.search)
+const isNewDocWindow = urlSearchParams.get('newDoc') === '1'
+/** 独立 draw.io 子窗口（仅 Electron） */
+const drawioStandaloneMode = urlSearchParams.get('drawioStandalone') === '1'
+/** 主进程在创建独立窗口时附带 appLocale，与主窗口语言一致（先于首帧渲染） */
+if (drawioStandaloneMode) {
+  const al = urlSearchParams.get('appLocale')
+  if (al === 'zh-CN' || al === 'zh-TW' || al === 'en') {
+    locale.value = al
+  }
+}
 const hasOpenedFile = ref(isNewDocWindow)
 const appPlatform = ref('')
 /** 网页版刷新后恢复库内当前打开的文档 */
@@ -363,6 +389,11 @@ async function onChangeCodeTheme(theme: string) {
   await window.electron.setSettings({ codeTheme: theme })
 }
 
+async function onChangeDrawioUiLayout(layout: DrawioUiLayout) {
+  drawioUiLayout.value = layout
+  await window.electron.setSettings({ drawioUiLayout: layout })
+}
+
 function onEditorReady(editor: any) {
   tiptapEditor.value = editor as Editor
   registerEditorApi({
@@ -613,6 +644,15 @@ onMounted(async () => {
   document.documentElement.setAttribute('data-platform', platform)
   appPlatform.value = platform
 
+  if (drawioStandaloneMode && platform !== 'web') {
+    const settings = await window.electron.getSettings()
+    codeTheme.value = settings.codeTheme || 'intellij'
+    document.documentElement.setAttribute('data-code-theme', codeTheme.value)
+    drawioUiLayout.value =
+      settings.drawioUiLayout === 'minimal' ? 'minimal' : 'full'
+    return
+  }
+
   if (platform === 'web') {
     const saved = localStorage.getItem('zq-web-user-locale')
     locale.value = saved || (await window.electron.getSystemLocale())
@@ -683,6 +723,8 @@ onMounted(async () => {
   telemetryEnabled.value = settings.telemetryEnabled !== false
   codeTheme.value = settings.codeTheme || 'intellij'
   document.documentElement.setAttribute('data-code-theme', codeTheme.value)
+  drawioUiLayout.value =
+    settings.drawioUiLayout === 'minimal' ? 'minimal' : 'full'
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
     if (action === 'view:toggleSidebar') {
@@ -709,6 +751,9 @@ onMounted(async () => {
     if (s.codeTheme && s.codeTheme !== codeTheme.value) {
       codeTheme.value = s.codeTheme
       document.documentElement.setAttribute('data-code-theme', s.codeTheme)
+    }
+    if (s.drawioUiLayout === 'minimal' || s.drawioUiLayout === 'full') {
+      drawioUiLayout.value = s.drawioUiLayout
     }
   })
 
@@ -749,7 +794,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="app-shell">
+  <DrawioStandaloneView v-if="drawioStandaloneMode" />
+  <div v-else class="app-shell">
     <WebAppMenu v-if="appPlatform === 'web'" />
     <Sidebar
       :editor="tiptapEditor"
@@ -852,12 +898,14 @@ onUnmounted(() => {
       :auto-save="autoSaveEnabled"
       :code-theme="codeTheme"
       :telemetry-enabled="telemetryEnabled"
+      :drawio-ui-layout="drawioUiLayout"
       @close="settingsVisible = false"
       @change-locale="onChangeLocale"
       @change-theme="onChangeTheme"
       @change-auto-save="onChangeAutoSave"
       @change-telemetry="onChangeTelemetry"
       @change-code-theme="onChangeCodeTheme"
+      @change-drawio-ui-layout="onChangeDrawioUiLayout"
       @check-update="triggerCheckUpdate"
     />
     <InputDialog

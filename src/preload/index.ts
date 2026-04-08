@@ -23,6 +23,11 @@ export interface AppSettings {
   updateUrl: string
   codeTheme: string
   telemetryEnabled: boolean
+  /**
+   * draw.io 编辑界面：full 为与 diagrams.net 一致的默认布局；
+   * minimal 为侧栏精简的嵌入布局（历史行为）
+   */
+  drawioUiLayout: 'full' | 'minimal'
 }
 
 export interface ElectronAPI {
@@ -77,6 +82,34 @@ export interface ElectronAPI {
   updateInstall: () => Promise<void>
   updateGetVersion: () => Promise<string>
   onUpdateEvent: (callback: (payload: any) => void) => () => void
+
+  /** 桌面端：draw.io index.html 的 local-asset URL；Web 为 null */
+  getDrawioIndexUrl: () => Promise<string | null>
+
+  /** 在新 BrowserWindow 中编辑流程图；Web 为空操作 */
+  openDrawioStandalone: (opts: {
+    xml: string
+    token: string
+  }) => Promise<{ ok: boolean }>
+  /** 独立 draw.io 窗口启动时拉取会话中的初始 XML */
+  getDrawioStandaloneInitial: () => Promise<{
+    xml: string
+    token: string
+  } | null>
+  /** 独立窗口点「完成」后回写并关闭子窗口 */
+  drawioStandaloneCommit: (payload: {
+    xml: string
+    preview: string
+    token: string
+  }) => Promise<{ ok: boolean }>
+  /** 主窗口：接收子窗口提交的画布数据（按 token 匹配块） */
+  onDrawioStandaloneCommit: (
+    callback: (payload: {
+      token: string
+      xml: string
+      preview: string
+    }) => void,
+  ) => () => void
 
   // Platform & window controls
   getPlatform: () => Promise<string>
@@ -174,6 +207,23 @@ const api: ElectronAPI = {
     const handler = (_event: Electron.IpcRendererEvent, payload: any) => callback(payload)
     ipcRenderer.on('update-event', handler)
     return () => ipcRenderer.removeListener('update-event', handler)
+  },
+
+  getDrawioIndexUrl: () => ipcRenderer.invoke('drawio:get-index-url'),
+
+  openDrawioStandalone: (opts) =>
+    ipcRenderer.invoke('drawio:open-standalone', opts),
+  getDrawioStandaloneInitial: () =>
+    ipcRenderer.invoke('drawio:get-standalone-initial'),
+  drawioStandaloneCommit: (payload) =>
+    ipcRenderer.invoke('drawio:standalone-commit', payload),
+  onDrawioStandaloneCommit: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { token: string; xml: string; preview: string },
+    ) => callback(payload)
+    ipcRenderer.on('drawio:standalone-commit', handler)
+    return () => ipcRenderer.removeListener('drawio:standalone-commit', handler)
   },
 
   // Platform & window controls

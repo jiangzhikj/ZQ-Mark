@@ -58,6 +58,14 @@ function onReset() {
 .zq-table-size-picker {
   padding: 8px;
   min-width: 200px;
+  /* 与 LinkEditor 一致：tippy 外壳常透明，根节点需自带实底 */
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 10px;
+  box-shadow:
+    0 4px 6px -1px rgb(0 0 0 / 0.1),
+    0 2px 4px -2px rgb(0 0 0 / 0.1),
+    0 8px 24px rgb(0 0 0 / 0.08);
 }
 
 .zq-table-size-picker__label {

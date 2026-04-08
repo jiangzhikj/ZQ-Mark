@@ -22,15 +22,17 @@ import { Callout } from './callout';
 import { CodeBlock } from './code-block';
 import { ColumnBlock, ColumnsBlock } from './columns';
 import { DrawBlock } from './draw';
+import { DrawioBlock } from './drawio';
 import { FontSize } from './font-size';
 import { ImageBlock } from './image';
-import { MathExtension } from './math';
+import { mathExtensions } from './math';
 import { SearchReplace } from './search-replace';
 import { createSlashSuggestion, SlashCommand } from './slash-command';
 import { TableOfContents } from './table-of-contents';
 import { ToggleBlock } from './toggle-list';
 import { VideoBlock } from './video';
 import { AudioBlock } from './audio';
+import { LinkOpenModifier } from './link-open-modifier';
 
 export interface EditorExtensionOptions {
   placeholder?: string;
@@ -110,9 +112,14 @@ export function createEditorExtensions(
       underline: false,
       link: {
         openOnClick: false,
-        HTMLAttributes: { class: 'zq-editor-link' },
+        HTMLAttributes: {
+          class: 'zq-editor-link',
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        },
       },
     }),
+    LinkOpenModifier,
     CodeBlock,
     Placeholder.configure({ placeholder }),
     TextStyle,
@@ -141,7 +148,8 @@ export function createEditorExtensions(
     ColumnBlock,
     TableOfContents,
     DrawBlock,
-    MathExtension,
+    DrawioBlock,
+    ...mathExtensions,
     GlobalDragHandle.configure({
       dragHandleWidth: 20,
       scrollTreshold: 100,

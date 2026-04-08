@@ -552,36 +552,55 @@
   }
 }
 
-// Mathematics (KaTeX)
+// Mathematics (KaTeX) — 扩展使用 class「tiptap-mathematics-render」（小写 t），勿写成 Tiptap-
 .zq-editor__wrapper .ProseMirror {
-  .Tiptap-mathematics-editor {
-    background-color: var(--el-fill-color-lighter);
-    border: 1px solid var(--el-border-color);
-    border-radius: 4px;
-    padding: 2px 6px;
-    font-family: 'KaTeX_Main', 'Times New Roman', serif;
-    color: var(--el-text-color-primary);
-
-    &.ProseMirror-selectednode {
-      border-color: var(--el-color-primary);
-      outline: none;
-    }
-  }
-
-  .Tiptap-mathematics-render {
-    cursor: pointer;
+  .tiptap-mathematics-render[data-type='inline-math'] {
+    display: inline;
+    cursor: text;
     padding: 0 2px;
+    vertical-align: middle;
     transition: background-color 0.15s;
 
-    &:hover {
+    &.tiptap-mathematics-render--editable:hover {
       background-color: var(--el-fill-color-lighter);
       border-radius: 4px;
     }
+
+    &.inline-math-error,
+    &.ProseMirror-selectednode {
+      outline: 1px solid var(--el-color-primary);
+      border-radius: 2px;
+    }
   }
 
-  .Tiptap-mathematics-editor,
-  .Tiptap-mathematics-render {
-    display: inline;
+  .tiptap-mathematics-render[data-type='block-math'] {
+    display: block;
+    margin: 0.75rem 0;
+    padding: 4px 0;
+    cursor: text;
+    text-align: center;
+
+    .block-math-inner {
+      display: inline-block;
+      text-align: left;
+    }
+
+    &.tiptap-mathematics-render--editable:hover {
+      background-color: var(--el-fill-color-lighter);
+      border-radius: 6px;
+    }
+
+    &.block-math-error {
+      color: var(--el-color-danger);
+      font-family: ui-monospace, monospace;
+      font-size: 0.875rem;
+    }
+
+    &.ProseMirror-selectednode {
+      outline: 2px solid var(--el-color-primary);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
   }
 }
 

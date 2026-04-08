@@ -20,6 +20,7 @@ const props = defineProps<{
   autoSave: boolean
   codeTheme: string
   telemetryEnabled: boolean
+  drawioUiLayout: 'full' | 'minimal'
 }>()
 
 const emit = defineEmits<{
@@ -29,6 +30,7 @@ const emit = defineEmits<{
   changeAutoSave: [enabled: boolean]
   changeTelemetry: [enabled: boolean]
   changeCodeTheme: [theme: string]
+  changeDrawioUiLayout: [layout: 'full' | 'minimal']
   checkUpdate: []
 }>()
 
@@ -41,6 +43,7 @@ const selectedTheme = ref(props.currentTheme)
 const selectedAutoSave = ref(props.autoSave)
 const selectedTelemetryEnabled = ref(props.telemetryEnabled)
 const selectedCodeTheme = ref(props.codeTheme)
+const selectedDrawioUiLayout = ref(props.drawioUiLayout)
 
 watch(() => props.currentLocale, (v) => {
   selectedLocale.value = v
@@ -56,6 +59,9 @@ watch(() => props.telemetryEnabled, (v) => {
 })
 watch(() => props.codeTheme, (v) => {
   selectedCodeTheme.value = v
+})
+watch(() => props.drawioUiLayout, (v) => {
+  selectedDrawioUiLayout.value = v
 })
 
 function onLocaleChange(code: string) {
@@ -81,6 +87,11 @@ function onTelemetryToggle(enabled: boolean) {
 function onCodeThemeChange(theme: string) {
   selectedCodeTheme.value = theme
   emit('changeCodeTheme', theme)
+}
+
+function onDrawioUiLayoutChange(layout: 'full' | 'minimal') {
+  selectedDrawioUiLayout.value = layout
+  emit('changeDrawioUiLayout', layout)
 }
 
 function onCheckUpdate() {
@@ -164,7 +175,9 @@ watch(() => props.visible, (v) => {
             <SettingsEditorTab
               v-show="activeTab === 'editor'"
               :code-theme="selectedCodeTheme"
+              :drawio-ui-layout="selectedDrawioUiLayout"
               @update:code-theme="onCodeThemeChange"
+              @update:drawio-ui-layout="onDrawioUiLayoutChange"
             />
 
             <SettingsAboutTab

@@ -162,7 +162,11 @@ const zhCN: AppLocale = {
     updateUrlPlaceholder: 'https://minio-api.fuadmin.cn/zq-mark',
     editor: '编辑器',
     codeTheme: '代码样式',
-    codeThemeDesc: '选择代码块的语法高亮主题'
+    codeThemeDesc: '选择代码块的语法高亮主题',
+    drawioUiLayout: '流程图编辑器布局',
+    drawioUiLayoutDesc: '标准布局与 diagrams.net 网页版一致；精简布局为侧栏更紧凑的嵌入样式。',
+    drawioUiLayoutFull: '标准布局',
+    drawioUiLayoutMinimal: '精简布局'
   },
   update: {
     currentVersion: '当前版本',
@@ -284,8 +288,22 @@ const zhCN: AppLocale = {
       replaceAll: '全部替换'
     },
     link: {
+      textLabel: '显示文本',
+      textPlaceholder: '链接上显示的文字',
+      urlLabel: '链接地址',
       placeholder: '输入链接地址...',
       confirm: '确认',
+      cancel: '取消'
+    },
+    math: {
+      title: '数学公式',
+      latexLabel: 'LaTeX',
+      placeholder: '例如：\\sum_{i=1}^n i = \\frac{n(n+1)}{2}',
+      previewLabel: '预览',
+      modeInline: '行内',
+      modeBlock: '块级',
+      hint: '⌘/Ctrl + Enter 插入；Esc 取消（取消时保留 / 命令文本）',
+      insert: '插入',
       cancel: '取消'
     },
     color: {
@@ -333,6 +351,8 @@ const zhCN: AppLocale = {
       blockquoteDesc: '创建引用块',
       codeBlock: '代码块',
       codeBlockDesc: '插入代码块',
+      link: '链接',
+      linkDesc: '插入超链接',
       divider: '分割线',
       dividerDesc: '插入水平分割线',
       table: '表格',
@@ -346,7 +366,7 @@ const zhCN: AppLocale = {
       callout: '提示框',
       calloutDesc: '插入提示信息框',
       inlineMath: '数学公式',
-      inlineMathDesc: '插入 LaTeX 数学公式',
+      inlineMathDesc: '打开公式编辑器，输入 LaTeX 并预览后插入',
       image: '图片',
       imageDesc: '插入本地图片',
       video: '视频',
@@ -359,6 +379,8 @@ const zhCN: AppLocale = {
       emojiDesc: '插入表情符号',
       draw: '画板',
       drawDesc: '插入自由绘图画板',
+      drawio: '流程图 (draw.io)',
+      drawioDesc: '插入 diagrams.net 流程图或图表（仅桌面版）',
       noResult: '无匹配结果'
     },
     draw: {
@@ -369,6 +391,22 @@ const zhCN: AppLocale = {
       clickToEdit: '点击添加绘图',
       fullscreen: '全屏编辑',
       exitFullscreen: '退出全屏'
+    },
+    drawio: {
+      title: '流程图',
+      edit: '编辑图表',
+      delete: '删除图表',
+      done: '完成',
+      clickToEdit: '双击预览，或使用工具栏编辑',
+      hintHasDiagram: '双击预览流程图，或使用工具栏编辑',
+      fullscreen: '全屏编辑',
+      exitFullscreen: '退出全屏',
+      openStandalone: '在独立窗口编辑',
+      switchToEdit: '编辑',
+      switchToPreview: '预览',
+      previewEmpty: '暂无内容可预览，请先编辑并保存。',
+      desktopOnly: '流程图仅支持 ZQ Mark 桌面版。',
+      missingBundle: '未找到内置的 draw.io 资源。请重新安装应用或在本仓库执行 npm run sync:drawio。',
     },
     table: {
       sizePicker: '选择表格大小',
