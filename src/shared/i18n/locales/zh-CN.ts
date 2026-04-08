@@ -166,8 +166,7 @@ const zhCN: AppLocale = {
     drawioUiLayout: '流程图编辑器布局',
     drawioUiLayoutDesc: '标准布局与 diagrams.net 网页版一致；精简布局为侧栏更紧凑的嵌入样式。',
     drawioUiLayoutFull: '标准布局',
-    drawioUiLayoutMinimal: '精简布局'
-    codeThemeDesc: '选择代码块的语法高亮主题',
+    drawioUiLayoutMinimal: '精简布局',
     saveFormatAsk: '保存时询问格式',
     saveFormatAskDesc: '保存单文件时弹出对话框，在 Markdown 与 ZQ 文档之间选择',
     saveFormatDefaultLabel: '不询问时默认使用',

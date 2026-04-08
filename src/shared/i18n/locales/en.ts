@@ -168,8 +168,7 @@ const en: AppLocale = {
     drawioUiLayoutDesc:
       'Standard matches the default diagrams.net layout. Compact uses the minimal embedded toolbar.',
     drawioUiLayoutFull: 'Standard',
-    drawioUiLayoutMinimal: 'Compact'
-    codeThemeDesc: 'Select the syntax highlighting theme for code blocks',
+    drawioUiLayoutMinimal: 'Compact',
     saveFormatAsk: 'Ask format on save',
     saveFormatAskDesc: 'When saving a single document, show a dialog to choose Markdown or ZQ Document',
     saveFormatDefaultLabel: 'Default when not asking',

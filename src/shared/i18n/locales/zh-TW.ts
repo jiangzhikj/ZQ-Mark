@@ -166,8 +166,7 @@ const zhTW: AppLocale = {
     drawioUiLayout: '流程圖編輯器版面',
     drawioUiLayoutDesc: '標準版面與 diagrams.net 網頁版一致；精簡版面為側欄較緊湊的嵌入樣式。',
     drawioUiLayoutFull: '標準版面',
-    drawioUiLayoutMinimal: '精簡版面'
-    codeThemeDesc: '選擇代碼區塊的語法高亮主題',
+    drawioUiLayoutMinimal: '精簡版面',
     saveFormatAsk: '儲存時詢問格式',
     saveFormatAskDesc: '儲存單一檔案時彈出對話框，在 Markdown 與 ZQ 文件之間選擇',
     saveFormatDefaultLabel: '不詢問時預設使用',

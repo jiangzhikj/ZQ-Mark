@@ -137,7 +137,6 @@ const defaultSettings: AppSettings = {
   codeTheme: 'intellij',
   telemetryEnabled: true,
   drawioUiLayout: 'full',
-  telemetryEnabled: true,
   saveFormatAskDialog: true,
   saveFormatDefault: 'md'
 }

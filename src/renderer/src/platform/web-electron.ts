@@ -51,7 +51,6 @@ const defaultSettings = (): AppSettings => ({
   telemetryEnabled: true,
   saveFormatAskDialog: true,
   saveFormatDefault: 'md',
-  telemetryEnabled: true,
   drawioUiLayout: 'full',
 })
 
