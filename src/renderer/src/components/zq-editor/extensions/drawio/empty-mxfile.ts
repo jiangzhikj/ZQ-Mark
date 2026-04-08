@@ -1,0 +1,2 @@
+/** 空图表，供 embed `action:load` 使用（draw.io 会按需补全属性） */
+export const EMPTY_DRAWIO_XML = `<mxfile><diagram id="zq-page1" name="Page-1"><mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>`
