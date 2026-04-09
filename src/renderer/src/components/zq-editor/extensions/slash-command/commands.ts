@@ -5,6 +5,7 @@ import { VueRenderer } from '@tiptap/vue-3';
 import tippy from 'tippy.js';
 
 import { $t } from '../../utils/i18n';
+import { isSlashDrawioAvailable } from './slash-drawio-state';
 import LinkEditor from '../../menus/LinkEditor.vue';
 import MathFormulaEditor from '../../menus/MathFormulaEditor.vue';
 import TableSizePicker from '../../menus/TableSizePicker.vue';
@@ -15,6 +16,8 @@ export interface SlashCommandItem {
   icon: string;
   category: string;
   aliases?: string[];
+  /** 为 true 时不可选（如流程图资源未安装） */
+  disabled?: boolean;
   command: (props: { editor: Editor; range: any }) => void;
 }
 
@@ -373,16 +376,23 @@ export function getSlashCommands(): SlashCommandItem[] {
         editor.chain().focus().deleteRange(range).setDrawBlock().run();
       },
     },
-    {
-      title: $t('zq-editor.slash.drawio'),
-      description: $t('zq-editor.slash.drawioDesc'),
-      icon: 'Workflow',
-      category: $t('zq-editor.slash.category.media'),
-      aliases: ['drawio', 'diagram', 'flowchart', 'uml', 'diagrams.net'],
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).setDrawioBlock().run();
-      },
-    },
+    (() => {
+      const drawioOk = isSlashDrawioAvailable();
+      return {
+        title: $t('zq-editor.slash.drawio'),
+        description: drawioOk
+          ? $t('zq-editor.slash.drawioDesc')
+          : $t('zq-editor.slash.drawioRequiresPlugin'),
+        icon: 'Workflow',
+        category: $t('zq-editor.slash.category.media'),
+        aliases: ['drawio', 'diagram', 'flowchart', 'uml', 'diagrams.net'],
+        disabled: !drawioOk,
+        command: ({ editor, range }) => {
+          if (!isSlashDrawioAvailable()) return;
+          editor.chain().focus().deleteRange(range).setDrawioBlock().run();
+        },
+      } satisfies SlashCommandItem;
+    })(),
   ];
 }
 

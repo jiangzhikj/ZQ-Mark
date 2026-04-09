@@ -163,12 +163,41 @@ export interface AppLocale {
     editor: string
     codeTheme: string
     codeThemeDesc: string
+    drawioUiLayout: string
+    drawioUiLayoutDesc: string
+    drawioUiLayoutFull: string
+    drawioUiLayoutMinimal: string
     saveFormatAsk: string
     saveFormatAskDesc: string
     saveFormatDefaultLabel: string
     saveFormatDefaultHint: string
     saveFormatMd: string
     saveFormatZq: string
+    plugins: string
+    pluginCenter: string
+    pluginCenterDesc: string
+    pluginDrawioTitle: string
+    pluginDrawioDesc: string
+    pluginDrawioLicense: string
+    pluginInstalled: string
+    pluginNotInstalled: string
+    pluginBuiltinDrawio: string
+    pluginBuiltinDrawioHint: string
+    pluginInstall: string
+    pluginUpdate: string
+    pluginRemove: string
+    pluginRemoteVersion: string
+    pluginInstalledVersion: string
+    pluginSize: string
+    pluginManifestError: string
+    pluginPhaseDownloading: string
+    pluginPhaseVerifying: string
+    pluginPhaseExtracting: string
+    pluginDownloadSpeed: string
+    pluginInstallFailed: string
+    pluginRemoveConfirmTitle: string
+    pluginRemoveConfirmMessage: string
+    drawioLayoutRequiresPlugin: string
   }
   update: {
     currentVersion: string
@@ -273,6 +302,7 @@ export interface ZqEditorLocale {
   turnInto: Record<string, string>
   search: Record<string, string>
   link: Record<string, string>
+  imageInsert: Record<string, string>
   color: Record<string, string>
   codeBlock: Record<string, string>
   slash: Record<string, string>

@@ -5,6 +5,8 @@ import CodeThemeSelect from './CodeThemeSelect.vue'
 defineProps<{
   codeTheme: string
   drawioUiLayout: 'full' | 'minimal'
+  /** 已下载流程图插件时为 true */
+  drawioBundleReady: boolean
 }>()
 
 const emit = defineEmits<{
@@ -36,7 +38,7 @@ function onDrawioLayoutInput(v: 'full' | 'minimal') {
       <CodeThemeSelect :model-value="codeTheme" @update:model-value="onCodeThemeInput" />
     </div>
 
-    <div class="setting-group">
+    <div v-if="drawioBundleReady" class="setting-group">
       <div class="setting-label">
         <span class="label-text">{{ t('settings.drawioUiLayout') }}</span>
         <span class="label-desc">{{ t('settings.drawioUiLayoutDesc') }}</span>
@@ -60,6 +62,9 @@ function onDrawioLayoutInput(v: 'full' | 'minimal') {
           {{ t('settings.drawioUiLayoutMinimal') }}
         </button>
       </div>
+    </div>
+    <div v-else class="setting-group">
+      <p class="drawio-plugin-hint">{{ t('settings.drawioLayoutRequiresPlugin') }}</p>
     </div>
   </div>
 </template>
@@ -99,5 +104,12 @@ function onDrawioLayoutInput(v: 'full' | 'minimal') {
 
 .seg-btn + .seg-btn {
   border-left: 1px solid var(--border-color);
+}
+
+.drawio-plugin-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
 }
 </style>

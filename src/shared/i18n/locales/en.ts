@@ -175,7 +175,38 @@ const en: AppLocale = {
     saveFormatDefaultHint:
       'When the switch above is off, saves use the format selected here. Checking “remember my choice” in the dialog also turns off asking and stores the format.',
     saveFormatMd: 'Markdown (.md)',
-    saveFormatZq: 'ZQ Document (.zq)'
+    saveFormatZq: 'ZQ Document (.zq)',
+    plugins: 'Plugins',
+    pluginCenter: 'Plugin center',
+    pluginCenterDesc:
+      'Large optional components are downloaded on demand and are not bundled with the app.',
+    pluginDrawioTitle: 'Diagrams (draw.io)',
+    pluginDrawioDesc:
+      'Insert and edit draw.io diagrams in documents. Download the bundle once below.',
+    pluginDrawioLicense:
+      'diagrams.net is distributed under Apache 2.0 and other licenses; see the official site for details.',
+    pluginInstalled: 'Installed',
+    pluginNotInstalled: 'Not installed',
+    pluginBuiltinDrawio: 'Built-in',
+    pluginBuiltinDrawioHint:
+      'Using the app’s bundled or dev-folder diagrams.net. Install from the plugin center to use the manifest version.',
+    pluginInstall: 'Download and install',
+    pluginUpdate: 'Update',
+    pluginRemove: 'Remove',
+    pluginRemoteVersion: 'Remote version',
+    pluginInstalledVersion: 'Installed version',
+    pluginSize: 'Download size',
+    pluginManifestError: 'Could not load plugin manifest',
+    pluginPhaseDownloading: 'Downloading…',
+    pluginPhaseVerifying: 'Verifying…',
+    pluginPhaseExtracting: 'Extracting…',
+    pluginDownloadSpeed: 'Speed',
+    pluginInstallFailed: 'Installation failed',
+    pluginRemoveConfirmTitle: 'Remove diagram editor?',
+    pluginRemoveConfirmMessage:
+      'You will not be able to edit diagrams until you install again from the plugin center.',
+    drawioLayoutRequiresPlugin:
+      'Install the diagram bundle under Plugins first, then you can change the diagram editor layout.',
   },
   update: {
     currentVersion: 'Current Version',
@@ -315,6 +346,15 @@ const en: AppLocale = {
       confirm: 'Confirm',
       cancel: 'Cancel'
     },
+    imageInsert: {
+      title: 'Insert image',
+      urlLabel: 'Image URL',
+      urlPlaceholder: 'https://... or data:image/...',
+      insertFromUrl: 'Insert from URL',
+      pickLocal: 'Choose local file',
+      cancel: 'Cancel',
+      invalidUrl: 'Enter a valid image URL (http/https or data:image/...)'
+    },
     math: {
       title: 'Math formula',
       latexLabel: 'LaTeX',
@@ -388,7 +428,7 @@ const en: AppLocale = {
       inlineMath: 'Math formula',
       inlineMathDesc: 'Open editor, type LaTeX with live preview, then insert',
       image: 'Image',
-      imageDesc: 'Insert a local image',
+      imageDesc: 'Insert a local or online image',
       video: 'Video',
       videoDesc: 'Insert a local video',
       audio: 'Audio',
@@ -401,6 +441,8 @@ const en: AppLocale = {
       drawDesc: 'Insert a freehand drawing canvas',
       drawio: 'Diagram (draw.io)',
       drawioDesc: 'Insert a diagrams.net flowchart or diagram (desktop app only)',
+      drawioRequiresPlugin:
+        'Install the diagram bundle under Preferences → Plugins first.',
       noResult: 'No results'
     },
     draw: {
@@ -426,7 +468,9 @@ const en: AppLocale = {
       switchToPreview: 'Preview',
       previewEmpty: 'Nothing to preview yet. Edit and save first.',
       desktopOnly: 'Diagrams are only available in the ZQ Mark desktop app.',
-      missingBundle: 'Built-in draw.io files were not found. Reinstall the app or run npm run sync:drawio.',
+      missingBundle:
+        'The diagram bundle is not installed. Open Preferences → Plugins and download the diagrams.net package.',
+      refreshBundle: 'Check again',
     },
     table: {
       sizePicker: 'Select table size',

@@ -5,6 +5,7 @@ import {
   Code,
   Info,
   Palette,
+  Puzzle,
   Settings,
   X,
 } from '@/components/icons'
@@ -12,6 +13,7 @@ import { ZqScrollbar } from '@/components/ui'
 import SettingsAppearanceTab from './settings/SettingsAppearanceTab.vue'
 import SettingsEditorTab from './settings/SettingsEditorTab.vue'
 import SettingsGeneralTab from './settings/SettingsGeneralTab.vue'
+import SettingsPluginsTab from './settings/SettingsPluginsTab.vue'
 import SettingsAboutTab from './settings/SettingsAboutTab.vue'
 
 const props = defineProps<{
@@ -24,6 +26,8 @@ const props = defineProps<{
   drawioUiLayout: 'full' | 'minimal'
   saveFormatAskDialog: boolean
   saveFormatDefault: 'md' | 'zq'
+  drawioBundleReady: boolean
+  showPluginCenter: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,11 +41,14 @@ const emit = defineEmits<{
   changeSaveFormatDefault: [format: 'md' | 'zq']
   changeDrawioUiLayout: [layout: 'full' | 'minimal']
   checkUpdate: []
+  drawioBundleChanged: []
 }>()
 
 const { t } = useI18n()
 
-const activeTab = ref<'general' | 'appearance' | 'editor' | 'about'>('general')
+const activeTab = ref<'general' | 'appearance' | 'editor' | 'plugins' | 'about'>(
+  'general',
+)
 
 const selectedLocale = ref(props.currentLocale)
 const selectedTheme = ref(props.currentTheme)
@@ -112,6 +119,10 @@ function onCheckUpdate() {
   emit('close')
 }
 
+function onDrawioBundleChanged() {
+  emit('drawioBundleChanged')
+}
+
 function onSaveFormatAskToggle(enabled: boolean) {
   selectedSaveFormatAsk.value = enabled
   emit('changeSaveFormatAsk', enabled)
@@ -164,6 +175,16 @@ watch(() => props.visible, (v) => {
               {{ t('settings.editor') }}
             </button>
             <button
+              v-if="showPluginCenter"
+              type="button"
+              class="nav-item"
+              :class="{ active: activeTab === 'plugins' }"
+              @click="activeTab = 'plugins'"
+            >
+              <Puzzle :size="16" :stroke-width="1.3" />
+              {{ t('settings.plugins') }}
+            </button>
+            <button
               type="button"
               class="nav-item"
               :class="{ active: activeTab === 'about' }"
@@ -201,17 +222,18 @@ watch(() => props.visible, (v) => {
                   @change-theme="onThemeChange"
                 />
 
-            <SettingsEditorTab
-              v-show="activeTab === 'editor'"
-              :code-theme="selectedCodeTheme"
-              :drawio-ui-layout="selectedDrawioUiLayout"
-              @update:code-theme="onCodeThemeChange"
-              @update:drawio-ui-layout="onDrawioUiLayoutChange"
-            />
                 <SettingsEditorTab
                   v-show="activeTab === 'editor'"
                   :code-theme="selectedCodeTheme"
+                  :drawio-ui-layout="selectedDrawioUiLayout"
+                  :drawio-bundle-ready="drawioBundleReady"
                   @update:code-theme="onCodeThemeChange"
+                  @update:drawio-ui-layout="onDrawioUiLayoutChange"
+                />
+
+                <SettingsPluginsTab
+                  v-show="activeTab === 'plugins'"
+                  @drawio-bundle-changed="onDrawioBundleChanged"
                 />
 
                 <SettingsAboutTab

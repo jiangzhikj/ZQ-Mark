@@ -98,6 +98,7 @@ export {
   Pencil,
   PenTool,
   Plus,
+  Puzzle,
   Quote,
   Redo2,
   RotateCw,

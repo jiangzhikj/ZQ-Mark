@@ -31,6 +31,13 @@ import {
   deleteDrawioStandaloneSession,
 } from './window-manager'
 import { createTray, rebuildTrayMenu, destroyTray } from './tray'
+import {
+  getDrawioIndexAssetUrl,
+  getDrawioBundleStatus,
+  fetchDrawioManifest,
+  installDrawioUsingUpdateUrl,
+  removeDrawioBundle,
+} from './drawio-bundle'
 
 const MAX_RECENT = 10
 let recentFiles: string[] = []
@@ -309,14 +316,27 @@ ipcMain.handle('window:is-maximized', (event) => {
 ipcMain.handle('get-platform', () => process.platform)
 
 ipcMain.handle('drawio:get-index-url', () => {
-  const indexPath = app.isPackaged
-    ? join(process.resourcesPath, 'drawio', 'index.html')
-    : join(__dirname, '../../resources/drawio/index.html')
-  if (!existsSync(indexPath)) {
-    console.warn('[drawio] bundled webapp not found:', indexPath)
-    return null
+  const url = getDrawioIndexAssetUrl()
+  if (!url) {
+    console.warn('[drawio] draw.io webapp not found (install from Settings → Plugins)')
   }
-  return localPathToAssetUrl(indexPath)
+  return url
+})
+
+ipcMain.handle('drawio:get-bundle-status', () => getDrawioBundleStatus())
+
+ipcMain.handle('drawio:fetch-manifest', async () => {
+  return await fetchDrawioManifest(appSettings.updateUrl)
+})
+
+ipcMain.handle('drawio:install-bundle', async () => {
+  await installDrawioUsingUpdateUrl(appSettings.updateUrl)
+  return { ok: true as const }
+})
+
+ipcMain.handle('drawio:remove-bundle', async () => {
+  await removeDrawioBundle()
+  return { ok: true as const }
 })
 
 ipcMain.handle(

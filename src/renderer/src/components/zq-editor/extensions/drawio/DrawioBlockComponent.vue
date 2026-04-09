@@ -11,7 +11,14 @@ import {
 import { nanoid } from 'nanoid';
 import { NodeViewWrapper } from '@tiptap/vue-3';
 import { useI18n } from 'vue-i18n';
-import { Eye, ExternalLink, Pencil, Trash2, Workflow } from '@/components/icons';
+import {
+  Eye,
+  ExternalLink,
+  Pencil,
+  RotateCw,
+  Trash2,
+  Workflow,
+} from '@/components/icons';
 import { $t } from '../../utils/i18n';
 import {
   DRAWIO_UI_LAYOUT_INJECT_KEY,
@@ -546,6 +553,12 @@ watch(
     }
   },
 );
+
+async function refreshDrawioBundle() {
+  if (isWebPlatform.value) return;
+  await prepareEditorUrl();
+  refreshPreviewIframeSrc();
+}
 </script>
 
 <template>
@@ -564,9 +577,19 @@ watch(
       </div>
       <div
         v-else-if="bundleError"
-        class="zq-drawio-block__error"
+        class="zq-drawio-block__error zq-drawio-block__error-row"
       >
-        {{ $t('zq-editor.drawio.missingBundle') }}
+        <span class="zq-drawio-block__error-text">{{
+          $t('zq-editor.drawio.missingBundle')
+        }}</span>
+        <button
+          type="button"
+          class="zq-drawio-block__error-refresh"
+          :title="$t('zq-editor.drawio.refreshBundle')"
+          @click="refreshDrawioBundle"
+        >
+          <RotateCw class="zq-drawio-block__error-refresh-icon" />
+        </button>
       </div>
       <div
         v-else-if="previewDataUrl"
@@ -823,6 +846,45 @@ watch(
   font-size: 13px;
   color: var(--text-muted);
   line-height: 1.5;
+}
+
+.zq-drawio-block__error-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zq-drawio-block__error-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.zq-drawio-block__error-refresh {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.zq-drawio-block__error-refresh:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.zq-drawio-block__error-refresh-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .zq-drawio-block__toolbar {

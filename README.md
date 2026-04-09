@@ -100,6 +100,8 @@ npm run build:all
 
 构建产物输出至 `dist/` 目录。
 
+**安装说明（含 draw.io 插件清单、校验、发布路径）**：见 **[安装文档](docs/installation.md)**。
+
 ## 项目结构
 
 ```
@@ -128,7 +130,7 @@ zq-md/
 │       ├── types.ts                   #   类型定义
 │       └── i18n/                      #   国际化资源 (en/zh-CN/zh-TW)
 ├── build/                             # 构建资源 (应用图标)
-├── docs/                              # 文档
+├── docs/                              # 文档（[安装文档](docs/installation.md)、[发布指南](docs/release-guide.md)）
 ├── electron.vite.config.ts            # electron-vite 配置
 ├── package.json
 └── tsconfig.json

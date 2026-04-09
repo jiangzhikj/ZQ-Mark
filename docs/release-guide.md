@@ -10,6 +10,7 @@
 6. [构建命令](#6-%E6%9E%84%E5%BB%BA%E5%91%BD%E4%BB%A4)
 7. [通过 GitHub 发布更新](#7-%E9%80%9A%E8%BF%87-github-%E5%8F%91%E5%B8%83%E6%9B%B4%E6%96%B0)
 8. [完整发布流程（基于 GitHub）](#8-%E5%AE%8C%E6%95%B4%E5%8F%91%E5%B8%83%E6%B5%81%E7%A8%8B%EF%BC%88%E5%9F%BA%E4%BA%8E-github%EF%BC%89)
+9. [安装文档](./installation.md)（环境与运行、**draw.io 插件** manifest / 校验 / 上传路径、`npm run hash:drawio` 等）
 
 ---
 
@@ -527,6 +528,10 @@ https://minio-api.fuadmin.cn/zq-mark/latest
     系统打开安装程序
     用户手动完成安装
 ```
+
+### 7.9 draw.io 插件
+
+已并入 **[安装文档](./installation.md)** 第 4 节（清单 URL、`manifest.json` 字段、当前 `sha256` / `size`、上传路径、`npm run hash:drawio`、用户数据目录等）。
 
 ---
 

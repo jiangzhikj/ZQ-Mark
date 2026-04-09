@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { LibraryNode } from '../shared/types'
+import type {
+  DrawioBundleStatus,
+  DrawioInstallProgress,
+  DrawioPluginManifest,
+} from '../shared/drawio-plugin'
 
 export interface LocalFileResult {
   id: string
@@ -87,6 +92,15 @@ export interface ElectronAPI {
 
   /** 桌面端：draw.io index.html 的 local-asset URL；Web 为 null */
   getDrawioIndexUrl: () => Promise<string | null>
+
+  getDrawioBundleStatus: () => Promise<DrawioBundleStatus>
+  fetchDrawioManifest: () => Promise<DrawioPluginManifest>
+  installDrawioBundle: () => Promise<{ ok: true }>
+  removeDrawioBundle: () => Promise<{ ok: true }>
+  onDrawioInstallProgress: (
+    callback: (payload: DrawioInstallProgress) => void,
+  ) => () => void
+  onDrawioBundleReady: (callback: () => void) => () => void
 
   /** 在新 BrowserWindow 中编辑流程图；Web 为空操作 */
   openDrawioStandalone: (opts: {
@@ -212,6 +226,24 @@ const api: ElectronAPI = {
   },
 
   getDrawioIndexUrl: () => ipcRenderer.invoke('drawio:get-index-url'),
+
+  getDrawioBundleStatus: () => ipcRenderer.invoke('drawio:get-bundle-status'),
+  fetchDrawioManifest: () => ipcRenderer.invoke('drawio:fetch-manifest'),
+  installDrawioBundle: () => ipcRenderer.invoke('drawio:install-bundle'),
+  removeDrawioBundle: () => ipcRenderer.invoke('drawio:remove-bundle'),
+  onDrawioInstallProgress: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: DrawioInstallProgress,
+    ) => callback(payload)
+    ipcRenderer.on('drawio:install-progress', handler)
+    return () => ipcRenderer.removeListener('drawio:install-progress', handler)
+  },
+  onDrawioBundleReady: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('drawio:bundle-ready', handler)
+    return () => ipcRenderer.removeListener('drawio:bundle-ready', handler)
+  },
 
   openDrawioStandalone: (opts) =>
     ipcRenderer.invoke('drawio:open-standalone', opts),

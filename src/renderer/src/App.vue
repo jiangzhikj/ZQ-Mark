@@ -41,6 +41,7 @@ import {
   setWebUrlView,
   type WebPageStateV1
 } from '@/platform/web-session'
+import { setSlashDrawioAvailable } from '@/components/zq-editor/extensions/slash-command/slash-drawio-state'
 import { restoreWebLibraryFromSnapshot, serializeWebLibrarySnapshot } from '@/platform/web-electron'
 
 const { themeMode, setThemeMode } = useTheme()
@@ -101,6 +102,8 @@ const telemetryEnabled = ref(true)
 const codeTheme = ref('intellij')
 const drawioUiLayout = ref<DrawioUiLayout>('full')
 provide(DRAWIO_UI_LAYOUT_INJECT_KEY, drawioUiLayout)
+/** 是否已在插件中心安装流程图（diagrams.net）资源 */
+const drawioBundleReady = ref(false)
 const editorRef = ref<InstanceType<typeof ZqEditor>>()
 const localeMode = ref<'system' | string>('system')
 const tiptapEditor = ref<Editor>()
@@ -658,6 +661,23 @@ function onWebLocaleChanged(e: Event) {
 
 let cleanupWebLocale: (() => void) | null = null
 
+async function refreshDrawioBundleStatus() {
+  if (appPlatform.value === 'web') {
+    drawioBundleReady.value = false
+    setSlashDrawioAvailable(false)
+    return
+  }
+  try {
+    const s = await window.electron.getDrawioBundleStatus()
+    drawioBundleReady.value = s.state === 'ready'
+  } catch {
+    drawioBundleReady.value = false
+  }
+  setSlashDrawioAvailable(drawioBundleReady.value)
+}
+
+let cleanupDrawioBundleReady: (() => void) | null = null
+
 onMounted(async () => {
   const platform = await window.electron.getPlatform()
   document.documentElement.setAttribute('data-platform', platform)
@@ -747,6 +767,11 @@ onMounted(async () => {
   saveFormatAskDialog.value = settings.saveFormatAskDialog !== false
   saveFormatDefault.value = settings.saveFormatDefault === 'zq' ? 'zq' : 'md'
 
+  await refreshDrawioBundleStatus()
+  cleanupDrawioBundleReady = window.electron.onDrawioBundleReady(() => {
+    void refreshDrawioBundleStatus()
+  })
+
   cleanupMenuAction = window.electron.onMenuAction((action) => {
     if (action === 'view:toggleSidebar') {
       toggleSidebar()
@@ -811,6 +836,7 @@ onUnmounted(() => {
   cleanupSettingsChanged?.()
   cleanupUnsavedFromMain?.()
   cleanupUpdateListener?.()
+  cleanupDrawioBundleReady?.()
   cleanupWebLocale?.()
   cleanupBeforeUnload?.()
   if (webPersistTimer) {
@@ -928,6 +954,8 @@ onUnmounted(() => {
       :drawio-ui-layout="drawioUiLayout"
       :save-format-ask-dialog="saveFormatAskDialog"
       :save-format-default="saveFormatDefault"
+      :drawio-bundle-ready="drawioBundleReady"
+      :show-plugin-center="appPlatform !== 'web'"
       @close="settingsVisible = false"
       @change-locale="onChangeLocale"
       @change-theme="onChangeTheme"
@@ -938,6 +966,7 @@ onUnmounted(() => {
       @change-save-format-default="onChangeSaveFormatDefault"
       @change-drawio-ui-layout="onChangeDrawioUiLayout"
       @check-update="triggerCheckUpdate"
+      @drawio-bundle-changed="refreshDrawioBundleStatus"
     />
     <InputDialog
       :visible="inputDialogVisible"

@@ -172,7 +172,37 @@ const zhTW: AppLocale = {
     saveFormatDefaultLabel: '不詢問時預設使用',
     saveFormatDefaultHint: '關閉上方開關後，儲存將直接使用此處選擇的格式。在對話框中勾選「記住選擇」也會同步關閉詢問並記錄格式。',
     saveFormatMd: 'Markdown（.md）',
-    saveFormatZq: 'ZQ 文件（.zq）'
+    saveFormatZq: 'ZQ 文件（.zq）',
+    plugins: '外掛',
+    pluginCenter: '外掛中心',
+    pluginCenterDesc: '大型可選元件需連線下載後使用，不會隨安裝套件一併提供。',
+    pluginDrawioTitle: '流程圖（draw.io）',
+    pluginDrawioDesc:
+      '在文件中插入與編輯 draw.io 流程圖。首次使用請於下方下載資源包。',
+    pluginDrawioLicense:
+      'diagrams.net 以 Apache 2.0 等開源授權條款發行，詳見官方網站說明。',
+    pluginInstalled: '已安裝',
+    pluginNotInstalled: '未安裝',
+    pluginBuiltinDrawio: '內建資源',
+    pluginBuiltinDrawioHint:
+      '目前使用應用程式內建或開發目錄中的 diagrams.net，未安裝外掛中心副本。下載安裝可切換為清單指定版本。',
+    pluginInstall: '下載並安裝',
+    pluginUpdate: '更新',
+    pluginRemove: '解除安裝',
+    pluginRemoteVersion: '遠端版本',
+    pluginInstalledVersion: '目前版本',
+    pluginSize: '安裝套件大小',
+    pluginManifestError: '無法載入外掛清單',
+    pluginPhaseDownloading: '正在下載…',
+    pluginPhaseVerifying: '正在驗證…',
+    pluginPhaseExtracting: '正在解壓縮…',
+    pluginDownloadSpeed: '速度',
+    pluginInstallFailed: '安裝失敗',
+    pluginRemoveConfirmTitle: '要解除安裝流程圖元件嗎？',
+    pluginRemoveConfirmMessage:
+      '解除後將無法編輯文件中的流程圖，可隨時在外掛中心重新安裝。',
+    drawioLayoutRequiresPlugin:
+      '請先於「外掛」中下載並安裝流程圖元件，再調整流程圖編輯器版面。',
   },
   update: {
     currentVersion: '目前版本',
@@ -311,6 +341,15 @@ const zhTW: AppLocale = {
       confirm: '確認',
       cancel: '取消'
     },
+    imageInsert: {
+      title: '插入圖片',
+      urlLabel: '圖片網址',
+      urlPlaceholder: 'https://... 或 data:image/...',
+      insertFromUrl: '插入連結',
+      pickLocal: '從本機選擇',
+      cancel: '取消',
+      invalidUrl: '請輸入有效的圖片網址（http/https，或以 data:image/ 開頭的 Data URL）'
+    },
     math: {
       title: '數學公式',
       latexLabel: 'LaTeX',
@@ -384,7 +423,7 @@ const zhTW: AppLocale = {
       inlineMath: '數學公式',
       inlineMathDesc: '開啟公式編輯器，輸入 LaTeX 並預覽後插入',
       image: '圖片',
-      imageDesc: '插入本機圖片',
+      imageDesc: '插入本機或網路圖片',
       video: '影片',
       videoDesc: '插入本機影片',
       audio: '音訊',
@@ -397,6 +436,7 @@ const zhTW: AppLocale = {
       drawDesc: '插入自由繪圖畫板',
       drawio: '流程圖 (draw.io)',
       drawioDesc: '插入 diagrams.net 流程圖或圖表（僅桌面版）',
+      drawioRequiresPlugin: '請開啟偏好設定 → 外掛，下載並安裝流程圖元件',
       noResult: '無符合結果'
     },
     draw: {
@@ -422,7 +462,9 @@ const zhTW: AppLocale = {
       switchToPreview: '預覽',
       previewEmpty: '尚無內容可預覽，請先編輯並儲存。',
       desktopOnly: '流程圖僅支援 ZQ Mark 桌面版。',
-      missingBundle: '找不到內建的 draw.io 資源。請重新安裝應用程式或在專案執行 npm run sync:drawio。',
+      missingBundle:
+        '尚未安裝流程圖元件。請開啟「偏好設定 → 外掛」，下載並安裝 diagrams.net 資源包。',
+      refreshBundle: '重新檢測元件',
     },
     table: {
       sizePicker: '選擇表格大小',

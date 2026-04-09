@@ -1,22 +1,22 @@
 {
-  "version": "1.0.4",
-  "notes": "- 添加了代码主题的设置\n- 优化了大文件Markdown的支持\n- 调整了优化了一些样式\n- 修复了一些bug",
+  "version": "1.0.5",
+  "notes": "- 新增了Draw.io\n- 优化了LaTex支持\n- 图片增加了外链的功能\n- 新文件保存时提醒是否保存.md",
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark-1.0.4-arm64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark-1.0.5-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark-1.0.4.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark-1.0.5.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark%20Setup%201.0.4.exe",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark%20Setup%201.0.5.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.4/ZQ%20Mark-1.0.4-x86_64.AppImage",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark-1.0.5-x86_64.AppImage",
       "size": 95000000
     }
   }

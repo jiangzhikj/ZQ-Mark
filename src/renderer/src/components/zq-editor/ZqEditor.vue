@@ -18,6 +18,7 @@ import { useFileUpload } from './composables/use-file-upload';
 import BubbleToolbar from './menus/BubbleToolbar.vue';
 import DragHandleMenu from './menus/DragHandleMenu.vue';
 import EmojiPicker from './menus/EmojiPicker.vue';
+import ImageInsertDialog from './menus/ImageInsertDialog.vue';
 import SearchReplacePanel from './menus/SearchReplacePanel.vue';
 import TableContextMenu from './menus/TableContextMenu.vue';
 import TableFloatingToolbar from './menus/TableFloatingToolbar.vue';
@@ -91,18 +92,15 @@ function onCustomUpload(e: Event) {
   }
 }
 
-async function onOpenImageSelector() {
+const showImageInsertDialog = ref(false);
+
+function onOpenImageSelector() {
   if (!editor.value) return;
-  try {
-    const result = await window.electron.openLocalFile({
-      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] }]
-    });
-    if (result) {
-      editor.value.chain().focus().setImageBlock({ src: result.url, fileId: result.id }).run();
-    }
-  } catch {
-    ZqMessage.error($t('zq-editor.upload.imageUploadFailed'));
-  }
+  showImageInsertDialog.value = true;
+}
+
+function closeImageInsertDialog() {
+  showImageInsertDialog.value = false;
 }
 
 async function onOpenFileSelector(e: Event) {
@@ -331,6 +329,17 @@ defineExpose({
         </div>
       </div>
     </Teleport>
+
+    <!-- Insert image: local file or image URL -->
+    <Teleport to="body">
+      <div
+        v-if="showImageInsertDialog && editor"
+        class="zq-editor__image-insert-overlay"
+        @click.self="closeImageInsertDialog"
+      >
+        <ImageInsertDialog :editor="editor" @close="closeImageInsertDialog" />
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -356,5 +365,16 @@ defineExpose({
   border: 1px solid var(--border-color);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.zq-editor__image-insert-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.1);
 }
 </style>

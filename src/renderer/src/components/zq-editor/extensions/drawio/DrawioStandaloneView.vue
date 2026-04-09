@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { ref, computed, inject, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import {
+  ref,
+  computed,
+  inject,
+  onMounted,
+  onBeforeUnmount,
+  nextTick,
+  watch,
+} from 'vue';
 import { useI18n } from 'vue-i18n';
-import { Eye, Pencil } from '@/components/icons';
+import { Eye, Pencil, RotateCw } from '@/components/icons';
 import {
   DRAWIO_UI_LAYOUT_INJECT_KEY,
   buildDrawioEmbedUrl,
@@ -281,16 +289,20 @@ watch(
   },
 );
 
-onMounted(async () => {
-  window.addEventListener('message', onWindowMessage, false);
+async function loadStandaloneDrawio() {
+  bundleError.value = false;
   const api = window.electron;
   if (!api?.getDrawioIndexUrl || !api.getDrawioStandaloneInitial) {
     bundleError.value = true;
+    iframeSrc.value = '';
+    standalonePreviewIframeSrc.value = '';
     return;
   }
   const initial = await api.getDrawioStandaloneInitial();
   if (!initial || initial.token !== token.value) {
     bundleError.value = true;
+    iframeSrc.value = '';
+    standalonePreviewIframeSrc.value = '';
     return;
   }
   sessionXml.value = initial.xml;
@@ -298,6 +310,8 @@ onMounted(async () => {
   indexBaseUrl.value = base;
   if (!base) {
     bundleError.value = true;
+    iframeSrc.value = '';
+    standalonePreviewIframeSrc.value = '';
     return;
   }
   drawioLoadSentForSession = false;
@@ -307,6 +321,11 @@ onMounted(async () => {
     appLocale: locale.value,
   });
   iframeSrc.value = `${url}${url.includes('?') ? '&' : '?'}_zq_st=${Date.now()}`;
+}
+
+onMounted(async () => {
+  window.addEventListener('message', onWindowMessage, false);
+  await loadStandaloneDrawio();
 });
 
 onBeforeUnmount(() => {
@@ -352,7 +371,19 @@ onBeforeUnmount(() => {
       </div>
     </div>
     <div v-if="bundleError" class="zq-drawio-standalone__error">
-      {{ t('zq-editor.drawio.missingBundle') }}
+      <div class="zq-drawio-standalone__error-row">
+        <span class="zq-drawio-standalone__error-text">{{
+          t('zq-editor.drawio.missingBundle')
+        }}</span>
+        <button
+          type="button"
+          class="zq-drawio-standalone__error-refresh"
+          :title="t('zq-editor.drawio.refreshBundle')"
+          @click="loadStandaloneDrawio"
+        >
+          <RotateCw class="zq-drawio-standalone__error-refresh-icon" />
+        </button>
+      </div>
     </div>
     <div v-else class="zq-drawio-standalone__body">
       <div
@@ -499,6 +530,46 @@ onBeforeUnmount(() => {
   padding: 24px;
   font-size: 13px;
   color: var(--text-muted);
+}
+
+.zq-drawio-standalone__error-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.zq-drawio-standalone__error-text {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.zq-drawio-standalone__error-refresh {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.zq-drawio-standalone__error-refresh:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.zq-drawio-standalone__error-refresh-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .zq-drawio-standalone__body {

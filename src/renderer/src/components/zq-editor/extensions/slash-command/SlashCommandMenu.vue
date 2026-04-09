@@ -89,9 +89,29 @@ const slashRows = computed(() => {
 
 function selectItem(index: number) {
   const item = flatItems.value[index];
-  if (item) {
+  if (item && !item.disabled) {
     props.command(item);
   }
+}
+
+function moveSelection(delta: 1 | -1) {
+  const items = flatItems.value;
+  const len = items.length;
+  if (len === 0) return;
+  let idx = selectedIndex.value;
+  for (let step = 0; step < len; step++) {
+    idx = (idx + delta + len) % len;
+    if (!items[idx]?.disabled) {
+      selectedIndex.value = idx;
+      scrollToSelected();
+      return;
+    }
+  }
+}
+
+function onItemMouseEnter(index: number) {
+  if (flatItems.value[index]?.disabled) return;
+  selectedIndex.value = index;
 }
 
 function scrollToSelected() {
@@ -107,22 +127,26 @@ function onKeyDown(event: KeyboardEvent) {
 
   if (event.key === 'ArrowUp') {
     event.preventDefault();
-    selectedIndex.value = (selectedIndex.value + len - 1) % len;
-    scrollToSelected();
+    moveSelection(-1);
     return true;
   }
   if (event.key === 'ArrowDown') {
     event.preventDefault();
-    selectedIndex.value = (selectedIndex.value + 1) % len;
-    scrollToSelected();
+    moveSelection(1);
     return true;
   }
   if (event.key === 'Enter') {
     event.preventDefault();
+    if (flatItems.value[selectedIndex.value]?.disabled) return true;
     selectItem(selectedIndex.value);
     return true;
   }
   return false;
+}
+
+function firstEnabledIndex(items: SlashCommandItem[]): number {
+  const i = items.findIndex((it) => !it.disabled);
+  return i >= 0 ? i : 0;
 }
 
 watch(
@@ -136,12 +160,15 @@ watch(
     if (selectedIndex.value >= len) {
       selectedIndex.value = len - 1;
     }
+    if (items[selectedIndex.value]?.disabled) {
+      selectedIndex.value = firstEnabledIndex(items);
+    }
   },
   { deep: true },
 );
 
 onMounted(() => {
-  selectedIndex.value = 0;
+  selectedIndex.value = firstEnabledIndex(flatItems.value);
 });
 
 onUnmounted(() => {
@@ -162,9 +189,13 @@ defineExpose({ onKeyDown });
           v-else
           type="button"
           class="zq-slash-menu__item"
-          :class="{ 'is-selected': row.index === selectedIndex }"
+          :class="{
+            'is-selected': row.index === selectedIndex,
+            'is-disabled': row.item.disabled,
+          }"
+          :disabled="row.item.disabled"
           @click="selectItem(row.index)"
-          @mouseenter="selectedIndex = row.index"
+          @mouseenter="onItemMouseEnter(row.index)"
         >
           <span class="zq-slash-menu__icon">
             <component
@@ -257,9 +288,19 @@ defineExpose({ onKeyDown });
   text-align: left;
 }
 
-.zq-slash-menu__item:hover,
-.zq-slash-menu__item.is-selected {
+.zq-slash-menu__item:hover:not(.is-disabled),
+.zq-slash-menu__item.is-selected:not(.is-disabled) {
   background-color: var(--el-fill-color-light);
+}
+
+.zq-slash-menu__item.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.zq-slash-menu__item.is-disabled .zq-slash-menu__title,
+.zq-slash-menu__item.is-disabled .zq-slash-menu__desc {
+  color: var(--el-text-color-secondary);
 }
 
 .zq-slash-menu__icon {

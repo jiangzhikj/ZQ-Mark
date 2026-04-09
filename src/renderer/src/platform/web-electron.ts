@@ -508,6 +508,22 @@ export function createWebElectronApi(): ElectronAPI {
 
     getDrawioIndexUrl: async () => null,
 
+    getDrawioBundleStatus: async () => ({
+      state: 'missing' as const,
+      userInstalled: false,
+    }),
+    fetchDrawioManifest: async () => {
+      throw new Error('draw.io plugin is desktop-only')
+    },
+    installDrawioBundle: async () => {
+      throw new Error('draw.io plugin is desktop-only')
+    },
+    removeDrawioBundle: async () => {
+      throw new Error('draw.io plugin is desktop-only')
+    },
+    onDrawioInstallProgress: () => () => {},
+    onDrawioBundleReady: () => () => {},
+
     openDrawioStandalone: async () => ({ ok: false }),
     getDrawioStandaloneInitial: async () => null,
     drawioStandaloneCommit: async () => ({ ok: false }),

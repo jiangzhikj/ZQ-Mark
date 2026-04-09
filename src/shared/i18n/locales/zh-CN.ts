@@ -172,7 +172,37 @@ const zhCN: AppLocale = {
     saveFormatDefaultLabel: '不询问时默认使用',
     saveFormatDefaultHint: '关闭上方开关后，保存将直接使用此处选择的格式。在弹窗中勾选「记住选择」也会同步关闭询问并记录格式。',
     saveFormatMd: 'Markdown（.md）',
-    saveFormatZq: 'ZQ 文档（.zq）'
+    saveFormatZq: 'ZQ 文档（.zq）',
+    plugins: '插件',
+    pluginCenter: '插件中心',
+    pluginCenterDesc: '大型可选组件需联网下载后使用，不会随安装包分发。',
+    pluginDrawioTitle: '流程图（diagrams.net）',
+    pluginDrawioDesc:
+      '在文档中插入与编辑 draw.io 流程图。首次使用需在下方下载资源包。',
+    pluginDrawioLicense:
+      'draw.io 以 Apache 2.0 等开源协议分发，详见其官方网站说明。',
+    pluginInstalled: '已安装',
+    pluginNotInstalled: '未安装',
+    pluginBuiltinDrawio: '内置资源',
+    pluginBuiltinDrawioHint:
+      '当前使用应用内置或开发目录中的 diagrams.net，未安装插件中心副本。下载安装可切换为清单指定版本。',
+    pluginInstall: '下载并安装',
+    pluginUpdate: '更新',
+    pluginRemove: '卸载',
+    pluginRemoteVersion: '远程版本',
+    pluginInstalledVersion: '当前版本',
+    pluginSize: '安装包大小',
+    pluginManifestError: '无法加载插件清单',
+    pluginPhaseDownloading: '正在下载…',
+    pluginPhaseVerifying: '正在校验…',
+    pluginPhaseExtracting: '正在解压…',
+    pluginDownloadSpeed: '速度',
+    pluginInstallFailed: '安装失败',
+    pluginRemoveConfirmTitle: '卸载流程图组件？',
+    pluginRemoveConfirmMessage:
+      '卸载后将无法编辑文档中的流程图，可随时在插件中心重新安装。',
+    drawioLayoutRequiresPlugin:
+      '请先在「插件」中下载并安装流程图组件，再调整流程图编辑器布局。',
   },
   update: {
     currentVersion: '当前版本',
@@ -311,6 +341,15 @@ const zhCN: AppLocale = {
       confirm: '确认',
       cancel: '取消'
     },
+    imageInsert: {
+      title: '插入图片',
+      urlLabel: '图片地址',
+      urlPlaceholder: 'https://... 或 data:image/...',
+      insertFromUrl: '插入链接',
+      pickLocal: '从本地选择',
+      cancel: '取消',
+      invalidUrl: '请输入有效的图片地址（http/https，或以 data:image/ 开头的 Data URL）'
+    },
     math: {
       title: '数学公式',
       latexLabel: 'LaTeX',
@@ -384,7 +423,7 @@ const zhCN: AppLocale = {
       inlineMath: '数学公式',
       inlineMathDesc: '打开公式编辑器，输入 LaTeX 并预览后插入',
       image: '图片',
-      imageDesc: '插入本地图片',
+      imageDesc: '插入本地或网络图片',
       video: '视频',
       videoDesc: '插入本地视频',
       audio: '音频',
@@ -397,6 +436,7 @@ const zhCN: AppLocale = {
       drawDesc: '插入自由绘图画板',
       drawio: '流程图 (draw.io)',
       drawioDesc: '插入 diagrams.net 流程图或图表（仅桌面版）',
+      drawioRequiresPlugin: '请打开偏好设置 → 插件，下载并安装流程图组件',
       noResult: '无匹配结果'
     },
     draw: {
@@ -422,7 +462,9 @@ const zhCN: AppLocale = {
       switchToPreview: '预览',
       previewEmpty: '暂无内容可预览，请先编辑并保存。',
       desktopOnly: '流程图仅支持 ZQ Mark 桌面版。',
-      missingBundle: '未找到内置的 draw.io 资源。请重新安装应用或在本仓库执行 npm run sync:drawio。',
+      missingBundle:
+        '未安装流程图组件。请打开 偏好设置 → 插件，下载并安装 diagrams.net 资源包。',
+      refreshBundle: '重新检测组件',
     },
     table: {
       sizePicker: '选择表格大小',

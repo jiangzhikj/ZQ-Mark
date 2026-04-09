@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "zipUrl": "https://minio-api.fuadmin.cn/zq-mark/plugins/drawio/drawio-1.0.0.zip",
+  "sha256": "2a7b6919a4c38d7b8950d850a922a52fb98b7bab4cdcf5745e594dbacb415ac7",
+  "size": 53521578,
+  "minAppVersion": "1.0.5",
+  "notes": "diagrams.net webapp；对应仓库内 resources/drawio-1.0.0.zip（解压后含单层 drawio/ 目录）"
+}

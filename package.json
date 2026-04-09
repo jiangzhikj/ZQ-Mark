@@ -1,6 +1,6 @@
 {
   "name": "zq-mark",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A local Markdown editor inspired",
   "main": "./out/main/index.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "start": "electron-vite preview",
     "dev:web": "vite --config vite.web.config.ts",
     "build:web": "vite build --config vite.web.config.ts",
-    "sync:drawio": "rsync -a --delete ../drawio-29.6.10/src/main/webapp/ resources/drawio/",
+    "hash:drawio": "node scripts/hash-drawio-zip.mjs",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -27,7 +27,8 @@
     "files": [
       "out/**/*",
       "resources/**/*",
-      "!resources/drawio/**/*"
+      "!resources/drawio/**/*",
+      "!resources/drawio-*.zip"
     ],
     "fileAssociations": [
       {
@@ -126,10 +127,6 @@
     },
     "npmRebuild": false,
     "extraResources": [
-      {
-        "from": "resources/drawio",
-        "to": "drawio"
-      },
       {
         "from": "build",
         "to": "icons",
