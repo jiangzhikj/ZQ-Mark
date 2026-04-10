@@ -362,7 +362,8 @@ const en: AppLocale = {
       previewLabel: 'Preview',
       modeInline: 'Inline',
       modeBlock: 'Block',
-      hint: '⌘/Ctrl + Enter to insert · Esc to cancel (keeps / text if cancelled)',
+      hint: 'Edit LaTeX above with live preview below; type $$ alone on a line and press Enter for a new block',
+      clickToEdit: 'Click to edit formula',
       insert: 'Insert',
       cancel: 'Cancel'
     },
@@ -386,7 +387,9 @@ const en: AppLocale = {
       searchLanguage: 'Search language...',
       noLanguage: 'Plain text',
       copied: 'Copied',
-      copyCode: 'Copy code'
+      copyCode: 'Copy code',
+      mermaidEmpty: 'Enter Mermaid syntax below for a live diagram preview.',
+      mermaidRendering: 'Rendering diagram…'
     },
     slash: {
       'category.text': 'Text',
@@ -411,6 +414,8 @@ const en: AppLocale = {
       blockquoteDesc: 'Create a quote block',
       codeBlock: 'Code block',
       codeBlockDesc: 'Insert a code block',
+      mermaid: 'Mermaid diagram',
+      mermaidDesc: 'Insert a Mermaid block (flowcharts, sequence, etc.; supports ```mermaid)',
       link: 'Link',
       linkDesc: 'Insert a hyperlink',
       divider: 'Divider',
@@ -425,8 +430,8 @@ const en: AppLocale = {
       tocDesc: 'Insert table of contents',
       callout: 'Callout',
       calloutDesc: 'Insert a callout block',
-      inlineMath: 'Math formula',
-      inlineMathDesc: 'Open editor, type LaTeX with live preview, then insert',
+      inlineMath: 'Math formula (block)',
+      inlineMathDesc: 'Insert an editable block (LaTeX)',
       image: 'Image',
       imageDesc: 'Insert a local or online image',
       video: 'Video',

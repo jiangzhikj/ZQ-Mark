@@ -357,7 +357,8 @@ const zhTW: AppLocale = {
       previewLabel: '預覽',
       modeInline: '行內',
       modeBlock: '區塊',
-      hint: '⌘/Ctrl + Enter 插入；Esc 取消（取消時保留 / 指令文字）',
+      hint: '在區塊內編輯 LaTeX，下方即時預覽；單獨一行輸入 $$ 後按 Enter 可新增公式區塊',
+      clickToEdit: '點擊編輯公式',
       insert: '插入',
       cancel: '取消'
     },
@@ -381,7 +382,9 @@ const zhTW: AppLocale = {
       searchLanguage: '搜尋語言...',
       noLanguage: '純文字',
       copied: '已複製',
-      copyCode: '複製程式碼'
+      copyCode: '複製程式碼',
+      mermaidEmpty: '在此輸入 Mermaid 語法，下方將即時預覽圖表。',
+      mermaidRendering: '正在繪製圖表…'
     },
     slash: {
       'category.text': '文字',
@@ -406,6 +409,8 @@ const zhTW: AppLocale = {
       blockquoteDesc: '建立引用區塊',
       codeBlock: '程式碼區塊',
       codeBlockDesc: '插入程式碼區塊',
+      mermaid: 'Mermaid 圖表',
+      mermaidDesc: '插入 Mermaid 流程圖/時序圖等（支援 ```mermaid）',
       link: '連結',
       linkDesc: '插入超連結',
       divider: '分隔線',
@@ -420,8 +425,8 @@ const zhTW: AppLocale = {
       tocDesc: '插入文件目錄',
       callout: '提示框',
       calloutDesc: '插入提示資訊框',
-      inlineMath: '數學公式',
-      inlineMathDesc: '開啟公式編輯器，輸入 LaTeX 並預覽後插入',
+      inlineMath: '數學公式（區塊）',
+      inlineMathDesc: '插入可編輯公式區塊（LaTeX—）',
       image: '圖片',
       imageDesc: '插入本機或網路圖片',
       video: '影片',

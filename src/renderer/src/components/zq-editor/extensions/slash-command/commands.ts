@@ -7,7 +7,6 @@ import tippy from 'tippy.js';
 import { $t } from '../../utils/i18n';
 import { isSlashDrawioAvailable } from './slash-drawio-state';
 import LinkEditor from '../../menus/LinkEditor.vue';
-import MathFormulaEditor from '../../menus/MathFormulaEditor.vue';
 import TableSizePicker from '../../menus/TableSizePicker.vue';
 
 export interface SlashCommandItem {
@@ -90,45 +89,6 @@ function showSlashLinkEditor(editor: Editor) {
     interactive: true,
     trigger: 'manual',
     placement: 'bottom-start',
-    onClickOutside: () => {
-      cleanup();
-    },
-  });
-  popup = Array.isArray(instances) ? instances[0]! : instances;
-}
-
-function showSlashMathEditor(editor: Editor, range: { from: number; to: number }) {
-  const { view } = editor;
-  const coords = view.coordsAtPos(range.from);
-  let popup: TippyInstance | null = null;
-
-  const component = new VueRenderer(MathFormulaEditor, {
-    props: {
-      editor,
-      range,
-      onClosed: () => {
-        cleanup();
-      },
-    },
-    editor,
-  });
-
-  function cleanup() {
-    popup?.destroy();
-    component.destroy();
-  }
-
-  const ref = document.createElement('div');
-  const instances = tippy(ref, {
-    getReferenceClientRect: () =>
-      new DOMRect(coords.left, coords.top, 0, coords.bottom - coords.top),
-    appendTo: () => document.body,
-    content: component.element as HTMLElement,
-    showOnCreate: true,
-    interactive: true,
-    trigger: 'manual',
-    placement: 'bottom-start',
-    maxWidth: 'none',
     onClickOutside: () => {
       cleanup();
     },
@@ -229,6 +189,21 @@ export function getSlashCommands(): SlashCommandItem[] {
       },
     },
     {
+      title: $t('zq-editor.slash.mermaid'),
+      description: $t('zq-editor.slash.mermaidDesc'),
+      icon: 'Workflow',
+      category: $t('zq-editor.slash.category.text'),
+      aliases: ['mermaid', 'flowchart', 'diagram', 'sequence'],
+      command: ({ editor, range }) => {
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .toggleCodeBlock({ language: 'mermaid' })
+          .run();
+      },
+    },
+    {
       title: $t('zq-editor.slash.link'),
       description: $t('zq-editor.slash.linkDesc'),
       icon: 'Link',
@@ -307,8 +282,7 @@ export function getSlashCommands(): SlashCommandItem[] {
       category: $t('zq-editor.slash.category.advanced'),
       aliases: ['math', 'formula', 'latex', 'equation', 'katex', 'gs', 'eq'],
       command: ({ editor, range }) => {
-        // 语雀式：先弹出公式编辑区 + 实时预览，确认后再删斜杠并插入（取消则保留 / 文本）
-        showSlashMathEditor(editor, range);
+        editor.chain().focus().deleteRange(range).insertBlockMath({ latex: '' }).run();
       },
     },
     {

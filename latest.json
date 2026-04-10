@@ -1,6 +1,6 @@
 {
   "version": "1.0.5",
-  "notes": "- 新增了Draw.io\n- 优化了LaTex支持\n- 图片增加了外链的功能\n- 新文件保存时提醒是否保存.md",
+  "notes": "- 新增了Draw.io\n- 新增了Mermaid支持\n- 优化了LaTex支持\n- 图片增加了外链的功能\n- 新文件保存时提醒是否保存.md",
   "pub_date": "2026-04-03T00:00:00Z",
   "platforms": {
     "darwin-arm64": {

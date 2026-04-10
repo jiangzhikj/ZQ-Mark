@@ -4,7 +4,8 @@ export type ThemeMode = 'system' | 'light' | 'dark'
 export type ResolvedTheme = 'light' | 'dark'
 
 const themeMode = ref<ThemeMode>('system')
-const resolvedTheme = ref<ResolvedTheme>('light')
+/** 供编辑器内组件（如 Mermaid 预览）订阅，无需重复监听系统主题 */
+export const resolvedTheme = ref<ResolvedTheme>('light')
 
 export function useTheme() {
   let cleanup: (() => void) | null = null

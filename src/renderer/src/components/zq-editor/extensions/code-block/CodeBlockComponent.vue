@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+
+import { NodeSelection } from '@tiptap/pm/state';
 
 import { Check, ChevronDown, Copy } from '@/components/icons';
+import { resolvedTheme } from '@/composables/useTheme';
 import { $t } from '../../utils/i18n';
 
 import { NodeViewContent, NodeViewWrapper } from '@tiptap/vue-3';
+
+import { renderMermaidToSvg } from './mermaid-render';
 
 const props = defineProps<{
   deleteNode: () => void;
@@ -13,32 +18,13 @@ const props = defineProps<{
   selected: boolean;
   updateAttributes: (attrs: Record<string, any>) => void;
   extension: any;
+  getPos?: () => number | undefined;
 }>();
 
 const showDropdown = ref(false);
 const copied = ref(false);
 const searchQuery = ref('');
 let clickOutsideCleanup: (() => void) | null = null;
-
-watch(showDropdown, (val) => {
-  if (val) {
-    const handler = (e: MouseEvent) => {
-      const target = e.target as Element;
-      if (!target.closest('.zq-codeblock__dropdown') && !target.closest('.zq-codeblock__lang-btn')) {
-        closeDropdown();
-      }
-    };
-    setTimeout(() => document.addEventListener('pointerdown', handler), 50);
-    clickOutsideCleanup = () => document.removeEventListener('pointerdown', handler);
-  } else {
-    clickOutsideCleanup?.();
-    clickOutsideCleanup = null;
-  }
-});
-
-onBeforeUnmount(() => {
-  clickOutsideCleanup?.();
-});
 
 const LANGUAGES = [
   { value: 'plaintext', label: 'Plain Text' },
@@ -63,6 +49,7 @@ const LANGUAGES = [
   { value: 'json', label: 'JSON' },
   { value: 'yaml', label: 'YAML' },
   { value: 'markdown', label: 'Markdown' },
+  { value: 'mermaid', label: 'Mermaid' },
   { value: 'bash', label: 'Bash' },
   { value: 'shell', label: 'Shell' },
   { value: 'dockerfile', label: 'Dockerfile' },
@@ -119,14 +106,196 @@ async function copyCode() {
     // fallback
   }
 }
+
+const isMermaid = computed(
+  () => (props.node.attrs.language || 'plaintext') === 'mermaid',
+);
+
+/** Mermaid：选区在块内或正在用头部下拉时才显示源码区（失焦仅保留渲染） */
+const mermaidEditing = ref(true);
+
+function syncMermaidEditing() {
+  if (!isMermaid.value) {
+    mermaidEditing.value = true;
+    return;
+  }
+  if (showDropdown.value) {
+    mermaidEditing.value = true;
+    return;
+  }
+  const pos = props.getPos?.();
+  if (typeof pos !== 'number') {
+    mermaidEditing.value = false;
+    return;
+  }
+  const { state, isFocused } = props.editor;
+  const sel = state.selection;
+  if (sel instanceof NodeSelection && sel.from === pos) {
+    mermaidEditing.value = true;
+    return;
+  }
+  if (!isFocused) {
+    mermaidEditing.value = false;
+    return;
+  }
+  const innerStart = pos + 1;
+  const innerEnd = pos + props.node.nodeSize - 1;
+  const from = sel.from;
+  mermaidEditing.value = from >= innerStart && from <= innerEnd;
+}
+
+function focusMermaidSource() {
+  const pos = props.getPos?.();
+  if (typeof pos !== 'number') return;
+  const innerEnd = pos + props.node.nodeSize - 1;
+  props.editor.chain().focus().setTextSelection(innerEnd).run();
+}
+
+watch(showDropdown, (val) => {
+  if (val) {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (!target.closest('.zq-codeblock__dropdown') && !target.closest('.zq-codeblock__lang-btn')) {
+        closeDropdown();
+      }
+    };
+    setTimeout(() => document.addEventListener('pointerdown', handler), 50);
+    clickOutsideCleanup = () => document.removeEventListener('pointerdown', handler);
+  } else {
+    clickOutsideCleanup?.();
+    clickOutsideCleanup = null;
+  }
+  queueMicrotask(() => {
+    if (isMermaid.value) syncMermaidEditing();
+  });
+});
+
+watch(isMermaid, () => {
+  syncMermaidEditing();
+});
+
+const showMermaidChrome = computed(
+  () => !isMermaid.value || mermaidEditing.value,
+);
+
+function onMermaidPreviewPointerDown() {
+  if (isMermaid.value && !mermaidEditing.value) {
+    focusMermaidSource();
+  }
+}
+
+let editorMermaidSyncCleanup: (() => void) | null = null;
+
+onMounted(() => {
+  const ed = props.editor;
+  if (!ed) return;
+  const run = () => {
+    if (isMermaid.value) syncMermaidEditing();
+  };
+  ed.on('transaction', run);
+  ed.on('focus', run);
+  ed.on('blur', run);
+  run();
+  editorMermaidSyncCleanup = () => {
+    ed.off('transaction', run);
+    ed.off('focus', run);
+    ed.off('blur', run);
+  };
+});
+
+const mermaidSvg = shallowRef('');
+const mermaidError = ref('');
+let mermaidDebounce: ReturnType<typeof setTimeout> | null = null;
+let mermaidSeq = 0;
+
+async function refreshMermaidPreview() {
+  if (!isMermaid.value) {
+    mermaidSvg.value = '';
+    mermaidError.value = '';
+    return;
+  }
+  const seq = ++mermaidSeq;
+  const raw = props.node.textContent || '';
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    mermaidSvg.value = '';
+    mermaidError.value = '';
+    return;
+  }
+  const theme = resolvedTheme.value === 'dark' ? 'dark' : 'default';
+  const result = await renderMermaidToSvg(raw, theme);
+  if (seq !== mermaidSeq) return;
+  if ('error' in result) {
+    mermaidSvg.value = '';
+    mermaidError.value = result.error;
+    return;
+  }
+  mermaidError.value = '';
+  mermaidSvg.value = result.svg;
+}
+
+function scheduleMermaidRefresh() {
+  if (!isMermaid.value) return;
+  if (mermaidDebounce) clearTimeout(mermaidDebounce);
+  mermaidDebounce = setTimeout(() => {
+    mermaidDebounce = null;
+    void refreshMermaidPreview();
+  }, 380);
+}
+
+watch(
+  isMermaid,
+  (m) => {
+    if (!m) {
+      mermaidSeq += 1;
+      mermaidSvg.value = '';
+      mermaidError.value = '';
+      if (mermaidDebounce) {
+        clearTimeout(mermaidDebounce);
+        mermaidDebounce = null;
+      }
+    } else {
+      scheduleMermaidRefresh();
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => [props.node.textContent, props.node.attrs.language, resolvedTheme.value] as const,
+  () => {
+    scheduleMermaidRefresh();
+  },
+);
+
+onBeforeUnmount(() => {
+  editorMermaidSyncCleanup?.();
+  editorMermaidSyncCleanup = null;
+  clickOutsideCleanup?.();
+  if (mermaidDebounce) {
+    clearTimeout(mermaidDebounce);
+    mermaidDebounce = null;
+  }
+});
 </script>
 
 <template>
   <NodeViewWrapper
     class="zq-codeblock"
-    :class="{ 'is-selected': selected }"
+    :class="{
+      'is-selected': selected,
+      'zq-codeblock--mermaid-solo': isMermaid && !showMermaidChrome,
+    }"
   >
-    <div class="zq-codeblock__header" contenteditable="false">
+    <div
+      v-show="showMermaidChrome"
+      class="zq-codeblock__chrome"
+    >
+    <div
+      class="zq-codeblock__header"
+      contenteditable="false"
+      @mousedown.prevent
+    >
       <div class="zq-codeblock__lang-wrapper">
         <button class="zq-codeblock__lang-btn" @click.stop="toggleDropdown">
           <span>{{ currentLanguage }}</span>
@@ -173,7 +342,42 @@ async function copyCode() {
         <Copy v-else class="h-3.5 w-3.5" />
       </button>
     </div>
-    <pre class="zq-codeblock__pre"><NodeViewContent as="code" /></pre>
+    <pre
+      class="zq-codeblock__pre"
+      :class="{ 'zq-codeblock__pre--mermaid': isMermaid }"
+    ><NodeViewContent as="code" /></pre>
+    </div>
+    <div
+      v-if="isMermaid"
+      class="zq-codeblock__mermaid"
+      :class="{ 'zq-codeblock__mermaid--solo': !showMermaidChrome }"
+      contenteditable="false"
+      @pointerdown="onMermaidPreviewPointerDown"
+    >
+      <div
+        v-if="mermaidError"
+        class="zq-codeblock__mermaid-error"
+      >
+        {{ mermaidError }}
+      </div>
+      <div
+        v-else-if="!(node.textContent || '').trim()"
+        class="zq-codeblock__mermaid-placeholder"
+      >
+        {{ $t('zq-editor.codeBlock.mermaidEmpty') }}
+      </div>
+      <div
+        v-else-if="mermaidSvg"
+        class="zq-codeblock__mermaid-svg"
+        v-html="mermaidSvg"
+      />
+      <div
+        v-else
+        class="zq-codeblock__mermaid-placeholder"
+      >
+        {{ $t('zq-editor.codeBlock.mermaidRendering') }}
+      </div>
+    </div>
   </NodeViewWrapper>
 </template>
 
@@ -189,6 +393,19 @@ async function copyCode() {
 
 .zq-codeblock.is-selected {
   border-color: var(--el-color-primary);
+}
+
+/* Mermaid 仅预览：只保留图，无外框与底 */
+.zq-codeblock.zq-codeblock--mermaid-solo {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.zq-codeblock.zq-codeblock--mermaid-solo.is-selected {
+  border: none;
+  box-shadow: none;
 }
 
 .zq-codeblock__header {
@@ -259,12 +476,54 @@ async function copyCode() {
   background: var(--zq-code-bg, var(--el-fill-color-lighter));
 }
 
+.zq-codeblock__pre--mermaid {
+  border-radius: 0;
+  border-bottom: none;
+}
+
 .zq-codeblock__pre :deep(code) {
   font-family: inherit;
   background: transparent !important;
   padding: 0 !important;
   border-radius: 0 !important;
   color: var(--zq-code-text, var(--el-text-color-primary));
+}
+
+.zq-codeblock__mermaid {
+  border-top: 1px solid var(--zq-code-border, var(--el-border-color-lighter));
+  padding: 12px 16px 16px;
+  background: var(--zq-code-bg, var(--el-fill-color-lighter));
+  border-radius: 0 0 8px 8px;
+  overflow-x: auto;
+}
+
+.zq-codeblock__mermaid--solo {
+  border: none;
+  border-top: none;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  cursor: text;
+}
+
+.zq-codeblock__mermaid-placeholder {
+  font-size: 0.8125rem;
+  color: var(--el-text-color-placeholder);
+  line-height: 1.5;
+}
+
+.zq-codeblock__mermaid-error {
+  font-size: 0.8125rem;
+  color: var(--el-color-danger, #f56c6c);
+  font-family: 'Fira Code', 'Cascadia Code', 'JetBrains Mono', Consolas, Monaco, monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.zq-codeblock__mermaid-svg :deep(svg) {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
 .zq-codeblock__dropdown {

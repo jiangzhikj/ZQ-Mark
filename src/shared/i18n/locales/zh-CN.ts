@@ -357,7 +357,8 @@ const zhCN: AppLocale = {
       previewLabel: '预览',
       modeInline: '行内',
       modeBlock: '块级',
-      hint: '⌘/Ctrl + Enter 插入；Esc 取消（取消时保留 / 命令文本）',
+      hint: '在块内编辑 LaTeX，下方实时预览；输入单独一行 $$ 后按 Enter 可新建公式块',
+      clickToEdit: '点击编辑公式',
       insert: '插入',
       cancel: '取消'
     },
@@ -381,7 +382,9 @@ const zhCN: AppLocale = {
       searchLanguage: '搜索语言...',
       noLanguage: '纯文本',
       copied: '已复制',
-      copyCode: '复制代码'
+      copyCode: '复制代码',
+      mermaidEmpty: '在此输入 Mermaid 语法，下方将实时预览图表。',
+      mermaidRendering: '正在渲染图表…'
     },
     slash: {
       'category.text': '文本',
@@ -406,6 +409,8 @@ const zhCN: AppLocale = {
       blockquoteDesc: '创建引用块',
       codeBlock: '代码块',
       codeBlockDesc: '插入代码块',
+      mermaid: 'Mermaid 图表',
+      mermaidDesc: '插入 Mermaid 流程图/时序图等（支持 ```mermaid）',
       link: '链接',
       linkDesc: '插入超链接',
       divider: '分割线',
@@ -420,8 +425,8 @@ const zhCN: AppLocale = {
       tocDesc: '插入文档目录',
       callout: '提示框',
       calloutDesc: '插入提示信息框',
-      inlineMath: '数学公式',
-      inlineMathDesc: '打开公式编辑器，输入 LaTeX 并预览后插入',
+      inlineMath: '数学公式（块级）',
+      inlineMathDesc: '插入可编辑公式块（LaTeX）',
       image: '图片',
       imageDesc: '插入本地或网络图片',
       video: '视频',

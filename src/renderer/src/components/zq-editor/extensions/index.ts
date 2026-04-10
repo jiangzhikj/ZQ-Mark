@@ -25,7 +25,7 @@ import { DrawBlock } from './draw';
 import { DrawioBlock } from './drawio';
 import { FontSize } from './font-size';
 import { ImageBlock } from './image';
-import { mathExtensions } from './math';
+import { mathExtensions, ZqMarkdownMath } from './math';
 import { SearchReplace } from './search-replace';
 import { createSlashSuggestion, SlashCommand } from './slash-command';
 import { TableOfContents } from './table-of-contents';
@@ -164,6 +164,7 @@ export function createEditorExtensions(
       tightLists: true,
       tightListClass: 'tight',
     }),
+    ZqMarkdownMath,
     ...extraExtensions,
   ];
 
