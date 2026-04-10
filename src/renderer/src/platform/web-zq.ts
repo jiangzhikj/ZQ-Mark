@@ -3,7 +3,7 @@ import type { ZqMeta } from '../../../shared/types'
 
 const ZQ_VERSION = '2.0'
 
-const ASSET_TYPE_MAP: Record<string, string> = {
+const ASSET_ATTRS: Record<string, string | string[]> = {
   imageBlock: 'src',
   image: 'src',
   videoBlock: 'src',
@@ -11,7 +11,15 @@ const ASSET_TYPE_MAP: Record<string, string> = {
   audioBlock: 'src',
   audio: 'src',
   attachmentBlock: 'url',
-  attachment: 'url'
+  attachment: 'url',
+  drawioBlock: ['preview', 'xml'],
+  excalidrawBlock: ['preview', 'scene'],
+}
+
+function assetAttrKeysForType(nodeType: string): string[] {
+  const v = ASSET_ATTRS[nodeType]
+  if (!v) return []
+  return Array.isArray(v) ? v : [v]
 }
 
 function walkReplaceAssets(
@@ -19,12 +27,13 @@ function walkReplaceAssets(
   getUrl: (assetPath: string) => string | null
 ): void {
   if (!node) return
-  const attrKey = ASSET_TYPE_MAP[node.type]
-  if (attrKey && node.attrs?.[attrKey]) {
-    const val = node.attrs[attrKey] as string
-    if (typeof val === 'string' && val.startsWith('assets/')) {
-      const url = getUrl(val)
-      if (url) node.attrs[attrKey] = url
+  for (const attrKey of assetAttrKeysForType(node.type)) {
+    if (node.attrs?.[attrKey]) {
+      const val = node.attrs[attrKey] as string
+      if (typeof val === 'string' && val.startsWith('assets/')) {
+        const url = getUrl(val)
+        if (url) node.attrs[attrKey] = url
+      }
     }
   }
   if (Array.isArray(node.content)) {
@@ -66,7 +75,11 @@ function buildAssetBlobMap(files: Record<string, Uint8Array>): Map<string, Blob>
                                 ? 'audio/opus'
                                 : ext === 'webm'
                                   ? 'video/webm'
-                                  : 'application/octet-stream'
+                                  : ext === 'xml'
+                                    ? 'application/xml'
+                                    : ext === 'json'
+                                      ? 'application/json'
+                                      : 'application/octet-stream'
       m.set(shortName, new Blob([data], { type: mime }))
     }
   }
@@ -120,6 +133,76 @@ export async function blobUrlToUint8(url: string): Promise<Uint8Array | null> {
   }
 }
 
+/** 从 data URL 解码为字节（用于 Web 端打包 .zq 内嵌 diagram 预览） */
+function dataUrlToUint8(dataUrl: string): Uint8Array | null {
+  if (!dataUrl.startsWith('data:')) return null
+  const comma = dataUrl.indexOf(',')
+  if (comma < 0) return null
+  const meta = dataUrl.slice(0, comma)
+  const payload = dataUrl.slice(comma + 1)
+  const isBase64 = /;base64/i.test(meta)
+  try {
+    if (isBase64) {
+      const binary = atob(payload)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      return bytes
+    }
+    return new TextEncoder().encode(decodeURIComponent(payload))
+  } catch {
+    return null
+  }
+}
+
+function looksLikeDrawioXml(s: string): boolean {
+  const t = s.trim()
+  if (t.length < 12) return false
+  if (
+    t.startsWith('local-asset:') ||
+    t.startsWith('blob:') ||
+    t.startsWith('http://') ||
+    t.startsWith('https://')
+  ) {
+    return false
+  }
+  return (
+    t.includes('<mxfile') ||
+    t.includes('<mxGraphModel') ||
+    (t.includes('<diagram') && t.includes('mxGraphModel'))
+  )
+}
+
+function looksLikeExcalidrawSceneJson(s: string): boolean {
+  const t = s.trim()
+  if (!t.startsWith('{')) return false
+  if (
+    t.startsWith('local-asset:') ||
+    t.startsWith('blob:') ||
+    t.startsWith('http://') ||
+    t.startsWith('https://')
+  ) {
+    return false
+  }
+  try {
+    const o = JSON.parse(t) as { elements?: unknown }
+    return Array.isArray(o.elements)
+  } catch {
+    return false
+  }
+}
+
+function extForWebPackedAsset(nodeType: string, attrKey: string): string {
+  if (attrKey === 'preview' && (nodeType === 'drawioBlock' || nodeType === 'excalidrawBlock')) {
+    return 'svg'
+  }
+  if (attrKey === 'xml') return 'xml'
+  if (attrKey === 'scene') return 'json'
+  if (nodeType === 'videoBlock' || nodeType === 'video') return 'mp4'
+  if (nodeType === 'audioBlock' || nodeType === 'audio') return 'mp3'
+  if (nodeType === 'attachmentBlock' || nodeType === 'attachment') return 'bin'
+  return 'png'
+}
+
 export async function buildZqZipBytes(
   json: any,
   title: string,
@@ -139,25 +222,55 @@ export async function buildZqZipBytes(
 
   async function walk(node: any) {
     if (!node) return
-    const attrKey = ASSET_TYPE_MAP[node.type]
-    if (attrKey && node.attrs?.[attrKey]) {
-      const val = node.attrs[attrKey] as string
-      if (typeof val === 'string' && (val.startsWith('blob:') || val.startsWith('http'))) {
+    for (const attrKey of assetAttrKeysForType(node.type)) {
+      const val = node.attrs?.[attrKey]
+      if (typeof val !== 'string') continue
+
+      if (val.startsWith('data:')) {
+        const data =
+          node.type === 'drawioBlock' || node.type === 'excalidrawBlock'
+            ? dataUrlToUint8(val)
+            : null
+        if (data && attrKey === 'preview') {
+          let fname = `diagram_${Object.keys(assetEntries).length}.svg`
+          while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
+          assetEntries[`assets/${fname}`] = data
+          node.attrs[attrKey] = `assets/${fname}`
+        }
+        continue
+      }
+
+      if (val.startsWith('blob:') || val.startsWith('http://') || val.startsWith('https://')) {
         const data = await blobUrlToUint8(val)
         if (data) {
-          const ext =
-            node.type === 'videoBlock' || node.type === 'video'
-              ? 'mp4'
-              : node.type === 'audioBlock' || node.type === 'audio'
-                ? 'mp3'
-                : node.type === 'attachmentBlock' || node.type === 'attachment'
-                  ? 'bin'
-                  : 'png'
+          const ext = extForWebPackedAsset(node.type, attrKey)
           let fname = `a_${Object.keys(assetEntries).length}.${ext}`
           while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
           assetEntries[`assets/${fname}`] = data
           node.attrs[attrKey] = `assets/${fname}`
         }
+        continue
+      }
+
+      if (node.type === 'drawioBlock' && attrKey === 'xml' && looksLikeDrawioXml(val)) {
+        const data = new TextEncoder().encode(val)
+        let fname = `diagram_${Object.keys(assetEntries).length}.xml`
+        while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
+        assetEntries[`assets/${fname}`] = data
+        node.attrs[attrKey] = `assets/${fname}`
+        continue
+      }
+
+      if (
+        node.type === 'excalidrawBlock' &&
+        attrKey === 'scene' &&
+        looksLikeExcalidrawSceneJson(val)
+      ) {
+        const data = new TextEncoder().encode(val)
+        let fname = `diagram_${Object.keys(assetEntries).length}.json`
+        while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
+        assetEntries[`assets/${fname}`] = data
+        node.attrs[attrKey] = `assets/${fname}`
       }
     }
     if (Array.isArray(node.content)) {

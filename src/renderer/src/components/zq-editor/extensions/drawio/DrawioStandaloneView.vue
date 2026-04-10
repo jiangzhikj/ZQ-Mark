@@ -20,6 +20,7 @@ import {
   postDrawioEmbedInvokeSave,
   type DrawioUiLayout,
 } from './drawio-embed';
+import { persistDiagramPreviewDataUrl } from '../../utils/diagram-preview-asset';
 
 const { t, locale } = useI18n();
 
@@ -246,9 +247,10 @@ async function commitAndClose(xml: string, preview: string) {
     api?.windowClose?.();
     return;
   }
+  const previewRef = await persistDiagramPreviewDataUrl(preview);
   await api.drawioStandaloneCommit({
     xml,
-    preview,
+    preview: previewRef,
     token: token.value,
   });
   api.windowClose?.();

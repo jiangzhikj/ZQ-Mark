@@ -307,6 +307,9 @@ export function createWebElectronApi(): ElectronAPI {
       }
     },
 
+    saveDataUrlAsset: async () => null,
+    saveTextAsset: async () => null,
+
     openLocalFile: async () => {
       const picked = await pickOpenFile()
       if (!picked) return null
@@ -524,9 +527,31 @@ export function createWebElectronApi(): ElectronAPI {
     onDrawioInstallProgress: () => () => {},
     onDrawioBundleReady: () => () => {},
 
+    getExcalidrawIndexUrl: async () => null,
+    getExcalidrawBundleStatus: async () => ({
+      state: 'missing' as const,
+      userInstalled: false,
+    }),
+    fetchExcalidrawManifest: async () => {
+      throw new Error('Excalidraw plugin is desktop-only')
+    },
+    installExcalidrawBundle: async () => {
+      throw new Error('Excalidraw plugin is desktop-only')
+    },
+    removeExcalidrawBundle: async () => {
+      throw new Error('Excalidraw plugin is desktop-only')
+    },
+    onExcalidrawInstallProgress: () => () => {},
+    onExcalidrawBundleReady: () => () => {},
+
     openDrawioStandalone: async () => ({ ok: false }),
     getDrawioStandaloneInitial: async () => null,
     drawioStandaloneCommit: async () => ({ ok: false }),
-    onDrawioStandaloneCommit: () => () => {}
+    onDrawioStandaloneCommit: () => () => {},
+
+    openExcalidrawStandalone: async () => ({ ok: false }),
+    getExcalidrawStandaloneInitial: async () => null,
+    excalidrawStandaloneCommit: async () => ({ ok: false }),
+    onExcalidrawStandaloneCommit: () => () => {}
   }
 }

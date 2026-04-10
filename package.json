@@ -16,6 +16,7 @@
     "dev:web": "vite --config vite.web.config.ts",
     "build:web": "vite build --config vite.web.config.ts",
     "hash:drawio": "node scripts/hash-drawio-zip.mjs",
+    "build:excalidraw-embed": "cd excalidraw-embed && npm run build",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -28,7 +29,9 @@
       "out/**/*",
       "resources/**/*",
       "!resources/drawio/**/*",
-      "!resources/drawio-*.zip"
+      "!resources/drawio-*.zip",
+      "!resources/excalidraw/**/*",
+      "!resources/excalidraw-*.zip"
     ],
     "fileAssociations": [
       {

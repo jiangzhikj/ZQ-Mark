@@ -1,5 +1,9 @@
 import { EMPTY_DRAWIO_XML } from './empty-mxfile';
 import type { InjectionKey, Ref } from 'vue';
+import {
+  fetchDiagramAssetText,
+  isDiagramAssetUrl,
+} from '../../utils/diagram-preview-asset';
 
 /** full：与 diagrams.net 默认一致（不强制 ui=min）；minimal：侧栏精简的嵌入布局 */
 export type DrawioUiLayout = 'full' | 'minimal';
@@ -120,4 +124,23 @@ export function getLoadXmlForDrawio(
     return storedXml!;
   }
   return EMPTY_DRAWIO_XML;
+}
+
+/** 块上是否已有可加载的图源（内联 XML 或外置资源 URL） */
+export function hasDrawioDiagramSource(s: string | null | undefined): boolean {
+  if (s == null || !String(s).trim()) return false;
+  const str = String(s);
+  if (isDiagramAssetUrl(str)) return true;
+  return isDrawioDiagramXml(str);
+}
+
+/** 解析 attrs 中的 xml（内联或 local-asset/blob URL）为可传给 embed load 的字符串 */
+export async function resolveXmlForDrawio(raw: string): Promise<string> {
+  const s = raw?.trim() ?? '';
+  if (isDiagramAssetUrl(s)) {
+    const t = await fetchDiagramAssetText(s);
+    if (t && isDrawioDiagramXml(t)) return t;
+    return EMPTY_DRAWIO_XML;
+  }
+  return getLoadXmlForDrawio(s);
 }

@@ -158,6 +158,15 @@ html.zq-drawio-dialog-fullscreen-open .sidebar-header {
   -webkit-app-region: no-drag !important;
 }
 
+html.zq-excalidraw-dialog-fullscreen-open #app {
+  pointer-events: none;
+}
+
+html.zq-excalidraw-dialog-fullscreen-open aside.sidebar,
+html.zq-excalidraw-dialog-fullscreen-open .sidebar-header {
+  -webkit-app-region: no-drag !important;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',

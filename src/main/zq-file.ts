@@ -17,7 +17,8 @@ export type { ZqMeta, LibraryIndex, LibraryNode }
 
 // ─── Asset helpers ───
 
-const ASSET_TYPE_MAP: Record<string, string> = {
+/** 每种节点类型要打包进 .zq 的 attrs（多字段时逐项收集） */
+const ASSET_ATTRS: Record<string, string | string[]> = {
   imageBlock: 'src',
   image: 'src',
   videoBlock: 'src',
@@ -25,7 +26,17 @@ const ASSET_TYPE_MAP: Record<string, string> = {
   audioBlock: 'src',
   audio: 'src',
   attachmentBlock: 'url',
-  attachment: 'url'
+  attachment: 'url',
+  /** 缩略图 SVG + 流程图源 XML */
+  drawioBlock: ['preview', 'xml'],
+  /** 缩略图 SVG + scene JSON */
+  excalidrawBlock: ['preview', 'scene'],
+}
+
+function assetAttrKeysForType(nodeType: string): string[] {
+  const v = ASSET_ATTRS[nodeType]
+  if (!v) return []
+  return Array.isArray(v) ? v : [v]
 }
 
 function urlToLocalPath(url: string): string | null {
@@ -40,8 +51,7 @@ function collectAssetRefs(json: any): { attrKey: string; filePath: string; node:
   const refs: { attrKey: string; filePath: string; node: any }[] = []
   function walk(node: any) {
     if (!node) return
-    const attrKey = ASSET_TYPE_MAP[node.type]
-    if (attrKey) {
+    for (const attrKey of assetAttrKeysForType(node.type)) {
       const val = node.attrs?.[attrKey]
       if (typeof val === 'string') {
         const localPath = urlToLocalPath(val)
@@ -59,8 +69,7 @@ function collectAssetRefs(json: any): { attrKey: string; filePath: string; node:
 function replaceAssetPathsInDoc(json: any, extractDir: string): void {
   function walk(node: any) {
     if (!node) return
-    const attrKey = ASSET_TYPE_MAP[node.type]
-    if (attrKey) {
+    for (const attrKey of assetAttrKeysForType(node.type)) {
       const val = node.attrs?.[attrKey]
       if (typeof val === 'string' && val.startsWith('assets/')) {
         const assetName = val.replace('assets/', '')

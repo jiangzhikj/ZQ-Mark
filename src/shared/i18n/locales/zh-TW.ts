@@ -186,6 +186,14 @@ const zhTW: AppLocale = {
     pluginBuiltinDrawio: '內建資源',
     pluginBuiltinDrawioHint:
       '目前使用應用程式內建或開發目錄中的 diagrams.net，未安裝外掛中心副本。下載安裝可切換為清單指定版本。',
+    pluginExcalidrawTitle: 'Excalidraw 手繪白板',
+    pluginExcalidrawDesc:
+      '在文件中插入 Excalidraw 手繪圖。首次使用請於下方下載資源包（與安裝套件分開發行）。',
+    pluginExcalidrawLicense:
+      'Excalidraw 以 MIT 條款開源，詳見 github.com/excalidraw/excalidraw。',
+    pluginBuiltinExcalidraw: '內建資源',
+    pluginBuiltinExcalidrawHint:
+      '目前使用開發目錄或建置產出的嵌入頁；未安裝外掛中心副本時仍可編輯。正式發行請上傳 ZIP 並於清單填寫校驗碼。',
     pluginInstall: '下載並安裝',
     pluginUpdate: '更新',
     pluginRemove: '解除安裝',
@@ -437,21 +445,13 @@ const zhTW: AppLocale = {
       attachmentDesc: '插入本機檔案附件',
       emoji: '表情',
       emojiDesc: '插入表情符號',
-      draw: '畫板',
-      drawDesc: '插入自由繪圖畫板',
       drawio: '流程圖 (draw.io)',
       drawioDesc: '插入 diagrams.net 流程圖或圖表（僅桌面版）',
       drawioRequiresPlugin: '請開啟偏好設定 → 外掛，下載並安裝流程圖元件',
+      excalidraw: 'Excalidraw',
+      excalidrawDesc: '插入 Excalidraw 手繪白板（僅桌面版）',
+      excalidrawRequiresPlugin: '請開啟偏好設定 → 外掛，下載並安裝 Excalidraw 元件',
       noResult: '無符合結果'
-    },
-    draw: {
-      title: '畫板',
-      edit: '編輯畫板',
-      delete: '刪除畫板',
-      done: '完成',
-      clickToEdit: '點擊新增繪圖',
-      fullscreen: '全螢幕編輯',
-      exitFullscreen: '退出全螢幕'
     },
     drawio: {
       title: '流程圖',
@@ -469,6 +469,22 @@ const zhTW: AppLocale = {
       desktopOnly: '流程圖僅支援 ZQ Mark 桌面版。',
       missingBundle:
         '尚未安裝流程圖元件。請開啟「偏好設定 → 外掛」，下載並安裝 diagrams.net 資源包。',
+      refreshBundle: '重新檢測元件',
+    },
+    excalidraw: {
+      title: 'Excalidraw',
+      edit: '編輯',
+      delete: '刪除',
+      done: '完成',
+      switchToEdit: '編輯',
+      switchToPreview: '預覽',
+      openStandalone: '獨立視窗',
+      previewEmpty: '尚無內容可預覽，請先編輯並儲存。',
+      clickToEdit: '按兩下或點工具列開始繪製',
+      hintHasDiagram: '按兩下編輯手繪圖',
+      desktopOnly: 'Excalidraw 僅支援 ZQ Mark 桌面版。',
+      missingBundle:
+        '尚未安裝 Excalidraw 元件。請開啟「偏好設定 → 外掛」，下載並安裝資源包。',
       refreshBundle: '重新檢測元件',
     },
     table: {
@@ -543,148 +559,6 @@ const zhTW: AppLocale = {
       videoUploadFailed: '影片上傳失敗',
       audioUploadFailed: '音訊上傳失敗',
       attachmentUploadFailed: '附件上傳失敗'
-    }
-  },
-  draw: {
-    tool: {
-      selection: '選取',
-      hand: '手型工具',
-      rectangle: '矩形',
-      ellipse: '橢圓',
-      diamond: '菱形',
-      line: '直線',
-      arrow: '箭頭',
-      freedraw: '自由繪製',
-      text: '文字',
-      image: '圖片',
-      eraser: '橡皮擦',
-      frame: '畫框'
-    },
-    action: {
-      zoomIn: '放大',
-      zoomOut: '縮小',
-      resetZoom: '重置縮放',
-      zoomToFit: '適應畫布',
-      zoomToFitSelection: '適應選取',
-      undo: '復原',
-      redo: '重做',
-      toggleSnap: '切換吸附',
-      toggleStats: '切換統計資訊',
-      toggleZenMode: '切換禪模式'
-    },
-    menu: {
-      openFile: '開啟檔案',
-      saveTo: '另存為',
-      export: '匯出',
-      exportPng: '匯出 PNG',
-      exportSvg: '匯出 SVG',
-      exportJson: '匯出 JSON',
-      exportCopyPng: '複製為 PNG',
-      exportCopySvg: '複製為 SVG',
-      copy: '複製',
-      cut: '剪下',
-      paste: '貼上',
-      duplicate: '複製元素',
-      delete: '刪除',
-      selectAll: '全選',
-      bringToFront: '置於頂層',
-      bringForward: '上移一層',
-      sendBackward: '下移一層',
-      sendToBack: '置於底層',
-      lock: '鎖定',
-      unlock: '解鎖',
-      group: '編組',
-      ungroup: '取消編組',
-      flip: '翻轉',
-      flipH: '水平翻轉',
-      flipV: '垂直翻轉',
-      align: '對齊',
-      alignLeft: '靠左對齊',
-      alignCenter: '水平置中',
-      alignRight: '靠右對齊',
-      alignTop: '頂部對齊',
-      alignMiddle: '垂直置中',
-      alignBottom: '底部對齊',
-      distributeH: '水平分佈',
-      distributeV: '垂直分佈',
-      layer: '圖層',
-      addLink: '新增連結',
-      editLink: '編輯連結',
-      removeLink: '移除連結',
-      toggleGrid: '切換格線',
-      copyStyle: '複製樣式',
-      pasteStyle: '貼上樣式'
-    },
-    property: {
-      strokeColor: '描邊顏色',
-      backgroundColor: '背景顏色',
-      customColor: '自訂顏色',
-      fillStyle: '填充樣式',
-      strokeWidth: '描邊寬度',
-      strokeStyle: '描邊樣式',
-      sloppiness: '粗糙度',
-      edges: '邊角',
-      edgesSharp: '直角',
-      edgesRound: '圓角',
-      arrowType: '箭頭類型',
-      arrowTypeSharp: '銳角',
-      arrowTypeRound: '圓角',
-      arrowTypeElbow: '折線',
-      fontFamily: '字型',
-      fontSize: '字型大小',
-      textAlign: '文字對齊',
-      verticalAlign: '垂直對齊',
-      arrowheadStart: '起始箭頭',
-      arrowheadEnd: '結束箭頭',
-      opacity: '不透明度',
-      layers: '圖層',
-      actions: '操作',
-      alignDistribute: '對齊與分佈',
-      mixed: '多個元素已選取（混合屬性）',
-      linkPlaceholder: '輸入連結網址...'
-    },
-    fillStyle: {
-      hachure: '線條填充',
-      crossHatch: '交叉線填充',
-      solid: '實心填充',
-      zigzag: '鋸齒填充'
-    },
-    strokeStyle: {
-      solid: '實線',
-      dashed: '虛線',
-      dotted: '點線'
-    },
-    label: {
-      thin: '細',
-      bold: '粗',
-      extraBold: '特粗',
-      architect: '建築師',
-      artist: '藝術家',
-      cartoonist: '漫畫家'
-    },
-    arrowhead: {
-      none: '無',
-      arrow: '箭頭',
-      triangle: '三角形',
-      bar: '橫槓',
-      circle: '圓形',
-      diamond: '菱形'
-    },
-    font: {
-      handDrawn: '手寫體',
-      normal: '常規',
-      code: '程式碼'
-    },
-    verticalAlign: {
-      top: '頂部',
-      middle: '置中',
-      bottom: '底部'
-    },
-    stats: {
-      title: '統計資訊',
-      elements: '元素數量',
-      sceneSize: '畫布尺寸',
-      multiSelected: '已選取 {count} 個元素'
     }
   }
 }

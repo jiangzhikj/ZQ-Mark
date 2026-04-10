@@ -42,6 +42,7 @@ const emit = defineEmits<{
   changeDrawioUiLayout: [layout: 'full' | 'minimal']
   checkUpdate: []
   drawioBundleChanged: []
+  excalidrawBundleChanged: []
 }>()
 
 const { t } = useI18n()
@@ -121,6 +122,10 @@ function onCheckUpdate() {
 
 function onDrawioBundleChanged() {
   emit('drawioBundleChanged')
+}
+
+function onExcalidrawBundleChanged() {
+  emit('excalidrawBundleChanged')
 }
 
 function onSaveFormatAskToggle(enabled: boolean) {
@@ -234,6 +239,7 @@ watch(() => props.visible, (v) => {
                 <SettingsPluginsTab
                   v-show="activeTab === 'plugins'"
                   @drawio-bundle-changed="onDrawioBundleChanged"
+                  @excalidraw-bundle-changed="onExcalidrawBundleChanged"
                 />
 
                 <SettingsAboutTab

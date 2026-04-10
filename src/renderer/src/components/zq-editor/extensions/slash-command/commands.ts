@@ -6,6 +6,7 @@ import tippy from 'tippy.js';
 
 import { $t } from '../../utils/i18n';
 import { isSlashDrawioAvailable } from './slash-drawio-state';
+import { isSlashExcalidrawAvailable } from './slash-excalidraw-state';
 import LinkEditor from '../../menus/LinkEditor.vue';
 import TableSizePicker from '../../menus/TableSizePicker.vue';
 
@@ -340,16 +341,6 @@ export function getSlashCommands(): SlashCommandItem[] {
         editor.view.dom.dispatchEvent(new CustomEvent('zq-editor:open-emoji-picker', { bubbles: true }));
       },
     },
-    {
-      title: $t('zq-editor.slash.draw'),
-      description: $t('zq-editor.slash.drawDesc'),
-      icon: 'PenTool',
-      category: $t('zq-editor.slash.category.media'),
-      aliases: ['draw', 'drawing', 'whiteboard', 'canvas', 'sketch', 'excalidraw'],
-      command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).setDrawBlock().run();
-      },
-    },
     (() => {
       const drawioOk = isSlashDrawioAvailable();
       return {
@@ -364,6 +355,23 @@ export function getSlashCommands(): SlashCommandItem[] {
         command: ({ editor, range }) => {
           if (!isSlashDrawioAvailable()) return;
           editor.chain().focus().deleteRange(range).setDrawioBlock().run();
+        },
+      } satisfies SlashCommandItem;
+    })(),
+    (() => {
+      const exOk = isSlashExcalidrawAvailable();
+      return {
+        title: $t('zq-editor.slash.excalidraw'),
+        description: exOk
+          ? $t('zq-editor.slash.excalidrawDesc')
+          : $t('zq-editor.slash.excalidrawRequiresPlugin'),
+        icon: 'Shapes',
+        category: $t('zq-editor.slash.category.media'),
+        aliases: ['excalidraw', '白板', 'handdraw'],
+        disabled: !exOk,
+        command: ({ editor, range }) => {
+          if (!isSlashExcalidrawAvailable()) return;
+          editor.chain().focus().deleteRange(range).setExcalidrawBlock().run();
         },
       } satisfies SlashCommandItem;
     })(),

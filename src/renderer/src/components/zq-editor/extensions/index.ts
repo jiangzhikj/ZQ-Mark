@@ -21,8 +21,8 @@ import { AttachmentBlock } from './attachment';
 import { Callout } from './callout';
 import { CodeBlock } from './code-block';
 import { ColumnBlock, ColumnsBlock } from './columns';
-import { DrawBlock } from './draw';
 import { DrawioBlock } from './drawio';
+import { ExcalidrawBlock } from './excalidraw';
 import { FontSize } from './font-size';
 import { ImageBlock } from './image';
 import { mathExtensions, ZqMarkdownMath } from './math';
@@ -147,8 +147,8 @@ export function createEditorExtensions(
     ColumnsBlock,
     ColumnBlock,
     TableOfContents,
-    DrawBlock,
     DrawioBlock,
+    ExcalidrawBlock,
     ...mathExtensions,
     GlobalDragHandle.configure({
       dragHandleWidth: 20,

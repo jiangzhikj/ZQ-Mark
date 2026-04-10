@@ -25,11 +25,17 @@ import {
   buildDrawioEmbedUrl,
   buildDrawioViewerEmbedUrl,
   parseDrawioMessage,
-  getLoadXmlForDrawio,
   isDrawioDiagramXml,
+  hasDrawioDiagramSource,
+  resolveXmlForDrawio,
   postDrawioEmbedInvokeSave,
   type DrawioUiLayout,
 } from './drawio-embed';
+import {
+  persistDiagramPreviewDataUrl,
+  diagramPreviewSrc,
+  persistDiagramTextAsset,
+} from '../../utils/diagram-preview-asset';
 
 const { locale } = useI18n();
 
@@ -90,12 +96,11 @@ const storedXml = computed(() =>
   typeof props.node.attrs.xml === 'string' ? props.node.attrs.xml : '',
 );
 
-const previewDataUrl = computed(() => {
-  const p = props.node.attrs.preview;
-  return typeof p === 'string' && p.startsWith('data:') ? p : '';
-});
+const previewDataUrl = computed(() =>
+  diagramPreviewSrc(props.node.attrs.preview),
+);
 
-const hasDiagram = computed(() => isDrawioDiagramXml(storedXml.value));
+const hasDiagram = computed(() => hasDrawioDiagramSource(storedXml.value));
 
 function isDarkTheme(): boolean {
   return document.documentElement.getAttribute('data-theme') === 'dark';
@@ -147,8 +152,9 @@ async function openStandaloneFromBlockView(tok: string) {
   const api = window.electron;
   if (!api?.openDrawioStandalone) return;
   standaloneToken.value = tok;
+  const xml = await resolveXmlForDrawio(storedXml.value);
   await api.openDrawioStandalone({
-    xml: getLoadXmlForDrawio(storedXml.value),
+    xml,
     token: tok,
   });
 }
@@ -165,10 +171,10 @@ async function openInStandaloneWindow() {
       standaloneExportTimer = null;
       if (!pendingStandaloneToken.value) return;
       pendingStandaloneToken.value = null;
-      void finishOpenStandaloneFromEditor(
-        getLoadXmlForDrawio(storedXml.value),
-        tok,
-      );
+      void (async () => {
+        const xml = await resolveXmlForDrawio(storedXml.value);
+        void finishOpenStandaloneFromEditor(xml, tok);
+      })();
     }, 2000);
     return;
   }
@@ -202,11 +208,13 @@ function handleEditorEmbedMessage(ev: MessageEvent) {
   if (data.event === 'init') {
     if (drawioLoadSentForSession) return;
     drawioLoadSentForSession = true;
-    const xml = getLoadXmlForDrawio(storedXml.value);
-    iframe.contentWindow?.postMessage(
-      JSON.stringify({ action: 'load', xml }),
-      '*',
-    );
+    void (async () => {
+      const xml = await resolveXmlForDrawio(storedXml.value);
+      iframe.contentWindow?.postMessage(
+        JSON.stringify({ action: 'load', xml }),
+        '*',
+      );
+    })();
     return;
   }
 
@@ -215,21 +223,24 @@ function handleEditorEmbedMessage(ev: MessageEvent) {
     typeof data.xml === 'string' &&
     isDrawioDiagramXml(data.xml)
   ) {
-    props.updateAttributes({ xml: data.xml });
-    if (pendingPreviewAfterSave.value && iframe.contentWindow) {
-      pendingPreviewAfterSave.value = false;
-      dialogLayerMode.value = 'preview';
-      setupDialogPreview();
-      void nextTick(() => notifyDialogPreviewLayout());
-    }
-    if (pendingCloseAfterSave.value && iframe.contentWindow) {
-      pendingCloseAfterSave.value = false;
-      if (saveBeforeExportTimer != null) {
-        clearTimeout(saveBeforeExportTimer);
-        saveBeforeExportTimer = null;
+    void (async () => {
+      const xml = await persistDiagramTextAsset(data.xml, '.xml');
+      props.updateAttributes({ xml });
+      if (pendingPreviewAfterSave.value && iframe.contentWindow) {
+        pendingPreviewAfterSave.value = false;
+        dialogLayerMode.value = 'preview';
+        setupDialogPreview();
+        void nextTick(() => notifyDialogPreviewLayout());
       }
-      startEmbedExportSvgForClose(iframe.contentWindow);
-    }
+      if (pendingCloseAfterSave.value && iframe.contentWindow) {
+        pendingCloseAfterSave.value = false;
+        if (saveBeforeExportTimer != null) {
+          clearTimeout(saveBeforeExportTimer);
+          saveBeforeExportTimer = null;
+        }
+        startEmbedExportSvgForClose(iframe.contentWindow);
+      }
+    })();
     return;
   }
 
@@ -239,15 +250,18 @@ function handleEditorEmbedMessage(ev: MessageEvent) {
     typeof data.data === 'string' &&
     data.data.startsWith('data:')
   ) {
-    props.updateAttributes({ preview: data.data });
-    if (closeAfterExportPending.value) {
-      closeAfterExportPending.value = false;
-      if (closeExportTimer != null) {
-        clearTimeout(closeExportTimer);
-        closeExportTimer = null;
+    void (async () => {
+      const preview = await persistDiagramPreviewDataUrl(data.data);
+      props.updateAttributes({ preview });
+      if (closeAfterExportPending.value) {
+        closeAfterExportPending.value = false;
+        if (closeExportTimer != null) {
+          clearTimeout(closeExportTimer);
+          closeExportTimer = null;
+        }
+        resetEditorState();
       }
-      resetEditorState();
-    }
+    })();
   }
 }
 
@@ -261,11 +275,13 @@ function handleBlockPreviewEmbedMessage(ev: MessageEvent) {
   if (data.event === 'init') {
     if (previewLoadSentForSession) return;
     previewLoadSentForSession = true;
-    const xml = getLoadXmlForDrawio(storedXml.value);
-    iframe.contentWindow?.postMessage(
-      JSON.stringify({ action: 'load', xml }),
-      '*',
-    );
+    void (async () => {
+      const xml = await resolveXmlForDrawio(storedXml.value);
+      iframe.contentWindow?.postMessage(
+        JSON.stringify({ action: 'load', xml }),
+        '*',
+      );
+    })();
   }
 }
 
@@ -279,11 +295,13 @@ function handleDialogPreviewEmbedMessage(ev: MessageEvent) {
   if (data.event === 'init') {
     if (dialogPreviewLoadSentForSession) return;
     dialogPreviewLoadSentForSession = true;
-    const xml = getLoadXmlForDrawio(storedXml.value);
-    iframe.contentWindow?.postMessage(
-      JSON.stringify({ action: 'load', xml }),
-      '*',
-    );
+    void (async () => {
+      const xml = await resolveXmlForDrawio(storedXml.value);
+      iframe.contentWindow?.postMessage(
+        JSON.stringify({ action: 'load', xml }),
+        '*',
+      );
+    })();
   }
 }
 
@@ -408,6 +426,15 @@ async function openEditor() {
   iframeSrc.value = `${url}${url.includes('?') ? '&' : '?'}_zq_t=${Date.now()}`;
 }
 
+/** 从块上双击：有图时默认全屏预览；尚无图源时直接进入编辑（避免空白预览） */
+async function onDrawioBlockDoubleClick() {
+  if (!hasDiagram.value) {
+    await openEditor();
+  } else {
+    await openDialogInPreviewMode();
+  }
+}
+
 /** 从块上双击：全屏默认进入预览（编辑 iframe 仍加载，便于切到编辑） */
 async function openDialogInPreviewMode() {
   if (props.editor?.isEditable === false) return;
@@ -508,11 +535,15 @@ onMounted(async () => {
     cleanupDrawioStandaloneCommit = window.electron.onDrawioStandaloneCommit(
       (payload) => {
         if (payload.token !== standaloneToken.value) return;
-        props.updateAttributes({
-          xml: payload.xml,
-          preview: payload.preview,
-        });
-        standaloneToken.value = '';
+        void (async () => {
+          const preview = await persistDiagramPreviewDataUrl(payload.preview);
+          const xml = await persistDiagramTextAsset(payload.xml, '.xml');
+          props.updateAttributes({
+            xml,
+            preview,
+          });
+          standaloneToken.value = '';
+        })();
       },
     );
   }
@@ -594,7 +625,7 @@ async function refreshDrawioBundle() {
       <div
         v-else-if="previewDataUrl"
         class="zq-drawio-block__thumb"
-        @dblclick="openDialogInPreviewMode"
+        @dblclick="onDrawioBlockDoubleClick"
       >
         <img
           class="zq-drawio-block__thumb-img"
@@ -607,7 +638,7 @@ async function refreshDrawioBundle() {
       <div
         v-else-if="hasDiagram && previewIframeSrc"
         class="zq-drawio-block__thumb zq-drawio-block__thumb--iframe"
-        @dblclick="openDialogInPreviewMode"
+        @dblclick="onDrawioBlockDoubleClick"
       >
         <iframe
           ref="previewIframeRef"
@@ -622,7 +653,7 @@ async function refreshDrawioBundle() {
       <div
         v-else
         class="zq-drawio-block__preview"
-        @dblclick="openDialogInPreviewMode"
+        @dblclick="onDrawioBlockDoubleClick"
       >
         <Workflow class="zq-drawio-block__icon" />
         <span v-if="hasDiagram">{{ $t('zq-editor.drawio.hintHasDiagram') }}</span>

@@ -5,6 +5,11 @@ import type {
   DrawioInstallProgress,
   DrawioPluginManifest,
 } from '../shared/drawio-plugin'
+import type {
+  ExcalidrawBundleStatus,
+  ExcalidrawInstallProgress,
+  ExcalidrawPluginManifest,
+} from '../shared/excalidraw-plugin'
 
 export interface LocalFileResult {
   id: string
@@ -59,6 +64,10 @@ export interface ElectronAPI {
   saveFile: (data: { filePath: string | null; content: string }) => Promise<string | null>
   saveZqFile: (data: { filePath: string | null; json: any; title: string; existingMeta?: any }) => Promise<string | null>
   saveDroppedFile: (buffer: ArrayBuffer, fileName: string) => Promise<LocalFileResult>
+  /** 将 data URL 写入本地资源目录，用于 diagram 预览等；失败或 Web 返回 null */
+  saveDataUrlAsset: (dataUrl: string) => Promise<LocalFileResult | null>
+  /** 将 UTF-8 文本写入本地资源（.xml / .json）；失败或 Web 返回 null */
+  saveTextAsset: (text: string, ext: string) => Promise<LocalFileResult | null>
   openLocalFile: (options: { filters?: { name: string; extensions: string[] }[] }) => Promise<LocalFileResult | null>
   exportFile: (options: { format: string; html: string; title: string; css?: string }) => Promise<string | null>
   showInFolder: (filePath: string) => Promise<void>
@@ -102,6 +111,17 @@ export interface ElectronAPI {
   ) => () => void
   onDrawioBundleReady: (callback: () => void) => () => void
 
+  /** 桌面端：Excalidraw embed index.html 的 local-asset URL；Web 为 null */
+  getExcalidrawIndexUrl: () => Promise<string | null>
+  getExcalidrawBundleStatus: () => Promise<ExcalidrawBundleStatus>
+  fetchExcalidrawManifest: () => Promise<ExcalidrawPluginManifest>
+  installExcalidrawBundle: () => Promise<{ ok: true }>
+  removeExcalidrawBundle: () => Promise<{ ok: true }>
+  onExcalidrawInstallProgress: (
+    callback: (payload: ExcalidrawInstallProgress) => void,
+  ) => () => void
+  onExcalidrawBundleReady: (callback: () => void) => () => void
+
   /** 在新 BrowserWindow 中编辑流程图；Web 为空操作 */
   openDrawioStandalone: (opts: {
     xml: string
@@ -123,6 +143,28 @@ export interface ElectronAPI {
     callback: (payload: {
       token: string
       xml: string
+      preview: string
+    }) => void,
+  ) => () => void
+
+  /** 在新 BrowserWindow 中编辑 Excalidraw；Web 为空操作 */
+  openExcalidrawStandalone: (opts: {
+    scene: string
+    token: string
+  }) => Promise<{ ok: boolean }>
+  getExcalidrawStandaloneInitial: () => Promise<{
+    scene: string
+    token: string
+  } | null>
+  excalidrawStandaloneCommit: (payload: {
+    scene: string
+    preview: string
+    token: string
+  }) => Promise<{ ok: boolean }>
+  onExcalidrawStandaloneCommit: (
+    callback: (payload: {
+      token: string
+      scene: string
       preview: string
     }) => void,
   ) => () => void
@@ -190,6 +232,8 @@ const api: ElectronAPI = {
   saveFile: (data) => ipcRenderer.invoke('dialog:save-file', data),
   saveZqFile: (data) => ipcRenderer.invoke('zq:save', data),
   saveDroppedFile: (buffer, fileName) => ipcRenderer.invoke('editor:save-dropped-file', buffer, fileName),
+  saveDataUrlAsset: (dataUrl) => ipcRenderer.invoke('editor:save-data-url-asset', dataUrl),
+  saveTextAsset: (text, ext) => ipcRenderer.invoke('editor:save-text-asset', text, ext),
   openLocalFile: (options) => ipcRenderer.invoke('editor:open-local-file', options),
   exportFile: (options) => ipcRenderer.invoke('export:run', options),
   showInFolder: (filePath) => ipcRenderer.invoke('shell:show-in-folder', filePath),
@@ -245,6 +289,25 @@ const api: ElectronAPI = {
     return () => ipcRenderer.removeListener('drawio:bundle-ready', handler)
   },
 
+  getExcalidrawIndexUrl: () => ipcRenderer.invoke('excalidraw:get-index-url'),
+  getExcalidrawBundleStatus: () => ipcRenderer.invoke('excalidraw:get-bundle-status'),
+  fetchExcalidrawManifest: () => ipcRenderer.invoke('excalidraw:fetch-manifest'),
+  installExcalidrawBundle: () => ipcRenderer.invoke('excalidraw:install-bundle'),
+  removeExcalidrawBundle: () => ipcRenderer.invoke('excalidraw:remove-bundle'),
+  onExcalidrawInstallProgress: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: ExcalidrawInstallProgress,
+    ) => callback(payload)
+    ipcRenderer.on('excalidraw:install-progress', handler)
+    return () => ipcRenderer.removeListener('excalidraw:install-progress', handler)
+  },
+  onExcalidrawBundleReady: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('excalidraw:bundle-ready', handler)
+    return () => ipcRenderer.removeListener('excalidraw:bundle-ready', handler)
+  },
+
   openDrawioStandalone: (opts) =>
     ipcRenderer.invoke('drawio:open-standalone', opts),
   getDrawioStandaloneInitial: () =>
@@ -258,6 +321,21 @@ const api: ElectronAPI = {
     ) => callback(payload)
     ipcRenderer.on('drawio:standalone-commit', handler)
     return () => ipcRenderer.removeListener('drawio:standalone-commit', handler)
+  },
+
+  openExcalidrawStandalone: (opts) =>
+    ipcRenderer.invoke('excalidraw:open-standalone', opts),
+  getExcalidrawStandaloneInitial: () =>
+    ipcRenderer.invoke('excalidraw:get-standalone-initial'),
+  excalidrawStandaloneCommit: (payload) =>
+    ipcRenderer.invoke('excalidraw:standalone-commit', payload),
+  onExcalidrawStandaloneCommit: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { token: string; scene: string; preview: string },
+    ) => callback(payload)
+    ipcRenderer.on('excalidraw:standalone-commit', handler)
+    return () => ipcRenderer.removeListener('excalidraw:standalone-commit', handler)
   },
 
   // Platform & window controls

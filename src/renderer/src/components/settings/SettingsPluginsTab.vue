@@ -8,22 +8,37 @@ import type {
   DrawioInstallProgress,
   DrawioPluginManifest,
 } from '../../../../shared/drawio-plugin'
+import type {
+  ExcalidrawBundleStatus,
+  ExcalidrawInstallProgress,
+  ExcalidrawPluginManifest,
+} from '../../../../shared/excalidraw-plugin'
 
 const emit = defineEmits<{
   drawioBundleChanged: []
+  excalidrawBundleChanged: []
 }>()
 
 const { t } = useI18n()
 
-const status = ref<DrawioBundleStatus | null>(null)
-const manifest = ref<DrawioPluginManifest | null>(null)
-const manifestError = ref('')
-const installError = ref('')
-const busy = ref(false)
-const progress = ref<DrawioInstallProgress | null>(null)
-const removeConfirmVisible = ref(false)
+const drawioStatus = ref<DrawioBundleStatus | null>(null)
+const drawioManifest = ref<DrawioPluginManifest | null>(null)
+const drawioManifestError = ref('')
+const drawioInstallError = ref('')
+const drawioBusy = ref(false)
+const drawioProgress = ref<DrawioInstallProgress | null>(null)
+const drawioRemoveConfirmVisible = ref(false)
 
-let cleanupProgress: (() => void) | null = null
+const exStatus = ref<ExcalidrawBundleStatus | null>(null)
+const exManifest = ref<ExcalidrawPluginManifest | null>(null)
+const exManifestError = ref('')
+const exInstallError = ref('')
+const exBusy = ref(false)
+const exProgress = ref<ExcalidrawInstallProgress | null>(null)
+const exRemoveConfirmVisible = ref(false)
+
+let cleanupDrawioProgress: (() => void) | null = null
+let cleanupExProgress: (() => void) | null = null
 
 function compareVersions(a: string, b: string): number {
   const pa = a.replace(/^v/, '').split('.').map(Number)
@@ -44,7 +59,6 @@ function formatBytes(n: number | undefined): string {
   return `${(n / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/** 下载速度（字节/秒）→ 可读字符串 */
 function formatSpeed(bps: number | undefined): string {
   if (bps == null || !Number.isFinite(bps) || bps <= 0) return ''
   if (bps < 1024) return `${bps.toFixed(0)} B/s`
@@ -52,101 +66,190 @@ function formatSpeed(bps: number | undefined): string {
   return `${(bps / (1024 * 1024)).toFixed(1)} MB/s`
 }
 
-async function loadStatus() {
+async function loadDrawioStatus() {
   try {
-    status.value = await window.electron.getDrawioBundleStatus()
+    drawioStatus.value = await window.electron.getDrawioBundleStatus()
   } catch {
-    status.value = { state: 'missing' }
+    drawioStatus.value = { state: 'missing' }
   }
 }
 
-async function loadManifest() {
-  manifestError.value = ''
+async function loadDrawioManifest() {
+  drawioManifestError.value = ''
   try {
-    manifest.value = await window.electron.fetchDrawioManifest()
+    drawioManifest.value = await window.electron.fetchDrawioManifest()
   } catch (e) {
-    manifest.value = null
-    manifestError.value = e instanceof Error ? e.message : String(e)
+    drawioManifest.value = null
+    drawioManifestError.value = e instanceof Error ? e.message : String(e)
   }
 }
 
-const canUpdate = () => {
+function canUpdateDrawio() {
   if (
-    !manifest.value ||
-    status.value?.state !== 'ready' ||
-    !status.value.version ||
-    !status.value.userInstalled
+    !drawioManifest.value ||
+    drawioStatus.value?.state !== 'ready' ||
+    !drawioStatus.value.version ||
+    !drawioStatus.value.userInstalled
   ) {
     return false
   }
-  const v = status.value.version
-  /** 主进程对开发/内置副本返回的占位版本，不做 semver 比较 */
+  const v = drawioStatus.value.version
   if (v === 'dev' || v === 'bundled') {
     return false
   }
-  return compareVersions(manifest.value.version, v) > 0
+  return compareVersions(drawioManifest.value.version, v) > 0
 }
 
-async function onInstallOrUpdate() {
-  installError.value = ''
-  busy.value = true
-  progress.value = null
+async function onDrawioInstallOrUpdate() {
+  drawioInstallError.value = ''
+  drawioBusy.value = true
+  drawioProgress.value = null
   try {
     await window.electron.installDrawioBundle()
-    await loadStatus()
+    await loadDrawioStatus()
     emit('drawioBundleChanged')
   } catch (e) {
-    installError.value = e instanceof Error ? e.message : String(e)
+    drawioInstallError.value = e instanceof Error ? e.message : String(e)
   } finally {
-    busy.value = false
-    progress.value = null
+    drawioBusy.value = false
+    drawioProgress.value = null
   }
 }
 
-function askRemove() {
-  removeConfirmVisible.value = true
+function askRemoveDrawio() {
+  drawioRemoveConfirmVisible.value = true
 }
 
-async function onConfirmRemove() {
-  removeConfirmVisible.value = false
-  installError.value = ''
-  busy.value = true
+async function onConfirmRemoveDrawio() {
+  drawioRemoveConfirmVisible.value = false
+  drawioInstallError.value = ''
+  drawioBusy.value = true
   try {
     await window.electron.removeDrawioBundle()
-    await loadStatus()
+    await loadDrawioStatus()
     emit('drawioBundleChanged')
   } catch (e) {
-    installError.value = e instanceof Error ? e.message : String(e)
+    drawioInstallError.value = e instanceof Error ? e.message : String(e)
   } finally {
-    busy.value = false
+    drawioBusy.value = false
   }
 }
 
+async function loadExStatus() {
+  try {
+    exStatus.value = await window.electron.getExcalidrawBundleStatus()
+  } catch {
+    exStatus.value = { state: 'missing' }
+  }
+}
+
+async function loadExManifest() {
+  exManifestError.value = ''
+  try {
+    exManifest.value = await window.electron.fetchExcalidrawManifest()
+  } catch (e) {
+    exManifest.value = null
+    exManifestError.value = e instanceof Error ? e.message : String(e)
+  }
+}
+
+function canUpdateEx() {
+  if (
+    !exManifest.value ||
+    exStatus.value?.state !== 'ready' ||
+    !exStatus.value.version ||
+    !exStatus.value.userInstalled
+  ) {
+    return false
+  }
+  const v = exStatus.value.version
+  if (v === 'dev' || v === 'bundled') {
+    return false
+  }
+  return compareVersions(exManifest.value.version, v) > 0
+}
+
+async function onExInstallOrUpdate() {
+  exInstallError.value = ''
+  exBusy.value = true
+  exProgress.value = null
+  try {
+    await window.electron.installExcalidrawBundle()
+    await loadExStatus()
+    emit('excalidrawBundleChanged')
+  } catch (e) {
+    exInstallError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    exBusy.value = false
+    exProgress.value = null
+  }
+}
+
+function askRemoveEx() {
+  exRemoveConfirmVisible.value = true
+}
+
+async function onConfirmRemoveEx() {
+  exRemoveConfirmVisible.value = false
+  exInstallError.value = ''
+  exBusy.value = true
+  try {
+    await window.electron.removeExcalidrawBundle()
+    await loadExStatus()
+    emit('excalidrawBundleChanged')
+  } catch (e) {
+    exInstallError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    exBusy.value = false
+  }
+}
+
+const anyBusy = () => drawioBusy.value || exBusy.value
+
 onMounted(async () => {
-  await loadStatus()
-  await loadManifest()
-  cleanupProgress = window.electron.onDrawioInstallProgress((p) => {
-    progress.value = p
+  await loadDrawioStatus()
+  await loadDrawioManifest()
+  await loadExStatus()
+  await loadExManifest()
+
+  cleanupDrawioProgress = window.electron.onDrawioInstallProgress((p) => {
+    drawioProgress.value = p
     if (p.phase === 'downloading' || p.phase === 'verifying' || p.phase === 'extracting') {
-      busy.value = true
+      drawioBusy.value = true
     }
     if (p.phase === 'done' || p.phase === 'error') {
-      busy.value = false
+      drawioBusy.value = false
       if (p.phase === 'error') {
-        installError.value = p.message || t('settings.pluginInstallFailed')
+        drawioInstallError.value = p.message || t('settings.pluginInstallFailed')
+      }
+    }
+  })
+
+  cleanupExProgress = window.electron.onExcalidrawInstallProgress((p) => {
+    exProgress.value = p
+    if (p.phase === 'downloading' || p.phase === 'verifying' || p.phase === 'extracting') {
+      exBusy.value = true
+    }
+    if (p.phase === 'done' || p.phase === 'error') {
+      exBusy.value = false
+      if (p.phase === 'error') {
+        exInstallError.value = p.message || t('settings.pluginInstallFailed')
       }
     }
   })
 })
 
 onBeforeUnmount(() => {
-  cleanupProgress?.()
+  cleanupDrawioProgress?.()
+  cleanupExProgress?.()
 })
 
 defineExpose({
   refresh: async () => {
-    await loadStatus()
-    await loadManifest()
+    await loadDrawioStatus()
+    await loadDrawioManifest()
+    await loadExStatus()
+    await loadExManifest()
   },
 })
 </script>
@@ -160,11 +263,11 @@ defineExpose({
       <div class="plugin-card__head">
         <h3 class="plugin-card__title">{{ t('settings.pluginDrawioTitle') }}</h3>
         <span
-          v-if="status?.state === 'ready' && status.userInstalled"
+          v-if="drawioStatus?.state === 'ready' && drawioStatus.userInstalled"
           class="plugin-card__badge"
         >{{ t('settings.pluginInstalled') }}</span>
         <span
-          v-else-if="status?.state === 'ready'"
+          v-else-if="drawioStatus?.state === 'ready'"
           class="plugin-card__badge plugin-card__badge--muted"
         >{{ t('settings.pluginBuiltinDrawio') }}</span>
         <span
@@ -175,66 +278,66 @@ defineExpose({
       <p class="plugin-card__desc">{{ t('settings.pluginDrawioDesc') }}</p>
       <p class="plugin-card__license">{{ t('settings.pluginDrawioLicense') }}</p>
 
-      <div v-if="manifestError" class="plugin-card__warn">
-        {{ t('settings.pluginManifestError') }}: {{ manifestError }}
+      <div v-if="drawioManifestError" class="plugin-card__warn">
+        {{ t('settings.pluginManifestError') }}: {{ drawioManifestError }}
       </div>
-      <div v-else-if="manifest" class="plugin-card__meta">
-        <span v-if="manifest.version">{{ t('settings.pluginRemoteVersion') }}: {{ manifest.version }}</span>
-        <span v-if="status?.version">{{ t('settings.pluginInstalledVersion') }}: {{ status.version }}</span>
-        <span>{{ t('settings.pluginSize') }}: {{ formatBytes(manifest.size) }}</span>
+      <div v-else-if="drawioManifest" class="plugin-card__meta">
+        <span v-if="drawioManifest.version">{{ t('settings.pluginRemoteVersion') }}: {{ drawioManifest.version }}</span>
+        <span v-if="drawioStatus?.version">{{ t('settings.pluginInstalledVersion') }}: {{ drawioStatus.version }}</span>
+        <span>{{ t('settings.pluginSize') }}: {{ formatBytes(drawioManifest.size) }}</span>
       </div>
       <p
-        v-if="status?.state === 'ready' && status.userInstalled === false"
+        v-if="drawioStatus?.state === 'ready' && drawioStatus.userInstalled === false"
         class="plugin-card__builtin-hint"
       >
         {{ t('settings.pluginBuiltinDrawioHint') }}
       </p>
 
-      <div v-if="installError" class="plugin-card__error">
-        {{ installError }}
+      <div v-if="drawioInstallError" class="plugin-card__error">
+        {{ drawioInstallError }}
       </div>
 
       <div
-        v-if="progress && progress.phase !== 'done' && progress.phase !== 'error'"
+        v-if="drawioProgress && drawioProgress.phase !== 'done' && drawioProgress.phase !== 'error'"
         class="plugin-card__progress"
       >
         <div class="plugin-card__progress-label">
-          <template v-if="progress.phase === 'downloading'">{{ t('settings.pluginPhaseDownloading') }}</template>
-          <template v-else-if="progress.phase === 'verifying'">{{ t('settings.pluginPhaseVerifying') }}</template>
-          <template v-else-if="progress.phase === 'extracting'">{{ t('settings.pluginPhaseExtracting') }}</template>
+          <template v-if="drawioProgress.phase === 'downloading'">{{ t('settings.pluginPhaseDownloading') }}</template>
+          <template v-else-if="drawioProgress.phase === 'verifying'">{{ t('settings.pluginPhaseVerifying') }}</template>
+          <template v-else-if="drawioProgress.phase === 'extracting'">{{ t('settings.pluginPhaseExtracting') }}</template>
         </div>
         <div class="plugin-card__progress-bar">
           <div
             class="plugin-card__progress-fill"
-            :style="{ width: `${progress.percent ?? 0}%` }"
+            :style="{ width: `${drawioProgress.percent ?? 0}%` }"
           />
         </div>
         <div class="plugin-card__progress-footer">
           <span class="plugin-card__progress-size">
-            <template v-if="progress.total">
-              {{ formatBytes(progress.received) }} / {{ formatBytes(progress.total) }}
+            <template v-if="drawioProgress.total">
+              {{ formatBytes(drawioProgress.received) }} / {{ formatBytes(drawioProgress.total) }}
             </template>
             <template v-else>
-              {{ formatBytes(progress.received) }}
+              {{ formatBytes(drawioProgress.received) }}
             </template>
           </span>
           <span
-            v-if="progress.phase === 'downloading' && progress.bytesPerSecond"
+            v-if="drawioProgress.phase === 'downloading' && drawioProgress.bytesPerSecond"
             class="plugin-card__progress-speed"
           >
-            {{ t('settings.pluginDownloadSpeed') }} {{ formatSpeed(progress.bytesPerSecond) }}
+            {{ t('settings.pluginDownloadSpeed') }} {{ formatSpeed(drawioProgress.bytesPerSecond) }}
           </span>
         </div>
       </div>
 
       <div class="plugin-card__actions">
-        <template v-if="status?.userInstalled">
+        <template v-if="drawioStatus?.userInstalled">
           <button
-            v-if="canUpdate()"
+            v-if="canUpdateDrawio()"
             type="button"
             class="btn-primary"
-            :disabled="busy"
-            @click="onInstallOrUpdate"
+            :disabled="anyBusy()"
+            @click="onDrawioInstallOrUpdate"
           >
             <Download :size="16" :stroke-width="1.5" class="btn-ic" />
             {{ t('settings.pluginUpdate') }}
@@ -242,8 +345,8 @@ defineExpose({
           <button
             type="button"
             class="btn-danger"
-            :disabled="busy"
-            @click="askRemove"
+            :disabled="anyBusy()"
+            @click="askRemoveDrawio"
           >
             <Trash2 :size="16" :stroke-width="1.5" class="btn-ic" />
             {{ t('settings.pluginRemove') }}
@@ -253,8 +356,114 @@ defineExpose({
           v-else
           type="button"
           class="btn-primary"
-          :disabled="busy"
-          @click="onInstallOrUpdate"
+          :disabled="anyBusy()"
+          @click="onDrawioInstallOrUpdate"
+        >
+          <Download :size="16" :stroke-width="1.5" class="btn-ic" />
+          {{ t('settings.pluginInstall') }}
+        </button>
+      </div>
+    </div>
+
+    <div class="plugin-card plugin-card--spaced">
+      <div class="plugin-card__head">
+        <h3 class="plugin-card__title">{{ t('settings.pluginExcalidrawTitle') }}</h3>
+        <span
+          v-if="exStatus?.state === 'ready' && exStatus.userInstalled"
+          class="plugin-card__badge"
+        >{{ t('settings.pluginInstalled') }}</span>
+        <span
+          v-else-if="exStatus?.state === 'ready'"
+          class="plugin-card__badge plugin-card__badge--muted"
+        >{{ t('settings.pluginBuiltinExcalidraw') }}</span>
+        <span
+          v-else
+          class="plugin-card__badge plugin-card__badge--muted"
+        >{{ t('settings.pluginNotInstalled') }}</span>
+      </div>
+      <p class="plugin-card__desc">{{ t('settings.pluginExcalidrawDesc') }}</p>
+      <p class="plugin-card__license">{{ t('settings.pluginExcalidrawLicense') }}</p>
+
+      <div v-if="exManifestError" class="plugin-card__warn">
+        {{ t('settings.pluginManifestError') }}: {{ exManifestError }}
+      </div>
+      <div v-else-if="exManifest" class="plugin-card__meta">
+        <span v-if="exManifest.version">{{ t('settings.pluginRemoteVersion') }}: {{ exManifest.version }}</span>
+        <span v-if="exStatus?.version">{{ t('settings.pluginInstalledVersion') }}: {{ exStatus.version }}</span>
+        <span>{{ t('settings.pluginSize') }}: {{ formatBytes(exManifest.size) }}</span>
+      </div>
+      <p
+        v-if="exStatus?.state === 'ready' && exStatus.userInstalled === false"
+        class="plugin-card__builtin-hint"
+      >
+        {{ t('settings.pluginBuiltinExcalidrawHint') }}
+      </p>
+
+      <div v-if="exInstallError" class="plugin-card__error">
+        {{ exInstallError }}
+      </div>
+
+      <div
+        v-if="exProgress && exProgress.phase !== 'done' && exProgress.phase !== 'error'"
+        class="plugin-card__progress"
+      >
+        <div class="plugin-card__progress-label">
+          <template v-if="exProgress.phase === 'downloading'">{{ t('settings.pluginPhaseDownloading') }}</template>
+          <template v-else-if="exProgress.phase === 'verifying'">{{ t('settings.pluginPhaseVerifying') }}</template>
+          <template v-else-if="exProgress.phase === 'extracting'">{{ t('settings.pluginPhaseExtracting') }}</template>
+        </div>
+        <div class="plugin-card__progress-bar">
+          <div
+            class="plugin-card__progress-fill"
+            :style="{ width: `${exProgress.percent ?? 0}%` }"
+          />
+        </div>
+        <div class="plugin-card__progress-footer">
+          <span class="plugin-card__progress-size">
+            <template v-if="exProgress.total">
+              {{ formatBytes(exProgress.received) }} / {{ formatBytes(exProgress.total) }}
+            </template>
+            <template v-else>
+              {{ formatBytes(exProgress.received) }}
+            </template>
+          </span>
+          <span
+            v-if="exProgress.phase === 'downloading' && exProgress.bytesPerSecond"
+            class="plugin-card__progress-speed"
+          >
+            {{ t('settings.pluginDownloadSpeed') }} {{ formatSpeed(exProgress.bytesPerSecond) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="plugin-card__actions">
+        <template v-if="exStatus?.userInstalled">
+          <button
+            v-if="canUpdateEx()"
+            type="button"
+            class="btn-primary"
+            :disabled="anyBusy()"
+            @click="onExInstallOrUpdate"
+          >
+            <Download :size="16" :stroke-width="1.5" class="btn-ic" />
+            {{ t('settings.pluginUpdate') }}
+          </button>
+          <button
+            type="button"
+            class="btn-danger"
+            :disabled="anyBusy()"
+            @click="askRemoveEx"
+          >
+            <Trash2 :size="16" :stroke-width="1.5" class="btn-ic" />
+            {{ t('settings.pluginRemove') }}
+          </button>
+        </template>
+        <button
+          v-else
+          type="button"
+          class="btn-primary"
+          :disabled="anyBusy()"
+          @click="onExInstallOrUpdate"
         >
           <Download :size="16" :stroke-width="1.5" class="btn-ic" />
           {{ t('settings.pluginInstall') }}
@@ -263,14 +472,25 @@ defineExpose({
     </div>
 
     <ConfirmDialog
-      :visible="removeConfirmVisible"
+      :visible="drawioRemoveConfirmVisible"
       :title="t('settings.pluginRemoveConfirmTitle')"
       :message="t('settings.pluginRemoveConfirmMessage')"
       :confirm-text="t('settings.pluginRemove')"
       :cancel-text="t('dialog.cancel')"
       confirm-variant="danger"
-      @confirm="onConfirmRemove"
-      @cancel="removeConfirmVisible = false"
+      @confirm="onConfirmRemoveDrawio"
+      @cancel="drawioRemoveConfirmVisible = false"
+    />
+
+    <ConfirmDialog
+      :visible="exRemoveConfirmVisible"
+      :title="t('settings.pluginRemoveConfirmTitle')"
+      :message="t('settings.pluginRemoveConfirmMessage')"
+      :confirm-text="t('settings.pluginRemove')"
+      :cancel-text="t('dialog.cancel')"
+      confirm-variant="danger"
+      @confirm="onConfirmRemoveEx"
+      @cancel="exRemoveConfirmVisible = false"
     />
   </div>
 </template>
@@ -288,6 +508,10 @@ defineExpose({
   border-radius: 10px;
   padding: 16px 18px;
   background: var(--bg-sidebar);
+}
+
+.plugin-card--spaced {
+  margin-top: 18px;
 }
 
 .plugin-card__head {

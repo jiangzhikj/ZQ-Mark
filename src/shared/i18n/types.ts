@@ -183,6 +183,11 @@ export interface AppLocale {
     pluginNotInstalled: string
     pluginBuiltinDrawio: string
     pluginBuiltinDrawioHint: string
+    pluginExcalidrawTitle: string
+    pluginExcalidrawDesc: string
+    pluginExcalidrawLicense: string
+    pluginBuiltinExcalidraw: string
+    pluginBuiltinExcalidrawHint: string
     pluginInstall: string
     pluginUpdate: string
     pluginRemove: string
@@ -278,21 +283,6 @@ export interface AppLocale {
     loadSuccess: string
   }
   'zq-editor': ZqEditorLocale
-  draw: DrawLocale
-}
-
-export interface DrawLocale {
-  tool: Record<string, string>
-  action: Record<string, string>
-  menu: Record<string, string>
-  property: Record<string, string>
-  fillStyle: Record<string, string>
-  strokeStyle: Record<string, string>
-  label: Record<string, string>
-  arrowhead: Record<string, string>
-  font: Record<string, string>
-  verticalAlign: Record<string, string>
-  stats: Record<string, string>
 }
 
 export interface ZqEditorLocale {

@@ -190,6 +190,14 @@ const en: AppLocale = {
     pluginBuiltinDrawio: 'Built-in',
     pluginBuiltinDrawioHint:
       'Using the app’s bundled or dev-folder diagrams.net. Install from the plugin center to use the manifest version.',
+    pluginExcalidrawTitle: 'Excalidraw',
+    pluginExcalidrawDesc:
+      'Insert Excalidraw sketches in documents. Download the embed bundle once below (distributed separately from the app).',
+    pluginExcalidrawLicense:
+      'Excalidraw is MIT-licensed; see github.com/excalidraw/excalidraw.',
+    pluginBuiltinExcalidraw: 'Built-in',
+    pluginBuiltinExcalidrawHint:
+      'Using the dev-folder or built embed output. For releases, upload a ZIP and set checksums in the manifest.',
     pluginInstall: 'Download and install',
     pluginUpdate: 'Update',
     pluginRemove: 'Remove',
@@ -442,22 +450,15 @@ const en: AppLocale = {
       attachmentDesc: 'Insert a local file attachment',
       emoji: 'Emoji',
       emojiDesc: 'Insert an emoji',
-      draw: 'Drawing',
-      drawDesc: 'Insert a freehand drawing canvas',
       drawio: 'Diagram (draw.io)',
       drawioDesc: 'Insert a diagrams.net flowchart or diagram (desktop app only)',
       drawioRequiresPlugin:
         'Install the diagram bundle under Preferences → Plugins first.',
+      excalidraw: 'Excalidraw',
+      excalidrawDesc: 'Insert an Excalidraw sketch (desktop app only)',
+      excalidrawRequiresPlugin:
+        'Install the Excalidraw bundle under Preferences → Plugins first.',
       noResult: 'No results'
-    },
-    draw: {
-      title: 'Drawing',
-      edit: 'Edit drawing',
-      delete: 'Delete drawing',
-      done: 'Done',
-      clickToEdit: 'Click to add a drawing',
-      fullscreen: 'Fullscreen',
-      exitFullscreen: 'Exit fullscreen'
     },
     drawio: {
       title: 'Diagram',
@@ -475,6 +476,22 @@ const en: AppLocale = {
       desktopOnly: 'Diagrams are only available in the ZQ Mark desktop app.',
       missingBundle:
         'The diagram bundle is not installed. Open Preferences → Plugins and download the diagrams.net package.',
+      refreshBundle: 'Check again',
+    },
+    excalidraw: {
+      title: 'Excalidraw',
+      edit: 'Edit',
+      delete: 'Delete',
+      done: 'Done',
+      switchToEdit: 'Edit',
+      switchToPreview: 'Preview',
+      openStandalone: 'Open in new window',
+      previewEmpty: 'Nothing to preview yet. Edit and save first.',
+      clickToEdit: 'Double-click or use the toolbar to draw',
+      hintHasDiagram: 'Double-click to edit the sketch',
+      desktopOnly: 'Excalidraw is only available in the ZQ Mark desktop app.',
+      missingBundle:
+        'The Excalidraw bundle is not installed. Open Preferences → Plugins and download it.',
       refreshBundle: 'Check again',
     },
     table: {
@@ -549,148 +566,6 @@ const en: AppLocale = {
       videoUploadFailed: 'Video upload failed',
       audioUploadFailed: 'Audio upload failed',
       attachmentUploadFailed: 'Attachment upload failed'
-    }
-  },
-  draw: {
-    tool: {
-      selection: 'Selection',
-      hand: 'Hand',
-      rectangle: 'Rectangle',
-      ellipse: 'Ellipse',
-      diamond: 'Diamond',
-      line: 'Line',
-      arrow: 'Arrow',
-      freedraw: 'Free draw',
-      text: 'Text',
-      image: 'Image',
-      eraser: 'Eraser',
-      frame: 'Frame'
-    },
-    action: {
-      zoomIn: 'Zoom in',
-      zoomOut: 'Zoom out',
-      resetZoom: 'Reset zoom',
-      zoomToFit: 'Zoom to fit',
-      zoomToFitSelection: 'Zoom to fit selection',
-      undo: 'Undo',
-      redo: 'Redo',
-      toggleSnap: 'Toggle snap',
-      toggleStats: 'Toggle stats',
-      toggleZenMode: 'Toggle zen mode'
-    },
-    menu: {
-      openFile: 'Open file',
-      saveTo: 'Save to...',
-      export: 'Export',
-      exportPng: 'Export PNG',
-      exportSvg: 'Export SVG',
-      exportJson: 'Export JSON',
-      exportCopyPng: 'Copy as PNG',
-      exportCopySvg: 'Copy as SVG',
-      copy: 'Copy',
-      cut: 'Cut',
-      paste: 'Paste',
-      duplicate: 'Duplicate',
-      delete: 'Delete',
-      selectAll: 'Select all',
-      bringToFront: 'Bring to front',
-      bringForward: 'Bring forward',
-      sendBackward: 'Send backward',
-      sendToBack: 'Send to back',
-      lock: 'Lock',
-      unlock: 'Unlock',
-      group: 'Group',
-      ungroup: 'Ungroup',
-      flip: 'Flip',
-      flipH: 'Flip horizontal',
-      flipV: 'Flip vertical',
-      align: 'Align',
-      alignLeft: 'Align left',
-      alignCenter: 'Align center',
-      alignRight: 'Align right',
-      alignTop: 'Align top',
-      alignMiddle: 'Align middle',
-      alignBottom: 'Align bottom',
-      distributeH: 'Distribute horizontally',
-      distributeV: 'Distribute vertically',
-      layer: 'Layer',
-      addLink: 'Add link',
-      editLink: 'Edit link',
-      removeLink: 'Remove link',
-      toggleGrid: 'Toggle grid',
-      copyStyle: 'Copy style',
-      pasteStyle: 'Paste style'
-    },
-    property: {
-      strokeColor: 'Stroke',
-      backgroundColor: 'Background',
-      customColor: 'Custom color',
-      fillStyle: 'Fill',
-      strokeWidth: 'Stroke width',
-      strokeStyle: 'Stroke style',
-      sloppiness: 'Sloppiness',
-      edges: 'Edges',
-      edgesSharp: 'Sharp',
-      edgesRound: 'Round',
-      arrowType: 'Arrow type',
-      arrowTypeSharp: 'Sharp',
-      arrowTypeRound: 'Round',
-      arrowTypeElbow: 'Elbow',
-      fontFamily: 'Font family',
-      fontSize: 'Font size',
-      textAlign: 'Text align',
-      verticalAlign: 'Vertical align',
-      arrowheadStart: 'Start arrowhead',
-      arrowheadEnd: 'End arrowhead',
-      opacity: 'Opacity',
-      layers: 'Layers',
-      actions: 'Actions',
-      alignDistribute: 'Align & Distribute',
-      mixed: 'Mixed (multiple elements selected)',
-      linkPlaceholder: 'Enter link URL...'
-    },
-    fillStyle: {
-      hachure: 'Hachure',
-      crossHatch: 'Cross hatch',
-      solid: 'Solid',
-      zigzag: 'Zigzag'
-    },
-    strokeStyle: {
-      solid: 'Solid',
-      dashed: 'Dashed',
-      dotted: 'Dotted'
-    },
-    label: {
-      thin: 'Thin',
-      bold: 'Bold',
-      extraBold: 'Extra bold',
-      architect: 'Architect',
-      artist: 'Artist',
-      cartoonist: 'Cartoonist'
-    },
-    arrowhead: {
-      none: 'None',
-      arrow: 'Arrow',
-      triangle: 'Triangle',
-      bar: 'Bar',
-      circle: 'Circle',
-      diamond: 'Diamond'
-    },
-    font: {
-      handDrawn: 'Hand drawn',
-      normal: 'Normal',
-      code: 'Code'
-    },
-    verticalAlign: {
-      top: 'Top',
-      middle: 'Middle',
-      bottom: 'Bottom'
-    },
-    stats: {
-      title: 'Stats',
-      elements: 'Elements',
-      sceneSize: 'Scene size',
-      multiSelected: '{count} elements selected'
     }
   }
 }

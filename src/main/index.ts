@@ -29,6 +29,9 @@ import {
   createDrawioStandaloneWindow,
   getDrawioStandaloneSession,
   deleteDrawioStandaloneSession,
+  createExcalidrawStandaloneWindow,
+  getExcalidrawStandaloneSession,
+  deleteExcalidrawStandaloneSession,
 } from './window-manager'
 import { createTray, rebuildTrayMenu, destroyTray } from './tray'
 import {
@@ -38,6 +41,13 @@ import {
   installDrawioUsingUpdateUrl,
   removeDrawioBundle,
 } from './drawio-bundle'
+import {
+  getExcalidrawIndexAssetUrl,
+  getExcalidrawBundleStatus,
+  fetchExcalidrawManifest,
+  installExcalidrawUsingUpdateUrl,
+  removeExcalidrawBundle,
+} from './excalidraw-bundle'
 
 const MAX_RECENT = 10
 let recentFiles: string[] = []
@@ -339,6 +349,30 @@ ipcMain.handle('drawio:remove-bundle', async () => {
   return { ok: true as const }
 })
 
+ipcMain.handle('excalidraw:get-index-url', () => {
+  const url = getExcalidrawIndexAssetUrl()
+  if (!url) {
+    console.warn('[excalidraw] embed bundle not found (install from Settings → Plugins)')
+  }
+  return url
+})
+
+ipcMain.handle('excalidraw:get-bundle-status', () => getExcalidrawBundleStatus())
+
+ipcMain.handle('excalidraw:fetch-manifest', async () => {
+  return await fetchExcalidrawManifest(appSettings.updateUrl)
+})
+
+ipcMain.handle('excalidraw:install-bundle', async () => {
+  await installExcalidrawUsingUpdateUrl(appSettings.updateUrl)
+  return { ok: true as const }
+})
+
+ipcMain.handle('excalidraw:remove-bundle', async () => {
+  await removeExcalidrawBundle()
+  return { ok: true as const }
+})
+
 ipcMain.handle(
   'drawio:open-standalone',
   (
@@ -386,6 +420,57 @@ ipcMain.handle(
       })
     }
     deleteDrawioStandaloneSession(win.id)
+    return { ok: true }
+  },
+)
+
+ipcMain.handle(
+  'excalidraw:open-standalone',
+  (
+    event,
+    opts: { scene: string; token: string },
+  ): { ok: boolean } => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    if (!parent) return { ok: false }
+    createExcalidrawStandaloneWindow({
+      parentId: parent.id,
+      token: opts.token,
+      scene: opts.scene,
+    })
+    return { ok: true }
+  },
+)
+
+ipcMain.handle(
+  'excalidraw:get-standalone-initial',
+  (event): { scene: string; token: string } | null => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const s = getExcalidrawStandaloneSession(win.id)
+    if (!s) return null
+    return { scene: s.scene, token: s.token }
+  },
+)
+
+ipcMain.handle(
+  'excalidraw:standalone-commit',
+  (
+    event,
+    payload: { scene: string; preview: string; token: string },
+  ): { ok: boolean } => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return { ok: false }
+    const s = getExcalidrawStandaloneSession(win.id)
+    if (!s || s.token !== payload.token) return { ok: false }
+    const parent = BrowserWindow.fromId(s.parentId)
+    if (parent && !parent.isDestroyed()) {
+      parent.webContents.send('excalidraw:standalone-commit', {
+        token: payload.token,
+        scene: payload.scene,
+        preview: payload.preview,
+      })
+    }
+    deleteExcalidrawStandaloneSession(win.id)
     return { ok: true }
   },
 )
@@ -670,6 +755,38 @@ async function ensureAssetsDir() {
   await mkdir(assetsDir, { recursive: true })
 }
 
+function extFromDataUrlMime(mime: string): string {
+  const m = mime.split(';')[0].trim().toLowerCase()
+  if (m === 'image/svg+xml') return '.svg'
+  if (m === 'image/png') return '.png'
+  if (m === 'image/jpeg' || m === 'image/jpg') return '.jpg'
+  if (m === 'image/gif') return '.gif'
+  if (m === 'image/webp') return '.webp'
+  return '.bin'
+}
+
+function parseDataUrlToBuffer(dataUrl: string): { buffer: Buffer; ext: string } | null {
+  if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return null
+  const comma = dataUrl.indexOf(',')
+  if (comma < 0) return null
+  const meta = dataUrl.slice(5, comma)
+  const payload = dataUrl.slice(comma + 1)
+  const mimeMatch = /^([^;,]+)/.exec(meta)
+  const mime = mimeMatch ? mimeMatch[1].trim() : 'application/octet-stream'
+  const isBase64 = /;base64(?:;|$)/i.test(meta) || /^[^;]+;base64/i.test(meta)
+  let buffer: Buffer
+  try {
+    if (isBase64) {
+      buffer = Buffer.from(payload, 'base64')
+    } else {
+      buffer = Buffer.from(decodeURIComponent(payload), 'utf8')
+    }
+  } catch {
+    return null
+  }
+  return { buffer, ext: extFromDataUrlMime(mime) }
+}
+
 ipcMain.handle('editor:save-dropped-file', async (_event, buffer: ArrayBuffer, fileName: string) => {
   await ensureAssetsDir()
   const ext = extname(fileName) || '.bin'
@@ -686,6 +803,49 @@ ipcMain.handle('editor:save-dropped-file', async (_event, buffer: ArrayBuffer, f
     size: byteLength
   }
 })
+
+/** 将 data URL（如 SVG 预览）写入 editor-assets，返回 local-asset URL，供 .zq 打包时收集为 assets/ */
+ipcMain.handle('editor:save-data-url-asset', async (_event, dataUrl: string) => {
+  await ensureAssetsDir()
+  const parsed = parseDataUrlToBuffer(dataUrl)
+  if (!parsed) return null
+  const id = randomUUID()
+  const localName = `${id}${parsed.ext}`
+  const localPath = join(assetsDir, localName)
+  await writeFile(localPath, parsed.buffer)
+  return {
+    id: localName,
+    path: localPath,
+    url: localPathToAssetUrl(localPath),
+    name: localName,
+    size: parsed.buffer.length,
+  }
+})
+
+const TEXT_ASSET_EXT = new Set(['.xml', '.json'])
+
+/** 将 UTF-8 文本写入 editor-assets（流程图 XML / Excalidraw scene），供 .zq 打包 */
+ipcMain.handle(
+  'editor:save-text-asset',
+  async (_event, text: string, ext: string) => {
+    await ensureAssetsDir()
+    if (typeof text !== 'string') return null
+    const normalized = ext.startsWith('.') ? ext : `.${ext}`
+    if (!TEXT_ASSET_EXT.has(normalized)) return null
+    const id = randomUUID()
+    const localName = `${id}${normalized}`
+    const localPath = join(assetsDir, localName)
+    await writeFile(localPath, text, 'utf8')
+    const size = Buffer.byteLength(text, 'utf8')
+    return {
+      id: localName,
+      path: localPath,
+      url: localPathToAssetUrl(localPath),
+      name: localName,
+      size,
+    }
+  },
+)
 
 ipcMain.handle('editor:open-local-file', async (event, options: { filters?: { name: string; extensions: string[] }[] }) => {
   const win = getWinFromEvent(event)

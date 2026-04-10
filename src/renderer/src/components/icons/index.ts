@@ -108,6 +108,7 @@ export {
   ScanSearch,
   Scissors,
   Search,
+  Shapes,
   Settings,
   Sigma,
   Smile,

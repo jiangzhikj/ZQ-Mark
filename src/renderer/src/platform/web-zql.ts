@@ -4,7 +4,7 @@ import { blobUrlToUint8 } from './web-zq'
 
 const ZQ_VERSION = '2.0'
 
-const ASSET_TYPE_MAP: Record<string, string> = {
+const ASSET_ATTRS: Record<string, string | string[]> = {
   imageBlock: 'src',
   image: 'src',
   videoBlock: 'src',
@@ -12,7 +12,15 @@ const ASSET_TYPE_MAP: Record<string, string> = {
   audioBlock: 'src',
   audio: 'src',
   attachmentBlock: 'url',
-  attachment: 'url'
+  attachment: 'url',
+  drawioBlock: ['preview', 'xml'],
+  excalidrawBlock: ['preview', 'scene'],
+}
+
+function assetAttrKeysForType(nodeType: string): string[] {
+  const v = ASSET_ATTRS[nodeType]
+  if (!v) return []
+  return Array.isArray(v) ? v : [v]
 }
 
 function walkReplaceAssets(
@@ -20,12 +28,13 @@ function walkReplaceAssets(
   getUrl: (assetPath: string) => string | null
 ): void {
   if (!node) return
-  const attrKey = ASSET_TYPE_MAP[node.type]
-  if (attrKey && node.attrs?.[attrKey]) {
-    const val = node.attrs[attrKey] as string
-    if (typeof val === 'string' && val.startsWith('assets/')) {
-      const url = getUrl(val)
-      if (url) node.attrs[attrKey] = url
+  for (const attrKey of assetAttrKeysForType(node.type)) {
+    if (node.attrs?.[attrKey]) {
+      const val = node.attrs[attrKey] as string
+      if (typeof val === 'string' && val.startsWith('assets/')) {
+        const url = getUrl(val)
+        if (url) node.attrs[attrKey] = url
+      }
     }
   }
   if (Array.isArray(node.content)) {
@@ -66,7 +75,11 @@ function buildAssetBlobMap(files: Record<string, Uint8Array>): Map<string, Blob>
                                 ? 'audio/opus'
                                 : ext === 'webm'
                                   ? 'video/webm'
-                                  : 'application/octet-stream'
+                                  : ext === 'xml'
+                                    ? 'application/xml'
+                                    : ext === 'json'
+                                      ? 'application/json'
+                                      : 'application/octet-stream'
       m.set(shortName, new Blob([data], { type: mime }))
     }
   }
@@ -346,10 +359,15 @@ function collectBrowserRefs(doc: any): RefItem[] {
   const refs: RefItem[] = []
   function walk(node: any) {
     if (!node) return
-    const attrKey = ASSET_TYPE_MAP[node.type]
-    if (attrKey) {
+    for (const attrKey of assetAttrKeysForType(node.type)) {
       const val = node.attrs?.[attrKey]
-      if (typeof val === 'string' && (val.startsWith('blob:') || val.startsWith('http') || val.startsWith('assets/'))) {
+      if (
+        typeof val === 'string' &&
+        (val.startsWith('blob:') ||
+          val.startsWith('http://') ||
+          val.startsWith('https://') ||
+          val.startsWith('assets/'))
+      ) {
         refs.push({ attrKey, node, url: val })
       }
     }

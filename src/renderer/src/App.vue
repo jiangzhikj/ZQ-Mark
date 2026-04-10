@@ -17,6 +17,7 @@ import StatusBar from '@/components/StatusBar.vue'
 import Settings from '@/components/Settings.vue'
 import WelcomeScreen from '@/components/WelcomeScreen.vue'
 import DrawioStandaloneView from '@/components/zq-editor/extensions/drawio/DrawioStandaloneView.vue'
+import ExcalidrawStandaloneView from '@/components/zq-editor/extensions/excalidraw/ExcalidrawStandaloneView.vue'
 import {
   DRAWIO_UI_LAYOUT_INJECT_KEY,
   type DrawioUiLayout
@@ -42,6 +43,7 @@ import {
   type WebPageStateV1
 } from '@/platform/web-session'
 import { setSlashDrawioAvailable } from '@/components/zq-editor/extensions/slash-command/slash-drawio-state'
+import { setSlashExcalidrawAvailable } from '@/components/zq-editor/extensions/slash-command/slash-excalidraw-state'
 import { restoreWebLibraryFromSnapshot, serializeWebLibrarySnapshot } from '@/platform/web-electron'
 
 const { themeMode, setThemeMode } = useTheme()
@@ -116,8 +118,10 @@ const urlSearchParams = new URLSearchParams(window.location.search)
 const isNewDocWindow = urlSearchParams.get('newDoc') === '1'
 /** 独立 draw.io 子窗口（仅 Electron） */
 const drawioStandaloneMode = urlSearchParams.get('drawioStandalone') === '1'
+/** 独立 Excalidraw 子窗口（仅 Electron） */
+const excalidrawStandaloneMode = urlSearchParams.get('excalidrawStandalone') === '1'
 /** 主进程在创建独立窗口时附带 appLocale，与主窗口语言一致（先于首帧渲染） */
-if (drawioStandaloneMode) {
+if (drawioStandaloneMode || excalidrawStandaloneMode) {
   const al = urlSearchParams.get('appLocale')
   if (al === 'zh-CN' || al === 'zh-TW' || al === 'en') {
     locale.value = al
@@ -676,14 +680,30 @@ async function refreshDrawioBundleStatus() {
   setSlashDrawioAvailable(drawioBundleReady.value)
 }
 
+async function refreshExcalidrawBundleStatus() {
+  if (appPlatform.value === 'web') {
+    setSlashExcalidrawAvailable(false)
+    return
+  }
+  let ready = false
+  try {
+    const s = await window.electron.getExcalidrawBundleStatus()
+    ready = s.state === 'ready'
+  } catch {
+    ready = false
+  }
+  setSlashExcalidrawAvailable(ready)
+}
+
 let cleanupDrawioBundleReady: (() => void) | null = null
+let cleanupExcalidrawBundleReady: (() => void) | null = null
 
 onMounted(async () => {
   const platform = await window.electron.getPlatform()
   document.documentElement.setAttribute('data-platform', platform)
   appPlatform.value = platform
 
-  if (drawioStandaloneMode && platform !== 'web') {
+  if ((drawioStandaloneMode || excalidrawStandaloneMode) && platform !== 'web') {
     const settings = await window.electron.getSettings()
     codeTheme.value = settings.codeTheme || 'intellij'
     document.documentElement.setAttribute('data-code-theme', codeTheme.value)
@@ -768,8 +788,12 @@ onMounted(async () => {
   saveFormatDefault.value = settings.saveFormatDefault === 'zq' ? 'zq' : 'md'
 
   await refreshDrawioBundleStatus()
+  await refreshExcalidrawBundleStatus()
   cleanupDrawioBundleReady = window.electron.onDrawioBundleReady(() => {
     void refreshDrawioBundleStatus()
+  })
+  cleanupExcalidrawBundleReady = window.electron.onExcalidrawBundleReady(() => {
+    void refreshExcalidrawBundleStatus()
   })
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
@@ -837,6 +861,7 @@ onUnmounted(() => {
   cleanupUnsavedFromMain?.()
   cleanupUpdateListener?.()
   cleanupDrawioBundleReady?.()
+  cleanupExcalidrawBundleReady?.()
   cleanupWebLocale?.()
   cleanupBeforeUnload?.()
   if (webPersistTimer) {
@@ -847,7 +872,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <DrawioStandaloneView v-if="drawioStandaloneMode" />
+  <ExcalidrawStandaloneView v-if="excalidrawStandaloneMode" />
+  <DrawioStandaloneView v-else-if="drawioStandaloneMode" />
   <div v-else class="app-shell">
     <WebAppMenu v-if="appPlatform === 'web'" />
     <Sidebar
@@ -967,6 +993,7 @@ onUnmounted(() => {
       @change-drawio-ui-layout="onChangeDrawioUiLayout"
       @check-update="triggerCheckUpdate"
       @drawio-bundle-changed="refreshDrawioBundleStatus"
+      @excalidraw-bundle-changed="refreshExcalidrawBundleStatus"
     />
     <InputDialog
       :visible="inputDialogVisible"

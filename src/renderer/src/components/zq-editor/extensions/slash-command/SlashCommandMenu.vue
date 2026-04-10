@@ -19,8 +19,8 @@ import {
   Music,
   Paperclip,
   Pencil,
-  PenTool,
   Quote,
+  Shapes,
   Sigma,
   Smile,
   Table,
@@ -61,8 +61,8 @@ const iconMap: Record<string, any> = {
   Video,
   Paperclip,
   Smile,
-  PenTool,
   Pencil,
+  Shapes,
   Workflow,
 };
 

@@ -119,10 +119,9 @@ zq-md/
 │   │       ├── App.vue                #   主应用壳
 │   │       ├── components/
 │   │       │   ├── zq-editor/         #   TipTap 编辑器封装
-│   │       │   │   ├── extensions/    #     自定义扩展 (附件/callout/分栏/绘图/...)
+│   │       │   │   ├── extensions/    #     自定义扩展 (附件/callout/分栏/流程图/Excalidraw/...)
 │   │       │   │   ├── menus/         #     菜单组件 (气泡/拖拽/表格/搜索/...)
 │   │       │   │   └── styles/        #     编辑器样式
-│   │       │   ├── zq-draw/           #   绘图白板模块
 │   │       │   ├── ui/                #   通用 UI 组件
 │   │       │   └── ...                #   Sidebar/Settings/WelcomeScreen/...
 │   │       └── composables/           #   组合式函数 (useEditor/useLibrary/useTheme/...)

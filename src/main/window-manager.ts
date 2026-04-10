@@ -106,6 +106,82 @@ export function createDrawioStandaloneWindow(session: DrawioStandaloneSession): 
   return win
 }
 
+/** Excalidraw 独立子窗口：仅 Electron */
+export interface ExcalidrawStandaloneSession {
+  parentId: number
+  token: string
+  scene: string
+}
+
+const excalidrawStandaloneSessions = new Map<number, ExcalidrawStandaloneSession>()
+
+export function getExcalidrawStandaloneSession(
+  winId: number,
+): ExcalidrawStandaloneSession | undefined {
+  return excalidrawStandaloneSessions.get(winId)
+}
+
+export function deleteExcalidrawStandaloneSession(winId: number): void {
+  excalidrawStandaloneSessions.delete(winId)
+}
+
+export function createExcalidrawStandaloneWindow(
+  session: ExcalidrawStandaloneSession,
+): BrowserWindow {
+  const isMac = process.platform === 'darwin'
+
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 820,
+    minWidth: 640,
+    minHeight: 400,
+    show: false,
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 15, y: 15 } }
+      : { frame: false }),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+    },
+  })
+
+  excalidrawStandaloneSessions.set(win.id, session)
+
+  win.on('closed', () => {
+    excalidrawStandaloneSessions.delete(win.id)
+  })
+
+  win.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  win.on('ready-to-show', () => {
+    win.show()
+  })
+
+  const query: Record<string, string> = {
+    windowId: String(win.id),
+    mode: 'document',
+    excalidrawStandalone: '1',
+    excalidrawToken: session.token,
+    parentWindowId: String(session.parentId),
+    appLocale: getLocale(),
+  }
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    const url = new URL(process.env['ELECTRON_RENDERER_URL'])
+    for (const [k, v] of Object.entries(query)) {
+      url.searchParams.set(k, v)
+    }
+    win.loadURL(url.toString())
+  } else {
+    win.loadFile(join(__dirname, '../renderer/index.html'), { query })
+  }
+
+  return win
+}
+
 export function setLocale(locale: SupportedLocale): void {
   currentLocale = locale
 }

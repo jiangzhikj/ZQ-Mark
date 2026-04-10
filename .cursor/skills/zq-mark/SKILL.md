@@ -37,7 +37,6 @@ src/
 │   │   ├── icons/        # 图标统一出口（见下文）
 │   │   ├── ui/           # 通用 UI：按钮、对话框、表单等（优先复用）
 │   │   ├── zq-editor/    # TipTap 封装：extensions/、menus/、styles/
-│   │   ├── zq-draw/      # 绘图白板
 │   │   └── ...
 │   ├── composables/
 │   └── platform/         # Electron / Web 等平台差异与补丁
