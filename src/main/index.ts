@@ -33,7 +33,7 @@ import {
   getExcalidrawStandaloneSession,
   deleteExcalidrawStandaloneSession,
 } from './window-manager'
-import { createTray, rebuildTrayMenu, destroyTray } from './tray'
+import { createTray, rebuildTrayMenu, destroyTray, showOrCreateMainWindow } from './tray'
 import {
   getDrawioIndexAssetUrl,
   getDrawioBundleStatus,
@@ -126,7 +126,12 @@ if (!gotTheLock) {
       if (allWindows.length > 0) {
         const win = allWindows[0]
         if (win.isMinimized()) win.restore()
+        win.show()
         win.focus()
+      } else {
+        // 窗口已全部关闭但进程仍在托盘时，任务栏/快捷方式会再起一次进程；
+        // 第二实例会退出，须在此处打开主窗口（与托盘左键一致）。
+        showOrCreateMainWindow()
       }
     }
   })

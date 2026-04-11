@@ -23,6 +23,9 @@
   "build": {
     "appId": "com.zq.zq-mark",
     "productName": "ZQ Mark",
+    "extraMetadata": {
+      "description": "ZQ Mark"
+    },
     "directories": {
       "output": "dist"
     },

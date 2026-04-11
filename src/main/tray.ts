@@ -88,7 +88,8 @@ function loadTrayIcon(): Electron.NativeImage {
   return nativeImage.createEmpty()
 }
 
-function showOrCreateMainWindow(): void {
+/** 供主进程在 second-instance 等场景复用：与托盘左键行为一致 */
+export function showOrCreateMainWindow(): void {
   const wins = BrowserWindow.getAllWindows()
   if (wins.length > 0) {
     const w = wins[0]
