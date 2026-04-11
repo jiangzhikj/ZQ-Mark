@@ -63,7 +63,8 @@ h2 { font-size: 1.5rem; font-weight: 600; margin: 1.25rem 0 0.5rem; line-height:
 h3 { font-size: 1.25rem; font-weight: 600; margin: 1rem 0 0.5rem; line-height: 1.4; }
 p { margin: 0.25rem 0; line-height: 1.7; }
 
-ul, ol { padding-left: 1.5rem; margin: 0.25rem 0; }
+ul { list-style: disc; padding-left: 1.5rem; margin: 0.25rem 0; }
+ol { list-style: decimal; padding-left: 1.5rem; margin: 0.25rem 0; }
 li { margin: 0.125rem 0; }
 li p { margin: 0; }
 

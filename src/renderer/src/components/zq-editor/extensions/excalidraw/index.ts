@@ -41,7 +41,21 @@ export const ExcalidrawBlock = Node.create({
     return [{ tag: 'div[data-type="excalidraw"]' }];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes, node }) {
+    const preview = node.attrs.preview;
+    const hasPreview = typeof preview === 'string' && preview.length > 0;
+
+    if (hasPreview) {
+      return [
+        'div',
+        mergeAttributes(
+          { 'data-type': 'excalidraw', class: 'excalidraw-block-node' },
+          HTMLAttributes,
+        ),
+        ['img', { src: preview, alt: 'Excalidraw', style: 'max-width: 100%; height: auto;' }],
+      ];
+    }
+
     return [
       'div',
       mergeAttributes(

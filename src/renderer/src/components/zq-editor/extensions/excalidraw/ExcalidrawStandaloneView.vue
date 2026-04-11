@@ -21,6 +21,7 @@ const iframeRef = ref<HTMLIFrameElement | null>(null);
 const iframeSrc = ref('');
 const iframeKey = ref(0);
 const bundleError = ref(false);
+const isMac = ref(false);
 
 const pendingDoneAfterSave = ref(false);
 let saveBeforeExportTimer: ReturnType<typeof setTimeout> | null = null;
@@ -155,6 +156,12 @@ async function loadStandaloneExcalidraw() {
 
 onMounted(async () => {
   window.addEventListener('message', onWindowMessage, false);
+  try {
+    const platform = await window.electron.getPlatform();
+    isMac.value = platform === 'darwin';
+  } catch {
+    isMac.value = false;
+  }
   await loadStandaloneExcalidraw();
 });
 
@@ -176,7 +183,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="zq-excalidraw-standalone">
-    <div class="zq-excalidraw-standalone__header">
+    <div
+      class="zq-excalidraw-standalone__header"
+      :class="{ 'zq-excalidraw-standalone__header--mac': isMac }"
+    >
       <span class="zq-excalidraw-standalone__title">{{ t('zq-editor.excalidraw.title') }}</span>
       <div class="zq-excalidraw-standalone__actions">
         <button
@@ -235,10 +245,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   flex-shrink: 0;
   padding: 8px 16px;
-  padding-left: 80px;
   background: #f5f5f5;
   border-bottom: 1px solid #e8e8e8;
   -webkit-app-region: drag;
+}
+
+.zq-excalidraw-standalone__header--mac {
+  padding-left: 80px;
 }
 
 .zq-excalidraw-standalone__header button,

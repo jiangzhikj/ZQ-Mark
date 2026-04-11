@@ -46,6 +46,7 @@ const iframeKey = ref(0);
 const indexBaseUrl = ref<string | null>(null);
 const bundleError = ref(false);
 const isWebPlatform = ref(false);
+const isMac = ref(false);
 
 const pendingCloseAfterSave = ref(false);
 let saveBeforeExportTimer: ReturnType<typeof setTimeout> | null = null;
@@ -285,10 +286,12 @@ let cleanupExcalidrawStandaloneCommit: (() => void) | undefined;
 onMounted(async () => {
   window.addEventListener('message', onWindowMessage, false);
   try {
-    isWebPlatform.value =
-      (await window.electron.getPlatform()) === 'web';
+    const platform = await window.electron.getPlatform();
+    isWebPlatform.value = platform === 'web';
+    isMac.value = platform === 'darwin';
   } catch {
     isWebPlatform.value = false;
+    isMac.value = false;
   }
   if (!isWebPlatform.value) {
     await prepareBaseUrl();
@@ -437,7 +440,10 @@ async function refreshExcalidrawBundle() {
         class="zq-excalidraw-block__editor"
         contenteditable="false"
       >
-        <div class="zq-excalidraw-block__editor-header">
+        <div
+          class="zq-excalidraw-block__editor-header"
+          :class="{ 'zq-excalidraw-block__editor-header--mac': isMac }"
+        >
           <span class="zq-excalidraw-block__editor-title">{{
             $t('zq-editor.excalidraw.title')
           }}</span>
@@ -650,10 +656,13 @@ async function refreshExcalidrawBundle() {
   justify-content: space-between;
   flex-shrink: 0;
   padding: 8px 16px;
-  padding-left: 80px;
   background: #f5f5f5;
   border-bottom: 1px solid #e8e8e8;
   -webkit-app-region: drag;
+}
+
+.zq-excalidraw-block__editor-header--mac {
+  padding-left: 80px;
 }
 
 .zq-excalidraw-block__editor-header button,

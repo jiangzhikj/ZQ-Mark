@@ -38,7 +38,21 @@ export const DrawioBlock = Node.create({
     return [{ tag: 'div[data-type="drawio"]' }];
   },
 
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes, node }) {
+    const preview = node.attrs.preview;
+    const hasPreview = typeof preview === 'string' && preview.length > 0;
+
+    if (hasPreview) {
+      return [
+        'div',
+        mergeAttributes(
+          { 'data-type': 'drawio', class: 'drawio-block-node' },
+          HTMLAttributes,
+        ),
+        ['img', { src: preview, alt: 'Diagram', style: 'max-width: 100%; height: auto;' }],
+      ];
+    }
+
     return [
       'div',
       mergeAttributes(

@@ -40,6 +40,7 @@ const iframeSrc = ref('');
 const standalonePreviewIframeSrc = ref('');
 const indexBaseUrl = ref<string | null>(null);
 const bundleError = ref(false);
+const isMac = ref(false);
 let drawioLoadSentForSession = false;
 let standalonePreviewLoadSentForSession = false;
 
@@ -327,6 +328,12 @@ async function loadStandaloneDrawio() {
 
 onMounted(async () => {
   window.addEventListener('message', onWindowMessage, false);
+  try {
+    const platform = await window.electron.getPlatform();
+    isMac.value = platform === 'darwin';
+  } catch {
+    isMac.value = false;
+  }
   await loadStandaloneDrawio();
 });
 
@@ -339,7 +346,10 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="zq-drawio-standalone">
-    <div class="zq-drawio-standalone__header">
+    <div
+      class="zq-drawio-standalone__header"
+      :class="{ 'zq-drawio-standalone__header--mac': isMac }"
+    >
       <span class="zq-drawio-standalone__title">{{ t('zq-editor.drawio.title') }}</span>
       <div class="zq-drawio-standalone__actions">
         <button
@@ -452,10 +462,13 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   flex-shrink: 0;
   padding: 8px 16px;
-  padding-left: 80px;
   background: #f5f5f5;
   border-bottom: 1px solid #e8e8e8;
   -webkit-app-region: drag;
+}
+
+.zq-drawio-standalone__header--mac {
+  padding-left: 80px;
 }
 
 .zq-drawio-standalone__title {

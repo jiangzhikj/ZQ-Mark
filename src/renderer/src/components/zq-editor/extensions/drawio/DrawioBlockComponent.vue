@@ -69,6 +69,7 @@ const dialogPreviewIframeSrc = ref('');
 const indexBaseUrl = ref<string | null>(null);
 const bundleError = ref(false);
 const isWebPlatform = ref(false);
+const isMac = ref(false);
 
 /** 关闭编辑器前拉取 SVG 预览，收到 export 后再卸载 iframe */
 const closeAfterExportPending = ref(false);
@@ -523,9 +524,12 @@ let cleanupDrawioStandaloneCommit: (() => void) | undefined;
 onMounted(async () => {
   window.addEventListener('message', onWindowMessage, false);
   try {
-    isWebPlatform.value = (await window.electron.getPlatform()) === 'web';
+    const platform = await window.electron.getPlatform();
+    isWebPlatform.value = platform === 'web';
+    isMac.value = platform === 'darwin';
   } catch {
     isWebPlatform.value = false;
+    isMac.value = false;
   }
   if (!isWebPlatform.value) {
     await prepareEditorUrl();
@@ -695,7 +699,10 @@ async function refreshDrawioBundle() {
         class="zq-drawio-block__editor"
         contenteditable="false"
       >
-        <div class="zq-drawio-block__editor-header">
+        <div
+          class="zq-drawio-block__editor-header"
+          :class="{ 'zq-drawio-block__editor-header--mac': isMac }"
+        >
           <span class="zq-drawio-block__editor-title">{{ $t('zq-editor.drawio.title') }}</span>
           <div class="zq-drawio-block__editor-actions">
             <button
@@ -979,10 +986,13 @@ async function refreshDrawioBundle() {
   justify-content: space-between;
   flex-shrink: 0;
   padding: 8px 16px;
-  padding-left: 80px;
   background: #f5f5f5;
   border-bottom: 1px solid #e8e8e8;
   -webkit-app-region: drag;
+}
+
+.zq-drawio-block__editor-header--mac {
+  padding-left: 80px;
 }
 
 .zq-drawio-block__editor-header button,
