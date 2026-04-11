@@ -2,3 +2,5 @@ node_modules
 dist
 out
 .idea
+# 本地打包上传 MinIO，不提交大体积 zip
+resources/plugins/excalidraw/*.zip

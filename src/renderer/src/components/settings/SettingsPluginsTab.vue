@@ -392,12 +392,12 @@ defineExpose({
         <span v-if="exStatus?.version">{{ t('settings.pluginInstalledVersion') }}: {{ exStatus.version }}</span>
         <span>{{ t('settings.pluginSize') }}: {{ formatBytes(exManifest.size) }}</span>
       </div>
-      <p
-        v-if="exStatus?.state === 'ready' && exStatus.userInstalled === false"
-        class="plugin-card__builtin-hint"
-      >
-        {{ t('settings.pluginBuiltinExcalidrawHint') }}
-      </p>
+<!--      <p-->
+<!--        v-if="exStatus?.state === 'ready' && exStatus.userInstalled === false"-->
+<!--        class="plugin-card__builtin-hint"-->
+<!--      >-->
+<!--        {{ t('settings.pluginBuiltinExcalidrawHint') }}-->
+<!--      </p>-->
 
       <div v-if="exInstallError" class="plugin-card__error">
         {{ exInstallError }}

@@ -1,22 +1,22 @@
 {
-  "version": "1.0.5",
-  "notes": "- 新增了Draw.io\n- 新增了Mermaid支持\n- 优化了LaTex支持\n- 图片增加了外链的功能\n- 新文件保存时提醒是否保存.md",
-  "pub_date": "2026-04-03T00:00:00Z",
+  "version": "1.0.6",
+  "notes": "- 新增了excalidraw\n- 优化了Mermaid支持\n- 优化了LaTex支持\n- 大幅减小了安装包大小\n- 修复了一些bug",
+  "pub_date": "2026-04-09T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark-1.0.5-arm64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.6/ZQ%20Mark-1.0.6-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark-1.0.5.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.6/ZQ%20Mark-1.0.6.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark%20Setup%201.0.5.exe",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.6/ZQ%20Mark%20Setup%201.0.6.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.5/ZQ%20Mark-1.0.5-x86_64.AppImage",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.6/ZQ%20Mark-1.0.6-x86_64.AppImage",
       "size": 95000000
     }
   }

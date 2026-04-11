@@ -1,8 +1,8 @@
 {
   "version": "1.0.0",
   "zipUrl": "https://minio-api.fuadmin.cn/zq-mark/plugins/excalidraw/excalidraw-embed-1.0.0.zip",
-  "sha256": "fe355c6d49f38b66c592d7063ea55bdb9c739310e0e146c21e07ecb4c73b9491",
-  "size": 2773842,
+  "sha256": "bcfe4228f2e038d05858b7550d20c0458131ccd422a3f4dd6c38430f01ce8c3e",
+  "size": 4524827,
   "minAppVersion": "1.0.6",
-  "notes": "Vite 构建的 Excalidraw 嵌入页；对应仓库 excalidraw-embed 产出 resources/excalidraw/（zip 内含单层 excalidraw/ 或根目录 index.html）"
+  "notes": "Vite 构建的 Excalidraw 嵌入页 + 内置素材库；打包：cd resources/excalidraw && zip -rq excalidraw-embed-1.0.1.zip . 后上传 MinIO，sha256/size 须与 zip 一致"
 }

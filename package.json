@@ -1,6 +1,6 @@
 {
   "name": "zq-mark",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A local Markdown editor inspired",
   "main": "./out/main/index.js",
   "scripts": {
@@ -16,6 +16,7 @@
     "dev:web": "vite --config vite.web.config.ts",
     "build:web": "vite build --config vite.web.config.ts",
     "hash:drawio": "node scripts/hash-drawio-zip.mjs",
+    "hash:excalidraw": "node scripts/hash-excalidraw-zip.mjs",
     "build:excalidraw-embed": "cd excalidraw-embed && npm run build",
     "postinstall": "electron-builder install-app-deps"
   },
