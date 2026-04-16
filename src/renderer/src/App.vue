@@ -872,7 +872,7 @@ onMounted(async () => {
   })
 
   cleanupUpdateListener = window.electron.onUpdateEvent((payload) => {
-    if (payload.type === 'available') {
+    if (payload.type === 'available' || payload.type === 'downloaded' || payload.type === 'error') {
       updateDialogVisible.value = true
     }
   })

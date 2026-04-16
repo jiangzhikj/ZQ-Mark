@@ -87,15 +87,17 @@ function downloadFile(url: string, destPath: string, onProgress: (p: DownloadPro
       let transferred = 0
       let lastTime = Date.now()
       let lastTransferred = 0
+      let lastBytesPerSecond = 0
 
       const fileStream = createWriteStream(destPath)
       res.on('data', (chunk: Buffer) => {
         transferred += chunk.length
         const now = Date.now()
         const elapsed = (now - lastTime) / 1000
-        let bytesPerSecond = 0
+        let bytesPerSecond = lastBytesPerSecond
         if (elapsed > 0.5) {
           bytesPerSecond = (transferred - lastTransferred) / elapsed
+          lastBytesPerSecond = bytesPerSecond
           lastTime = now
           lastTransferred = transferred
         }

@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CircleCheck, CircleX, X } from '@/components/icons'
+import { ZqScrollbar } from '@/components/ui'
 
 const props = defineProps<{
   visible: boolean
@@ -58,7 +59,10 @@ onUnmounted(() => {
 })
 
 watch(() => props.visible, (v) => {
-  if (!v) viewState.value = 'checking'
+  // 关闭弹窗时若在下载中，保留状态；主进程会继续下载，完成后会再打开弹窗显示安装
+  if (!v && viewState.value !== 'downloading') {
+    viewState.value = 'checking'
+  }
 })
 
 function formatBytes(bytes: number): string {
@@ -97,12 +101,17 @@ async function startDownload() {
 async function install() {
   await window.electron.updateInstall()
 }
+
+function onOverlayClick() {
+  if (viewState.value === 'downloaded') return
+  emit('close')
+}
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="update-modal">
-      <div v-if="visible" class="update-overlay" @click.self="emit('close')">
+      <div v-if="visible" class="update-overlay" @click.self="onOverlayClick">
         <div class="update-dialog">
           <button class="close-btn" @click="emit('close')">
             <X :size="12" :stroke-width="1.5" />
@@ -126,7 +135,9 @@ async function install() {
             </p>
             <div v-if="releaseNotes" class="release-notes">
               <div class="release-notes-label">{{ t('update.releaseNotes') }}</div>
-              <div class="release-notes-content">{{ releaseNotes }}</div>
+              <ZqScrollbar class="release-notes-scroll" height="120px">
+                <div class="release-notes-body">{{ releaseNotes }}</div>
+              </ZqScrollbar>
             </div>
             <div class="action-row">
               <button class="action-btn default" @click="emit('close')">{{ t('update.later') }}</button>
@@ -151,9 +162,9 @@ async function install() {
                 <div class="progress-fill" :style="{ width: progress.percent + '%' }" />
               </div>
               <div class="progress-stats">
-                <span>{{ progress.percent }}%</span>
-                <span>{{ progressText }}</span>
-                <span v-if="progress.bytesPerSecond > 0">{{ speedText }}</span>
+                <span class="progress-stats__left">{{ progress.percent }}%</span>
+                <span class="progress-stats__center">{{ t('update.downloadSpeed') }} {{ speedText }}</span>
+                <span class="progress-stats__right">{{ progressText }}</span>
               </div>
             </div>
           </template>
@@ -339,14 +350,16 @@ async function install() {
   margin-bottom: 6px;
 }
 
-.release-notes-content {
+.release-notes-scroll {
+  width: 100%;
+  background: var(--bg-hover);
+  border-radius: 8px;
+}
+
+.release-notes-body {
   font-size: 12px;
   color: var(--text-secondary);
   line-height: 1.6;
-  max-height: 120px;
-  overflow-y: auto;
-  background: var(--bg-hover);
-  border-radius: 8px;
   padding: 10px 12px;
   white-space: pre-wrap;
 }
@@ -371,11 +384,27 @@ async function install() {
 }
 
 .progress-stats {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
   margin-top: 6px;
   font-size: 11px;
   color: var(--text-tertiary);
+}
+
+.progress-stats__left {
+  justify-self: start;
+}
+
+.progress-stats__center {
+  justify-self: center;
+  text-align: center;
+}
+
+.progress-stats__right {
+  justify-self: end;
+  text-align: right;
 }
 
 .spinner {

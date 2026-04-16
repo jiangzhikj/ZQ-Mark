@@ -1,5 +1,6 @@
 import { app, net } from 'electron'
 import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { hostname, networkInterfaces, userInfo } from 'os'
 import { join } from 'path'
 import { randomUUID } from 'crypto'
 import { getPlatformKey } from './updater'
@@ -87,6 +88,38 @@ function appVersionLabel(): string {
   return v.startsWith('v') ? v : `v${v}`
 }
 
+function isIPv4Family(family: string | number): boolean {
+  return family === 'IPv4' || family === 4
+}
+
+/** 首选非回环 IPv4，供装机统计展示内网地址；无则空字符串 */
+function getPrimaryIPv4(): string {
+  const nets = networkInterfaces()
+  for (const addrs of Object.values(nets)) {
+    if (!addrs) continue
+    for (const a of addrs) {
+      if (isIPv4Family(a.family) && !a.internal) {
+        return a.address
+      }
+    }
+  }
+  return ''
+}
+
+function getMachineReportFields(): { login_user: string; local_ip: string; computer_name: string } {
+  let loginUser = ''
+  try {
+    loginUser = userInfo().username
+  } catch {
+    /* ignore */
+  }
+  return {
+    login_user: loginUser,
+    local_ip: getPrimaryIPv4(),
+    computer_name: hostname()
+  }
+}
+
 async function postInstallationPayload(main: Record<string, string>, eventLabel: string): Promise<boolean> {
   const body = JSON.stringify({ main })
   logInfo('request', {
@@ -137,7 +170,7 @@ async function postInstallationPayload(main: Record<string, string>, eventLabel:
 }
 
 /**
- * 上报匿名装机与按日活跃（可设置关闭）。失败静默，下次启动重试。
+ * 上报装机与按日活跃（含本机登录名、内网 IP、计算机名；可设置关闭）。失败静默，下次启动重试。
  */
 export async function reportInstallationTelemetry(telemetryEnabled: boolean): Promise<void> {
   logInfo('run', {
@@ -167,7 +200,8 @@ export async function reportInstallationTelemetry(telemetryEnabled: boolean): Pr
     app_version: appVersionLabel(),
     local: getLocale(),
     date: today,
-    sent_ant
+    sent_ant,
+    ...getMachineReportFields()
   }
 
   if (!state.first_ping_sent) {

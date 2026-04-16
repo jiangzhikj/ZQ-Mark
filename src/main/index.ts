@@ -143,7 +143,7 @@ interface AppSettings {
   autoSave: boolean
   updateUrl: string
   codeTheme: string
-  /** 是否向服务端上报匿名装机与活跃统计 */
+  /** 是否向服务端上报装机与活跃统计（含本机登录名、内网 IP、计算机名） */
   telemetryEnabled: boolean
   drawioUiLayout: 'full' | 'minimal'
   /** 桌面端：UI 语言选择（可为 system，渲染侧会解析为具体 locale） */
