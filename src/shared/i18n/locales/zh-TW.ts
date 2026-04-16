@@ -19,6 +19,8 @@ const zhTW: AppLocale = {
       newLibrary: '新建檔案庫',
       open: '開啟...',
       openRecent: '最近開啟',
+      recentProjects: '最近專案',
+      recentEmpty: '暫無最近專案',
       clearRecent: '清除最近記錄',
       save: '儲存',
       saveAs: '另存為',
@@ -391,8 +393,14 @@ const zhTW: AppLocale = {
       noLanguage: '純文字',
       copied: '已複製',
       copyCode: '複製程式碼',
+      collapse: '摺疊程式碼',
+      expand: '展開程式碼',
       mermaidEmpty: '在此輸入 Mermaid 語法，下方將即時預覽圖表。',
       mermaidRendering: '正在繪製圖表…'
+    },
+    headingFold: {
+      collapse: '摺疊下方內容（直至同級或更高級標題）',
+      expand: '展開下方內容'
     },
     slash: {
       'category.text': '文字',

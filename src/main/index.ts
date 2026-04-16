@@ -146,6 +146,10 @@ interface AppSettings {
   /** 是否向服务端上报匿名装机与活跃统计 */
   telemetryEnabled: boolean
   drawioUiLayout: 'full' | 'minimal'
+  /** 桌面端：UI 语言选择（可为 system，渲染侧会解析为具体 locale） */
+  uiLocale: 'system' | SupportedLocale
+  /** 桌面端：UI 主题选择（system/light/dark） */
+  uiThemeMode: 'system' | 'light' | 'dark'
   /** 单文件保存时是否弹出 Markdown / ZQ 格式选择 */
   saveFormatAskDialog: boolean
   /** 关闭询问后默认保存格式 */
@@ -159,6 +163,8 @@ const defaultSettings: AppSettings = {
   codeTheme: 'intellij',
   telemetryEnabled: true,
   drawioUiLayout: 'full',
+  uiLocale: 'system',
+  uiThemeMode: 'system',
   saveFormatAskDialog: true,
   saveFormatDefault: 'md'
 }
@@ -216,7 +222,13 @@ function loadRecentFiles(): void {
     const fs = require('fs')
     const p = join(stored, 'recent-files.json')
     if (fs.existsSync(p)) {
-      recentFiles = JSON.parse(fs.readFileSync(p, 'utf-8'))
+      const parsed = JSON.parse(fs.readFileSync(p, 'utf-8'))
+      if (Array.isArray(parsed)) {
+        recentFiles = parsed.slice(0, MAX_RECENT)
+        if (parsed.length > MAX_RECENT) saveRecentFiles()
+      } else {
+        recentFiles = []
+      }
     }
   } catch { recentFiles = [] }
 }
@@ -229,11 +241,30 @@ function saveRecentFiles(): void {
   } catch { /* ignore */ }
 }
 
+function notifyRecentFilesChanged(): void {
+  for (const w of BrowserWindow.getAllWindows()) {
+    w.webContents.send('recent-files-changed')
+  }
+}
+
+function clearRecentFilesFromMenu(): void {
+  recentFiles = []
+  saveRecentFiles()
+  rebuildApplicationMenu()
+  notifyRecentFilesChanged()
+}
+
+function rebuildApplicationMenu(): void {
+  buildMenu(getLocale(), recentFiles, clearRecentFilesFromMenu)
+}
+
 function addRecentFile(fp: string): void {
   recentFiles = recentFiles.filter((f) => f !== fp)
   recentFiles.unshift(fp)
   if (recentFiles.length > MAX_RECENT) recentFiles = recentFiles.slice(0, MAX_RECENT)
   saveRecentFiles()
+  rebuildApplicationMenu()
+  notifyRecentFilesChanged()
 }
 
 function getSystemLocale(): SupportedLocale {
@@ -257,7 +288,7 @@ ipcMain.handle('get-system-theme', () => {
 
 ipcMain.handle('change-locale', (_event, locale: SupportedLocale) => {
   setLocale(locale)
-  buildMenu(locale)
+  buildMenu(locale, recentFiles, clearRecentFilesFromMenu)
   rebuildTrayMenu(locale)
 })
 
@@ -959,12 +990,16 @@ app.whenReady().then(async () => {
   registerUpdaterIPC()
   registerMenuIPC()
 
-  const locale = getSystemLocale()
-  setLocale(locale)
-  buildMenu(locale)
-  createTray(locale)
-
   appSettings = loadSettings()
+  const sysLocale = getSystemLocale()
+  setLocale(sysLocale)
+  buildMenu(sysLocale, recentFiles, clearRecentFilesFromMenu)
+  createTray(sysLocale)
+
+  const effectiveLocale = appSettings.uiLocale === 'system' ? sysLocale : appSettings.uiLocale
+  setLocale(effectiveLocale)
+  buildMenu(effectiveLocale, recentFiles, clearRecentFilesFromMenu)
+  rebuildTrayMenu(effectiveLocale)
   void reportInstallationTelemetry(appSettings.telemetryEnabled !== false)
 
   // Auto-check for updates on launch (delayed by 10s) and every 4 hours

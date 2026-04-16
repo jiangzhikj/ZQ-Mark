@@ -57,8 +57,13 @@
 .zq-editor__wrapper .ProseMirror {
   outline: none;
   min-height: inherit;
-  padding-left: 1.75rem;
-  padding-right: 1.75rem;
+  // 与 GlobalDragHandle.configure({ dragHandleWidth }) 一致；左右对称，避免一侧为手柄留空、另一侧偏窄
+  --zq-drag-handle-w: 46px;
+  --zq-heading-fold-gap: 4px;
+  --zq-heading-fold-btn: 22px;
+  --zq-editor-pad-x: max(1.75rem, calc(var(--zq-drag-handle-w) + 4px));
+  padding-left: var(--zq-editor-pad-x);
+  padding-right: var(--zq-editor-pad-x);
 
   > * + * {
     margin-top: 0.5rem;
@@ -95,6 +100,11 @@
     font-weight: 600;
     margin: 1rem 0 0.5rem;
     line-height: 1.4;
+  }
+
+  // 标题折叠：由 heading-fold 插件写入 decoration class
+  .zq-heading-fold--hidden {
+    display: none !important;
   }
 
   p {
@@ -262,7 +272,10 @@
 // Table
 .zq-editor__wrapper .ProseMirror {
   table {
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
+    border: 1px solid var(--el-border-color);
+    border-radius: 8px;
     margin: 1rem 0;
     overflow: hidden;
     table-layout: fixed;
@@ -271,12 +284,36 @@
 
   td,
   th {
-    border: 1px solid var(--el-border-color);
+    border: none;
+    border-right: 1px solid var(--el-border-color);
+    border-bottom: 1px solid var(--el-border-color);
     box-sizing: border-box;
     min-width: 1em;
     padding: 6px 12px;
     position: relative;
     vertical-align: middle;
+  }
+
+  tr > th:last-child,
+  tr > td:last-child {
+    border-right: none;
+  }
+
+  tbody tr:last-child > th,
+  tbody tr:last-child > td {
+    border-bottom: none;
+  }
+
+  /* 无 tbody 包裹时（部分序列化结构） */
+  table > tr:last-child > th,
+  table > tr:last-child > td {
+    border-bottom: none;
+  }
+
+  /* 仅 thead、无 tbody 时底边仍由表格外框承担 */
+  thead:last-child tr:last-child > th,
+  thead:last-child tr:last-child > td {
+    border-bottom: none;
   }
 
   th {
@@ -307,6 +344,8 @@
   .tableWrapper {
     margin: 1rem 0;
     overflow-x: auto;
+    border-radius: 8px;
+    /* 与 table 圆角一致，裁剪溢出（含横向滚动时） */
   }
 
   &.resize-cursor {

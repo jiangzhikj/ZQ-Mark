@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { LibraryNode } from '../shared/types'
+import type { SupportedLocale } from '../shared/i18n'
 import type {
   DrawioBundleStatus,
   DrawioInstallProgress,
@@ -38,6 +39,10 @@ export interface AppSettings {
    * minimal 为侧栏精简的嵌入布局（历史行为）
    */
   drawioUiLayout: 'full' | 'minimal'
+  /** 桌面端：UI 语言选择（可为 system，渲染侧会解析为具体 locale） */
+  uiLocale: 'system' | SupportedLocale
+  /** 桌面端：UI 主题选择（system/light/dark） */
+  uiThemeMode: 'system' | 'light' | 'dark'
   saveFormatAskDialog: boolean
   saveFormatDefault: 'md' | 'zq'
 }
@@ -52,6 +57,8 @@ export interface ElectronAPI {
   onSettingsChanged: (callback: (settings: AppSettings) => void) => () => void
   onThemeChanged: (callback: (theme: 'light' | 'dark') => void) => () => void
   onMenuAction: (callback: (action: string) => void) => () => void
+  /** 最近项目列表在主进程被更新或清空时触发（桌面端） */
+  onRecentFilesChanged: (callback: () => void) => () => void
   onCheckDirty: (callback: () => boolean) => () => void
   onLoadFile: (callback: (data: { filePath: string; content: string; json?: any; meta?: any; isZq: boolean }) => void) => () => void
   getPendingFile: () => Promise<{ filePath: string; content: string; json?: any; meta?: any; isZq: boolean } | null>
@@ -202,6 +209,11 @@ const api: ElectronAPI = {
     const handler = (_event: Electron.IpcRendererEvent, action: string) => callback(action)
     ipcRenderer.on('menu-action', handler)
     return () => ipcRenderer.removeListener('menu-action', handler)
+  },
+  onRecentFilesChanged: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('recent-files-changed', handler)
+    return () => ipcRenderer.removeListener('recent-files-changed', handler)
   },
   onCheckDirty: (callback) => {
     const handler = () => {

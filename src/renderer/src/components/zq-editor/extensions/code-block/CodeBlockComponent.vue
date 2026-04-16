@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 
 import { NodeSelection } from '@tiptap/pm/state';
 
-import { Check, ChevronDown, Copy } from '@/components/icons';
+import { Check, ChevronDown, ChevronRight, Copy } from '@/components/icons';
 import { resolvedTheme } from '@/composables/useTheme';
 import { $t } from '../../utils/i18n';
 
@@ -25,6 +25,13 @@ const showDropdown = ref(false);
 const copied = ref(false);
 const searchQuery = ref('');
 let clickOutsideCleanup: (() => void) | null = null;
+
+// 折叠状态
+const isCollapsed = computed(() => props.node.attrs.collapsed === true);
+
+function toggleCollapse() {
+  props.updateAttributes({ collapsed: !isCollapsed.value });
+}
 
 const LANGUAGES = [
   { value: 'plaintext', label: 'Plain Text' },
@@ -92,6 +99,23 @@ function toggleDropdown() {
 function closeDropdown() {
   showDropdown.value = false;
   searchQuery.value = '';
+}
+
+function onSearchKeydown(e: KeyboardEvent) {
+  // 阻止编辑器快捷键，但允许输入框正常编辑
+  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'Tab'];
+  const isModKey = e.ctrlKey || e.metaKey || e.altKey;
+
+  // 允许正常的编辑操作
+  if (allowedKeys.includes(e.key) || e.key.length === 1 || isModKey) {
+    // 只允许这些操作，阻止事件冒泡到编辑器
+    e.stopPropagation();
+    return;
+  }
+
+  // 阻止其他按键（如 Enter、Escape 等编辑器快捷键）
+  e.preventDefault();
+  e.stopPropagation();
 }
 
 async function copyCode() {
@@ -290,59 +314,75 @@ onBeforeUnmount(() => {
     <div
       v-show="showMermaidChrome"
       class="zq-codeblock__chrome"
+      :class="{ 'is-collapsed': isCollapsed }"
     >
     <div
       class="zq-codeblock__header"
       contenteditable="false"
       @mousedown.prevent
     >
-      <div class="zq-codeblock__lang-wrapper">
-        <button class="zq-codeblock__lang-btn" @click.stop="toggleDropdown">
-          <span>{{ currentLanguage }}</span>
-          <ChevronDown class="h-3 w-3" />
-        </button>
-
-        <div
-          v-if="showDropdown"
-          class="zq-codeblock__dropdown"
-          @click.stop
+      <div class="zq-codeblock__header-left">
+        <button
+          class="zq-codeblock__collapse-btn"
+          :title="isCollapsed ? $t('zq-editor.codeBlock.expand') : $t('zq-editor.codeBlock.collapse')"
+          @click="toggleCollapse"
         >
-          <input
-            v-model="searchQuery"
-            class="zq-codeblock__search"
-            :placeholder="$t('zq-editor.codeBlock.searchLanguage')"
-            @keydown.stop
-          />
-          <div class="zq-codeblock__lang-list">
-            <button
-              v-for="lang in filteredLanguages"
-              :key="lang.value"
-              class="zq-codeblock__lang-item"
-              :class="{ 'is-active': node.attrs.language === lang.value }"
-              @click="selectLanguage(lang.value)"
-            >
-              {{ lang.label }}
-            </button>
-            <div
-              v-if="filteredLanguages.length === 0"
-              class="zq-codeblock__no-result"
-            >
-              {{ $t('zq-editor.codeBlock.noLanguage') }}
+          <ChevronRight v-if="isCollapsed" class="h-3.5 w-3.5" />
+          <ChevronDown v-else class="h-3.5 w-3.5" />
+        </button>
+      </div>
+
+      <div class="zq-codeblock__header-right">
+        <div class="zq-codeblock__lang-wrapper">
+          <button class="zq-codeblock__lang-btn" @click.stop="toggleDropdown">
+            <span>{{ currentLanguage }}</span>
+            <ChevronDown class="h-3 w-3" />
+          </button>
+
+          <div
+            v-if="showDropdown"
+            class="zq-codeblock__dropdown"
+            @click.stop
+          >
+            <input
+              v-model="searchQuery"
+              class="zq-codeblock__search"
+              :placeholder="$t('zq-editor.codeBlock.searchLanguage')"
+              @keydown="onSearchKeydown"
+              @mousedown.stop
+            />
+            <div class="zq-codeblock__lang-list">
+              <button
+                v-for="lang in filteredLanguages"
+                :key="lang.value"
+                class="zq-codeblock__lang-item"
+                :class="{ 'is-active': node.attrs.language === lang.value }"
+                @click="selectLanguage(lang.value)"
+              >
+                {{ lang.label }}
+              </button>
+              <div
+                v-if="filteredLanguages.length === 0"
+                class="zq-codeblock__no-result"
+              >
+                {{ $t('zq-editor.codeBlock.noLanguage') }}
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <button
-        class="zq-codeblock__copy-btn"
-        :title="copied ? $t('zq-editor.codeBlock.copied') : $t('zq-editor.codeBlock.copyCode')"
-        @click="copyCode"
-      >
-        <Check v-if="copied" class="h-3.5 w-3.5" />
-        <Copy v-else class="h-3.5 w-3.5" />
-      </button>
+        <button
+          class="zq-codeblock__copy-btn"
+          :title="copied ? $t('zq-editor.codeBlock.copied') : $t('zq-editor.codeBlock.copyCode')"
+          @click="copyCode"
+        >
+          <Check v-if="copied" class="h-3.5 w-3.5" />
+          <Copy v-else class="h-3.5 w-3.5" />
+        </button>
+      </div>
     </div>
     <pre
+      v-show="!isCollapsed"
       class="zq-codeblock__pre"
       :class="{ 'zq-codeblock__pre--mermaid': isMermaid }"
     ><NodeViewContent as="code" /></pre>
@@ -417,6 +457,44 @@ onBeforeUnmount(() => {
   background: var(--zq-code-header-bg, var(--el-fill-color-light));
   border-radius: 8px 8px 0 0;
   user-select: none;
+}
+
+.zq-codeblock__chrome.is-collapsed .zq-codeblock__header {
+  border-bottom: none;
+  border-radius: 8px;
+}
+
+.zq-codeblock__header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zq-codeblock__header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zq-codeblock__collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--zq-code-text, var(--el-text-color-secondary));
+  cursor: pointer;
+  transition: all 0.15s;
+  opacity: 0.7;
+}
+
+.zq-codeblock__collapse-btn:hover {
+  background: var(--el-fill-color);
+  color: var(--el-text-color-primary);
+  opacity: 1;
 }
 
 .zq-codeblock__lang-wrapper {
@@ -529,7 +607,7 @@ onBeforeUnmount(() => {
 .zq-codeblock__dropdown {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
+  right: 0;
   z-index: 100;
   width: 200px;
   max-height: 300px;

@@ -19,6 +19,8 @@ const en: AppLocale = {
       newLibrary: 'New Library',
       open: 'Open...',
       openRecent: 'Open Recent',
+      recentProjects: 'Recent Projects',
+      recentEmpty: 'No Recent Projects',
       clearRecent: 'Clear Recent',
       save: 'Save',
       saveAs: 'Save As',
@@ -396,8 +398,14 @@ const en: AppLocale = {
       noLanguage: 'Plain text',
       copied: 'Copied',
       copyCode: 'Copy code',
+      collapse: 'Collapse code',
+      expand: 'Expand code',
       mermaidEmpty: 'Enter Mermaid syntax below for a live diagram preview.',
       mermaidRendering: 'Rendering diagram…'
+    },
+    headingFold: {
+      collapse: 'Fold content below (until same or higher-level heading)',
+      expand: 'Expand content below'
     },
     slash: {
       'category.text': 'Text',

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { FolderOpen, FilePlus, Library, FileText, Clock } from 'lucide-vue-next'
 import ZqScrollbar from '@/components/ui/ZqScrollbar.vue'
@@ -16,10 +16,25 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const recentFiles = ref<string[]>([])
 
-onMounted(async () => {
+async function refreshRecentList() {
   try {
     recentFiles.value = await window.electron.getRecentFiles()
-  } catch { /* ignore */ }
+  } catch {
+    recentFiles.value = []
+  }
+}
+
+let offRecentChanged: (() => void) | undefined
+
+onMounted(async () => {
+  await refreshRecentList()
+  offRecentChanged = window.electron.onRecentFilesChanged(() => {
+    void refreshRecentList()
+  })
+})
+
+onUnmounted(() => {
+  offRecentChanged?.()
 })
 
 function getFileName(fp: string): string {

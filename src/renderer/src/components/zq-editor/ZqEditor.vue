@@ -78,9 +78,18 @@ const { handleFile, handleDrop, handlePaste } = useFileUpload(
   props.uploadOptions,
 );
 
+function isPosInCodeBlock(state: { doc: any }, pos: number): boolean {
+  const $pos = state.doc.resolve(pos);
+  for (let d = $pos.depth; d > 0; d--) {
+    if ($pos.node(d).type.name === 'codeBlock') return true;
+  }
+  return false;
+}
+
 function shouldShowBubble({ state, from, to }: { state: any; from: number; to: number }) {
   const { selection } = state;
   if (selection.empty || !isTextSelection(selection)) return false;
+  if (isPosInCodeBlock(state, from) || isPosInCodeBlock(state, to)) return false;
   const text = state.doc.textBetween(from, to, ' ');
   return text.trim().length > 0;
 }

@@ -19,6 +19,8 @@ const zhCN: AppLocale = {
       newLibrary: '新建文件库',
       open: '打开...',
       openRecent: '最近打开',
+      recentProjects: '最近项目',
+      recentEmpty: '暂无最近项目',
       clearRecent: '清除最近记录',
       save: '保存',
       saveAs: '另存为',
@@ -391,8 +393,14 @@ const zhCN: AppLocale = {
       noLanguage: '纯文本',
       copied: '已复制',
       copyCode: '复制代码',
+      collapse: '折叠代码',
+      expand: '展开代码',
       mermaidEmpty: '在此输入 Mermaid 语法，下方将实时预览图表。',
       mermaidRendering: '正在渲染图表…'
+    },
+    headingFold: {
+      collapse: '折叠下方内容（直至同级或更高级标题）',
+      expand: '展开下方内容'
     },
     slash: {
       'category.text': '文本',

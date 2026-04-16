@@ -52,6 +52,8 @@ const defaultSettings = (): AppSettings => ({
   saveFormatAskDialog: true,
   saveFormatDefault: 'md',
   drawioUiLayout: 'full',
+  uiLocale: 'system',
+  uiThemeMode: 'system',
 })
 
 function readSettings(): AppSettings {
@@ -188,6 +190,8 @@ export function createWebElectronApi(): ElectronAPI {
       menuListeners.add(callback)
       return () => menuListeners.delete(callback)
     },
+
+    onRecentFilesChanged: () => () => {},
 
     onCheckDirty: () => () => {},
 

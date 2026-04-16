@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { dispatchWebMenuAction } from '@/platform/web-electron'
 import { ZqScrollbar } from '@/components/ui'
@@ -9,6 +9,21 @@ const { t } = useI18n()
 const visible = ref(false)
 /** 汉堡按钮位置，用于像 Win/Linux 原生菜单一样在按钮下方弹出 */
 const anchorRect = ref<DOMRect | null>(null)
+const recentPaths = ref<string[]>([])
+
+function shortFileName(fp: string): string {
+  const parts = fp.split(/[/\\]/)
+  return parts[parts.length - 1] || fp
+}
+
+watch(visible, async (v) => {
+  if (!v) return
+  try {
+    recentPaths.value = await window.electron.getRecentFiles()
+  } catch {
+    recentPaths.value = []
+  }
+})
 
 const PANEL_MIN_WIDTH = 240
 const PANEL_MAX_WIDTH = 300
@@ -118,6 +133,20 @@ onUnmounted(() => {
           <button type="button" class="web-menu-item" @click="run('file:open')">
             {{ t('menu.file.open') }}
           </button>
+
+          <div v-if="recentPaths.length > 0" class="web-menu-subgroup">
+            <span class="web-menu-subgroup-label">{{ t('menu.file.recentProjects') }}</span>
+            <button
+              v-for="fp in recentPaths"
+              :key="fp"
+              type="button"
+              class="web-menu-item web-menu-item--sub"
+              @click="run('file:openRecent:' + encodeURIComponent(fp))"
+            >
+              {{ shortFileName(fp) }}
+            </button>
+          </div>
+
           <button type="button" class="web-menu-item" @click="run('file:save')">
             {{ t('menu.file.save') }}
           </button>

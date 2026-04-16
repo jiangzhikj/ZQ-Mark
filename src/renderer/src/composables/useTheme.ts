@@ -12,7 +12,8 @@ export function useTheme() {
 
   async function init() {
     const systemTheme = await window.electron.getSystemTheme()
-    resolvedTheme.value = systemTheme
+    // init 可能早于 App.vue 从 settings 恢复 themeMode，因此要以 themeMode.value 为准
+    resolvedTheme.value = themeMode.value === 'system' ? systemTheme : themeMode.value
     applyTheme()
 
     cleanup = window.electron.onThemeChanged((newTheme) => {

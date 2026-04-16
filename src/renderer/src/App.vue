@@ -381,14 +381,18 @@ async function onChangeLocale(newLocale: string) {
     const sys = await window.electron.getSystemLocale()
     locale.value = sys
     await window.electron.changeLocale(sys)
+    await window.electron.setSettings({ uiLocale: 'system' })
   } else {
     locale.value = newLocale
     await window.electron.changeLocale(newLocale)
+    await window.electron.setSettings({ uiLocale: newLocale as any })
   }
 }
 
-function onChangeTheme(mode: string) {
-  setThemeMode(mode as 'system' | 'light' | 'dark')
+async function onChangeTheme(mode: string) {
+  const m = mode as 'system' | 'light' | 'dark'
+  setThemeMode(m)
+  await window.electron.setSettings({ uiThemeMode: m })
 }
 
 async function onChangeAutoSave(enabled: boolean) {
@@ -778,6 +782,24 @@ onMounted(async () => {
   }
 
   const settings = await window.electron.getSettings()
+  // 恢复用户选择的 UI 语言/主题（关闭重开后不会回退）
+  localeMode.value = (settings.uiLocale ?? 'system') as any
+  if (settings.uiThemeMode) {
+    setThemeMode(settings.uiThemeMode as 'system' | 'light' | 'dark')
+  }
+  if (localeMode.value === 'system') {
+    const sysLocale = await window.electron.getSystemLocale()
+    locale.value = sysLocale
+    if (platform !== 'web') {
+      await window.electron.changeLocale(sysLocale)
+    }
+  } else {
+    locale.value = localeMode.value
+    if (platform !== 'web') {
+      await window.electron.changeLocale(localeMode.value as any)
+    }
+  }
+
   updateUrl.value = settings.updateUrl || ''
   telemetryEnabled.value = settings.telemetryEnabled !== false
   codeTheme.value = settings.codeTheme || 'intellij'
@@ -797,6 +819,16 @@ onMounted(async () => {
   })
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
+    if (action.startsWith('file:openRecent:')) {
+      const enc = action.slice('file:openRecent:'.length)
+      try {
+        const fp = decodeURIComponent(enc)
+        void onWelcomeOpenRecent(fp)
+      } catch (e) {
+        console.error('Open recent from menu failed:', e)
+      }
+      return
+    }
     if (action === 'view:toggleSidebar') {
       toggleSidebar()
     } else if (action === 'view:sourceCode') {

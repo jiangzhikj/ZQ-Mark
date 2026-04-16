@@ -11,8 +11,12 @@ export interface MenuLocale {
     label: string
     new: string
     newLibrary: string
-    open: string
+       open: string
     openRecent: string
+    /** 文件菜单中「最近项目」子菜单标题（与欢迎页列表含义一致） */
+    recentProjects: string
+    /** 尚无最近项目时的占位项 */
+    recentEmpty: string
     clearRecent: string
     save: string
     saveAs: string

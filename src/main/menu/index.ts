@@ -1,13 +1,46 @@
 import { Menu, BrowserWindow, app, shell, ipcMain } from 'electron'
 import type { MenuItemConstructorOptions } from 'electron'
+import { basename } from 'path'
 import { messages } from '../../shared/i18n'
 import type { SupportedLocale, MenuLocale } from '../../shared/i18n'
 
+const OPEN_RECENT_PREFIX = 'file:openRecent:'
+
 let cachedLocale: SupportedLocale = 'zh-CN'
+let cachedRecentPaths: string[] = []
+let cachedClearRecent: () => void = () => {}
 
 function sendAction(action: string): void {
   const win = BrowserWindow.getFocusedWindow()
   win?.webContents.send('menu-action', action)
+}
+
+function sendOpenRecentFile(filePath: string): void {
+  const win = BrowserWindow.getFocusedWindow()
+  win?.webContents.send('menu-action', OPEN_RECENT_PREFIX + encodeURIComponent(filePath))
+}
+
+function buildRecentProjectsSubmenu(m: MenuLocale): MenuItemConstructorOptions {
+  const paths = cachedRecentPaths
+  const items: MenuItemConstructorOptions[] = []
+  if (paths.length === 0) {
+    items.push({ label: m.file.recentEmpty, enabled: false })
+  } else {
+    paths.forEach((fp, i) => {
+      const label = basename(fp)
+      items.push({
+        label,
+        accelerator: i < 9 ? `CmdOrCtrl+${i + 1}` : undefined,
+        click: () => sendOpenRecentFile(fp)
+      })
+    })
+    items.push({ type: 'separator' })
+    items.push({
+      label: m.file.clearRecent,
+      click: () => cachedClearRecent()
+    })
+  }
+  return { label: m.file.recentProjects, submenu: items }
 }
 
 function buildAppMenu(m: MenuLocale): MenuItemConstructorOptions {
@@ -33,6 +66,7 @@ function buildFileMenu(m: MenuLocale): MenuItemConstructorOptions {
     { label: m.file.new, accelerator: 'CmdOrCtrl+N', click: () => sendAction('file:new') },
     { label: m.file.newLibrary, accelerator: 'CmdOrCtrl+Shift+N', click: () => sendAction('file:newLibrary') },
     { label: m.file.open, accelerator: 'CmdOrCtrl+O', click: () => sendAction('file:open') },
+    buildRecentProjectsSubmenu(m),
     { type: 'separator' },
     { label: m.file.save, accelerator: 'CmdOrCtrl+S', click: () => sendAction('file:save') },
     {
@@ -142,8 +176,14 @@ function buildPopupTemplate(m: MenuLocale): MenuItemConstructorOptions[] {
   ]
 }
 
-export function buildMenu(locale: SupportedLocale): void {
+export function buildMenu(
+  locale: SupportedLocale,
+  recentPaths: string[],
+  clearRecent: () => void
+): void {
   cachedLocale = locale
+  cachedRecentPaths = recentPaths
+  cachedClearRecent = clearRecent
   const m = messages[locale].menu
 
   if (process.platform === 'darwin') {
