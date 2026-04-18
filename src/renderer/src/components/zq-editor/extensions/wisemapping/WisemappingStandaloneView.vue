@@ -5,6 +5,7 @@ import { ChevronDown, RotateCw } from '@/components/icons';
 import {
   parseWisemappingHostMessage,
   mapAppLocaleToWisemappingLocale,
+  isWisemappingMessageFromIframe,
   postWisemappingLoad,
   postWisemappingFlushSave,
   postWisemappingNotifyLayout,
@@ -52,22 +53,29 @@ function notifyWisemappingLayout() {
   setTimeout(bumpResize, 200);
 }
 
+function pushStandaloneSessionLoad(): void {
+  const iframe = iframeRef.value;
+  const w = iframe?.contentWindow;
+  if (!w) return;
+  const mapXml =
+    sessionMapXml.value.trim().length > 0 ? sessionMapXml.value : null;
+  postWisemappingLoad(w, {
+    mapXml,
+    theme: isDarkTheme() ? 'dark' : 'light',
+    openMode: 'edit',
+    locale: mapAppLocaleToWisemappingLocale(locale.value),
+  });
+}
+
 function handleEmbedMessage(ev: MessageEvent) {
   const iframe = iframeRef.value;
-  if (!iframe?.contentWindow || ev.source !== iframe.contentWindow) return;
+  if (!isWisemappingMessageFromIframe(ev, iframe)) return;
 
   const data = parseWisemappingHostMessage(ev.data);
   if (!data) return;
 
   if (data.type === 'ready') {
-    const mapXml =
-      sessionMapXml.value.trim().length > 0 ? sessionMapXml.value : null;
-    postWisemappingLoad(iframe.contentWindow!, {
-      mapXml,
-      theme: isDarkTheme() ? 'dark' : 'light',
-      openMode: 'edit',
-      locale: mapAppLocaleToWisemappingLocale(locale.value),
-    });
+    pushStandaloneSessionLoad();
     return;
   }
 
@@ -125,6 +133,16 @@ function onDone() {
 
 function onEditorIframeLoad() {
   void nextTick().then(() => notifyWisemappingLayout());
+  const w = iframeRef.value?.contentWindow;
+  if (!w || !iframeSrc.value) return;
+  pushStandaloneSessionLoad();
+  const delays = [150, 450, 1200];
+  for (const ms of delays) {
+    setTimeout(() => {
+      if (!iframeSrc.value || iframeRef.value?.contentWindow !== w) return;
+      pushStandaloneSessionLoad();
+    }, ms);
+  }
 }
 
 const exportMenuDetailsRef = ref<HTMLDetailsElement | null>(null);
@@ -268,7 +286,7 @@ onBeforeUnmount(() => {
         class="zq-wisemapping-standalone__iframe"
         :src="iframeSrc"
         title="WiseMapping"
-        sandbox="allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-presentation"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-downloads allow-presentation"
         referrerpolicy="no-referrer"
         @load="onEditorIframeLoad"
       />

@@ -16,6 +16,7 @@ import {
   hasWisemappingMapXml,
   resolveMapXmlForWisemapping,
   mapAppLocaleToWisemappingLocale,
+  isWisemappingMessageFromIframe,
   postWisemappingLoad,
   postWisemappingFlushSave,
   postWisemappingNotifyLayout,
@@ -163,9 +164,25 @@ async function openInStandaloneWindow() {
   await openStandaloneFromBlockView(tok);
 }
 
+async function pushWisemappingEmbedLoad(target: Window): Promise<void> {
+  let mapXml: string | null = null;
+  try {
+    const raw = await resolveMapXmlForWisemapping(storedMapXml.value);
+    mapXml = raw.trim().length > 0 ? raw : null;
+  } catch {
+    mapXml = null;
+  }
+  postWisemappingLoad(target, {
+    mapXml,
+    theme: isDarkTheme() ? 'dark' : 'light',
+    openMode: loadOpenMode.value,
+    locale: mapAppLocaleToWisemappingLocale(locale.value),
+  });
+}
+
 function handleEditorEmbedMessage(ev: MessageEvent) {
   const iframe = iframeRef.value;
-  if (!iframe?.contentWindow || ev.source !== iframe.contentWindow) return;
+  if (!isWisemappingMessageFromIframe(ev, iframe)) return;
 
   const data = parseWisemappingHostMessage(ev.data);
   if (!data) return;
@@ -194,16 +211,8 @@ function handleEditorEmbedMessage(ev: MessageEvent) {
   }
 
   if (data.type === 'ready') {
-    void (async () => {
-      const raw = await resolveMapXmlForWisemapping(storedMapXml.value);
-      const mapXml = raw.trim().length > 0 ? raw : null;
-      postWisemappingLoad(iframe.contentWindow!, {
-        mapXml,
-        theme: isDarkTheme() ? 'dark' : 'light',
-        openMode: loadOpenMode.value,
-        locale: mapAppLocaleToWisemappingLocale(locale.value),
-      });
-    })();
+    const w = iframe.contentWindow;
+    if (w) void pushWisemappingEmbedLoad(w);
     return;
   }
 
@@ -253,6 +262,16 @@ function notifyWisemappingLayout() {
 
 function onEditorIframeLoad() {
   void nextTick().then(() => notifyWisemappingLayout());
+  const w = iframeRef.value?.contentWindow;
+  if (!w || !editing.value) return;
+  void pushWisemappingEmbedLoad(w);
+  const delays = [150, 450, 1200];
+  for (const ms of delays) {
+    setTimeout(() => {
+      if (!editing.value || iframeRef.value?.contentWindow !== w) return;
+      void pushWisemappingEmbedLoad(w);
+    }, ms);
+  }
 }
 
 const exportMenuDetailsRef = ref<HTMLDetailsElement | null>(null);
@@ -531,7 +550,7 @@ async function refreshWisemappingBundle() {
             class="zq-wisemapping-block__iframe"
             :src="iframeSrc"
             title="WiseMapping"
-            sandbox="allow-scripts allow-popups allow-forms allow-modals allow-downloads allow-presentation"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-modals allow-downloads allow-presentation"
             referrerpolicy="no-referrer"
             @load="onEditorIframeLoad"
           />

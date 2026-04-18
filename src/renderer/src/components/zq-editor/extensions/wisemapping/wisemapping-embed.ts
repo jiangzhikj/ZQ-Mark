@@ -39,6 +39,26 @@ export function parseWisemappingHostMessage(
   return d;
 }
 
+/**
+ * 校验 postMessage 是否来自当前 Wisemapping iframe。
+ * local-asset 与沙箱无 allow-same-origin 时，部分环境下 ev.source 与 contentWindow 严格不等，
+ * 但仍可通过子窗口的 frameElement 与宿主持有的 iframe 对应。
+ */
+export function isWisemappingMessageFromIframe(
+  ev: MessageEvent,
+  iframe: HTMLIFrameElement | null,
+): boolean {
+  if (!iframe?.contentWindow) return false;
+  if (ev.source === iframe.contentWindow) return true;
+  const src = ev.source;
+  if (!(src instanceof Window)) return false;
+  try {
+    return src.frameElement === iframe;
+  } catch {
+    return false;
+  }
+}
+
 export function hasWisemappingMapXml(s: string | null | undefined): boolean {
   if (s == null || !String(s).trim()) return false;
   const str = String(s);

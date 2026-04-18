@@ -1,8 +1,8 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "zipUrl": "https://minio-api.fuadmin.cn/zq-mark/plugins/wisemapping/wisemapping-embed-1.0.0.zip",
-  "sha256": "05e34d0e971c530cf6e9b732b2d5f58aa527d65e7175c98a04c4c6363ebfe5f6",
-  "size": 2004357,
+  "sha256": "e8b3592b66020c2c6c8996e8c05d518137f4391718f7a4aa462c26a73c593ce8",
+  "size": 2004427,
   "minAppVersion": "1.0.8",
   "notes": "由 resources/wisemapping 构建产物打包：npm run build:wisemapping-embed 后生成 wisemapping-embed-1.0.0.zip；上传至 zipUrl 对应路径后客户端校验 sha256 安装"
 }
