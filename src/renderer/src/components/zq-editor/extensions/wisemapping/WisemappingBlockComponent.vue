@@ -26,7 +26,12 @@ import {
   persistDiagramPreviewDataUrl,
   diagramPreviewSrc,
   persistDiagramTextAsset,
+  isDiagramAssetUrl,
 } from '../../utils/diagram-preview-asset';
+import {
+  wisemappingStandaloneCommitBridge,
+  ensureWisemappingStandaloneCommitIpcListener,
+} from './wisemapping-standalone-bridge';
 
 const WISEMAPPING_DIALOG_ROOT_CLASS = 'zq-wisemapping-dialog-fullscreen-open';
 
@@ -82,10 +87,45 @@ function resetEditorState() {
   }
 }
 
+function isUsableWisemappingPreview(s: unknown): boolean {
+  if (typeof s !== 'string' || !s.trim()) return false;
+  return (
+    s.startsWith('data:') || isDiagramAssetUrl(s) || s.startsWith('blob:')
+  );
+}
+
+function armWisemappingStandaloneForCommit(tok: string) {
+  standaloneToken.value = tok;
+  wisemappingStandaloneCommitBridge.value = {
+    token: tok,
+    commit: async (payload) => {
+      if (payload.token !== tok) return;
+      try {
+        const previewRaw =
+          typeof payload.preview === 'string' ? payload.preview : '';
+        const previewStored = await persistDiagramPreviewDataUrl(previewRaw);
+        const mapXmlStored = await persistDiagramTextAsset(payload.mapXml, '.xml');
+        const attrs: Record<string, any> = { mapXml: mapXmlStored };
+        // 独立窗口首次「完成」时常来不及生成 preview，勿用空串覆盖已有缩略图
+        if (isUsableWisemappingPreview(previewStored)) {
+          attrs.preview = previewStored;
+        }
+        props.updateAttributes(attrs);
+      } finally {
+        standaloneToken.value = '';
+        if (wisemappingStandaloneCommitBridge.value?.token === tok) {
+          wisemappingStandaloneCommitBridge.value = null;
+        }
+        resetEditorState();
+      }
+    },
+  };
+}
+
 async function finishOpenStandaloneFromEditor(mapXml: string, tok: string) {
   const api = window.electron;
   if (!api?.openWisemappingStandalone) return;
-  standaloneToken.value = tok;
+  armWisemappingStandaloneForCommit(tok);
   await api.openWisemappingStandalone({ mapXml, token: tok });
   resetEditorState();
 }
@@ -93,7 +133,7 @@ async function finishOpenStandaloneFromEditor(mapXml: string, tok: string) {
 async function openStandaloneFromBlockView(tok: string) {
   const api = window.electron;
   if (!api?.openWisemappingStandalone) return;
-  standaloneToken.value = tok;
+  armWisemappingStandaloneForCommit(tok);
   const mapXml = await resolveMapXmlForWisemapping(storedMapXml.value);
   await api.openWisemappingStandalone({
     mapXml,
@@ -293,10 +333,9 @@ function closeEditor() {
   postWisemappingFlushSave(w);
 }
 
-let cleanupWisemappingStandaloneCommit: (() => void) | undefined;
-
 onMounted(async () => {
   window.addEventListener('message', onWindowMessage, false);
+  ensureWisemappingStandaloneCommitIpcListener();
   try {
     const platform = await window.electron.getPlatform();
     isWebPlatform.value = platform === 'web';
@@ -308,22 +347,6 @@ onMounted(async () => {
   if (!isWebPlatform.value) {
     await prepareBaseUrl();
   }
-  if (window.electron?.onWisemappingStandaloneCommit) {
-    cleanupWisemappingStandaloneCommit = window.electron.onWisemappingStandaloneCommit(
-      (payload) => {
-        if (payload.token !== standaloneToken.value) return;
-        void (async () => {
-          const preview = await persistDiagramPreviewDataUrl(payload.preview);
-          const mapXml = await persistDiagramTextAsset(payload.mapXml, '.xml');
-          props.updateAttributes({
-            mapXml,
-            preview,
-          });
-          standaloneToken.value = '';
-        })();
-      },
-    );
-  }
 });
 
 onBeforeUnmount(() => {
@@ -331,7 +354,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('message', onWindowMessage, false);
   if (saveBeforeExportTimer != null) clearTimeout(saveBeforeExportTimer);
   if (standaloneExportTimer != null) clearTimeout(standaloneExportTimer);
-  cleanupWisemappingStandaloneCommit?.();
+  // 不在此清空 wisemappingStandaloneCommitBridge：NodeView 重挂载时旧实例会先卸载，
+  // 若此时独立窗口仍在等待「完成」，清 bridge 会导致 token 无法写回。由 commit finally 或下次 arm 覆盖即可。
 });
 
 watch(
@@ -692,6 +716,15 @@ async function refreshWisemappingBundle() {
   padding: 8px 16px;
   background: var(--bg-elevated);
   border-bottom: 1px solid var(--border-color);
+  -webkit-app-region: drag;
+}
+
+.zq-wisemapping-block__editor-header button,
+.zq-wisemapping-block__editor-actions,
+.zq-wisemapping-block__export-dropdown,
+.zq-wisemapping-block__export-summary,
+.zq-wisemapping-block__export-panel {
+  -webkit-app-region: no-drag;
 }
 
 .zq-wisemapping-block__editor-header--mac {

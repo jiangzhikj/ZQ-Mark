@@ -300,8 +300,12 @@ onBeforeUnmount(() => {
   padding-left: 80px;
 }
 
+/* summary/details 不是 button，须单独声明 no-drag，否则整段 header 的 drag 会吞掉点击 */
 .zq-wisemapping-standalone__header button,
-.zq-wisemapping-standalone__actions {
+.zq-wisemapping-standalone__actions,
+.zq-wisemapping-standalone__export-dropdown,
+.zq-wisemapping-standalone__export-summary,
+.zq-wisemapping-standalone__export-panel {
   -webkit-app-region: no-drag;
 }
 

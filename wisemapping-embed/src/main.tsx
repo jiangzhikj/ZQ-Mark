@@ -79,7 +79,10 @@ class MapInfoZq implements MapInfo {
 }
 
 class HostNotifyPersistenceManager extends PersistenceManager {
-  constructor(private readonly onSaved: (xml: string, preview?: string) => void) {
+  constructor(
+    private readonly onSaved: (xml: string, preview?: string) => void,
+    private readonly getSvgElement: () => Element | null = () => null,
+  ) {
     super();
   }
 
@@ -99,11 +102,8 @@ class HostNotifyPersistenceManager extends PersistenceManager {
         const xml = new XMLSerializer().serializeToString(mapXml);
         let preview: string | undefined;
         try {
-          const d = (globalThis as unknown as { designer?: { getWorkSpace: () => { getSVGElement: () => Element } } })
-            .designer;
-          if (d) {
-            const workspace = d.getWorkSpace();
-            const svgElement = workspace.getSVGElement();
+          const svgElement = this.getSvgElement();
+          if (svgElement) {
             const exporter = ImageExporterFactory.create(
               'png',
               svgElement,
@@ -246,11 +246,22 @@ function EmbeddedEditorApp({
     [],
   );
 
+  const getSvgElementRef = useRef<() => Element | null>(() => null);
+
   const hostPmRef = useRef<HostNotifyPersistenceManager | null>(null);
   if (!hostPmRef.current) {
-    hostPmRef.current = new HostNotifyPersistenceManager((xml, preview) => {
-      postSave(xml, preview);
-    });
+    hostPmRef.current = new HostNotifyPersistenceManager(
+      (xml, preview) => {
+        postSave(xml, preview);
+      },
+      () => {
+        try {
+          return getSvgElementRef.current() ?? null;
+        } catch {
+          return null;
+        }
+      },
+    );
   }
 
   const persistence = useMemo(
@@ -278,6 +289,18 @@ function EmbeddedEditorApp({
   });
 
   useEffect(() => {
+    getSvgElementRef.current = () => {
+      try {
+        const m = editor.model;
+        if (!m?.isMapLoadded()) return null;
+        return m.getDesigner().getWorkSpace().getSVGElement() ?? null;
+      } catch {
+        return null;
+      }
+    };
+  }, [editor.model]);
+
+  useEffect(() => {
     const m = editor.model;
     if (!m?.isMapLoadded()) return undefined;
     const designer = m.getDesigner();
@@ -296,7 +319,12 @@ function EmbeddedEditorApp({
       const d = parseHostMessage(ev.data);
       if (!d || d.zq !== PROTO) return;
       if (d.type === 'flush-save') {
-        void editor.model?.save(false).catch(() => {});
+        // 等布局一帧后再保存，避免首次点「完成」时 SVG 尚未就绪导致无 preview
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            void editor.model?.save(false).catch(() => {});
+          });
+        });
         return;
       }
       if (d.type === 'notify-layout') {
