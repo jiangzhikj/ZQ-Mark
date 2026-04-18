@@ -14,6 +14,7 @@ const ASSET_ATTRS: Record<string, string | string[]> = {
   attachment: 'url',
   drawioBlock: ['preview', 'xml'],
   excalidrawBlock: ['preview', 'scene'],
+  wisemappingBlock: ['preview', 'mapXml'],
 }
 
 function assetAttrKeysForType(nodeType: string): string[] {
@@ -191,11 +192,30 @@ function looksLikeExcalidrawSceneJson(s: string): boolean {
   }
 }
 
+function looksLikeWisemappingMapXml(s: string): boolean {
+  const t = s.trim()
+  if (
+    t.startsWith('local-asset:') ||
+    t.startsWith('blob:') ||
+    t.startsWith('http://') ||
+    t.startsWith('https://')
+  ) {
+    return false
+  }
+  return /<map[\s>]/.test(t) && /version\s*=\s*["']tango["']/.test(t)
+}
+
 function extForWebPackedAsset(nodeType: string, attrKey: string): string {
-  if (attrKey === 'preview' && (nodeType === 'drawioBlock' || nodeType === 'excalidrawBlock')) {
-    return 'svg'
+  if (
+    attrKey === 'preview' &&
+    (nodeType === 'drawioBlock' ||
+      nodeType === 'excalidrawBlock' ||
+      nodeType === 'wisemappingBlock')
+  ) {
+    return nodeType === 'wisemappingBlock' ? 'png' : 'svg'
   }
   if (attrKey === 'xml') return 'xml'
+  if (attrKey === 'mapXml') return 'xml'
   if (attrKey === 'scene') return 'json'
   if (nodeType === 'videoBlock' || nodeType === 'video') return 'mp4'
   if (nodeType === 'audioBlock' || nodeType === 'audio') return 'mp3'
@@ -228,11 +248,15 @@ export async function buildZqZipBytes(
 
       if (val.startsWith('data:')) {
         const data =
-          node.type === 'drawioBlock' || node.type === 'excalidrawBlock'
+          node.type === 'drawioBlock' ||
+          node.type === 'excalidrawBlock' ||
+          node.type === 'wisemappingBlock'
             ? dataUrlToUint8(val)
             : null
         if (data && attrKey === 'preview') {
-          let fname = `diagram_${Object.keys(assetEntries).length}.svg`
+          const ext =
+            node.type === 'wisemappingBlock' ? 'png' : 'svg'
+          let fname = `diagram_${Object.keys(assetEntries).length}.${ext}`
           while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
           assetEntries[`assets/${fname}`] = data
           node.attrs[attrKey] = `assets/${fname}`
@@ -268,6 +292,18 @@ export async function buildZqZipBytes(
       ) {
         const data = new TextEncoder().encode(val)
         let fname = `diagram_${Object.keys(assetEntries).length}.json`
+        while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
+        assetEntries[`assets/${fname}`] = data
+        node.attrs[attrKey] = `assets/${fname}`
+      }
+
+      if (
+        node.type === 'wisemappingBlock' &&
+        attrKey === 'mapXml' &&
+        looksLikeWisemappingMapXml(val)
+      ) {
+        const data = new TextEncoder().encode(val)
+        let fname = `diagram_${Object.keys(assetEntries).length}.xml`
         while (assetEntries[`assets/${fname}`]) fname = `_${fname}`
         assetEntries[`assets/${fname}`] = data
         node.attrs[attrKey] = `assets/${fname}`

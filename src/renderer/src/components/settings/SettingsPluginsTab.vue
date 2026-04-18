@@ -13,10 +13,16 @@ import type {
   ExcalidrawInstallProgress,
   ExcalidrawPluginManifest,
 } from '../../../../shared/excalidraw-plugin'
+import type {
+  WisemappingBundleStatus,
+  WisemappingInstallProgress,
+  WisemappingPluginManifest,
+} from '../../../../shared/wisemapping-plugin'
 
 const emit = defineEmits<{
   drawioBundleChanged: []
   excalidrawBundleChanged: []
+  wisemappingBundleChanged: []
 }>()
 
 const { t } = useI18n()
@@ -37,8 +43,17 @@ const exBusy = ref(false)
 const exProgress = ref<ExcalidrawInstallProgress | null>(null)
 const exRemoveConfirmVisible = ref(false)
 
+const wmStatus = ref<WisemappingBundleStatus | null>(null)
+const wmManifest = ref<WisemappingPluginManifest | null>(null)
+const wmManifestError = ref('')
+const wmInstallError = ref('')
+const wmBusy = ref(false)
+const wmProgress = ref<WisemappingInstallProgress | null>(null)
+const wmRemoveConfirmVisible = ref(false)
+
 let cleanupDrawioProgress: (() => void) | null = null
 let cleanupExProgress: (() => void) | null = null
+let cleanupWmProgress: (() => void) | null = null
 
 function compareVersions(a: string, b: string): number {
   const pa = a.replace(/^v/, '').split('.').map(Number)
@@ -204,13 +219,84 @@ async function onConfirmRemoveEx() {
   }
 }
 
-const anyBusy = () => drawioBusy.value || exBusy.value
+async function loadWmStatus() {
+  try {
+    wmStatus.value = await window.electron.getWisemappingBundleStatus()
+  } catch {
+    wmStatus.value = { state: 'missing' }
+  }
+}
+
+async function loadWmManifest() {
+  wmManifestError.value = ''
+  try {
+    wmManifest.value = await window.electron.fetchWisemappingManifest()
+  } catch (e) {
+    wmManifest.value = null
+    wmManifestError.value = e instanceof Error ? e.message : String(e)
+  }
+}
+
+function canUpdateWm() {
+  if (
+    !wmManifest.value ||
+    wmStatus.value?.state !== 'ready' ||
+    !wmStatus.value.version ||
+    !wmStatus.value.userInstalled
+  ) {
+    return false
+  }
+  const v = wmStatus.value.version
+  if (v === 'dev' || v === 'bundled') {
+    return false
+  }
+  return compareVersions(wmManifest.value.version, v) > 0
+}
+
+async function onWmInstallOrUpdate() {
+  wmInstallError.value = ''
+  wmBusy.value = true
+  wmProgress.value = null
+  try {
+    await window.electron.installWisemappingBundle()
+    await loadWmStatus()
+    emit('wisemappingBundleChanged')
+  } catch (e) {
+    wmInstallError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    wmBusy.value = false
+    wmProgress.value = null
+  }
+}
+
+function askRemoveWm() {
+  wmRemoveConfirmVisible.value = true
+}
+
+async function onConfirmRemoveWm() {
+  wmRemoveConfirmVisible.value = false
+  wmInstallError.value = ''
+  wmBusy.value = true
+  try {
+    await window.electron.removeWisemappingBundle()
+    await loadWmStatus()
+    emit('wisemappingBundleChanged')
+  } catch (e) {
+    wmInstallError.value = e instanceof Error ? e.message : String(e)
+  } finally {
+    wmBusy.value = false
+  }
+}
+
+const anyBusy = () => drawioBusy.value || exBusy.value || wmBusy.value
 
 onMounted(async () => {
   await loadDrawioStatus()
   await loadDrawioManifest()
   await loadExStatus()
   await loadExManifest()
+  await loadWmStatus()
+  await loadWmManifest()
 
   cleanupDrawioProgress = window.electron.onDrawioInstallProgress((p) => {
     drawioProgress.value = p
@@ -237,11 +323,25 @@ onMounted(async () => {
       }
     }
   })
+
+  cleanupWmProgress = window.electron.onWisemappingInstallProgress((p) => {
+    wmProgress.value = p
+    if (p.phase === 'downloading' || p.phase === 'verifying' || p.phase === 'extracting') {
+      wmBusy.value = true
+    }
+    if (p.phase === 'done' || p.phase === 'error') {
+      wmBusy.value = false
+      if (p.phase === 'error') {
+        wmInstallError.value = p.message || t('settings.pluginInstallFailed')
+      }
+    }
+  })
 })
 
 onBeforeUnmount(() => {
   cleanupDrawioProgress?.()
   cleanupExProgress?.()
+  cleanupWmProgress?.()
 })
 
 defineExpose({
@@ -250,6 +350,8 @@ defineExpose({
     await loadDrawioManifest()
     await loadExStatus()
     await loadExManifest()
+    await loadWmStatus()
+    await loadWmManifest()
   },
 })
 </script>
@@ -471,6 +573,112 @@ defineExpose({
       </div>
     </div>
 
+    <div class="plugin-card plugin-card--spaced">
+      <div class="plugin-card__head">
+        <h3 class="plugin-card__title">{{ t('settings.pluginWisemappingTitle') }}</h3>
+        <span
+          v-if="wmStatus?.state === 'ready' && wmStatus.userInstalled"
+          class="plugin-card__badge"
+        >{{ t('settings.pluginInstalled') }}</span>
+        <span
+          v-else-if="wmStatus?.state === 'ready'"
+          class="plugin-card__badge plugin-card__badge--muted"
+        >{{ t('settings.pluginBuiltinWisemapping') }}</span>
+        <span
+          v-else
+          class="plugin-card__badge plugin-card__badge--muted"
+        >{{ t('settings.pluginNotInstalled') }}</span>
+      </div>
+      <p class="plugin-card__desc">{{ t('settings.pluginWisemappingDesc') }}</p>
+      <p class="plugin-card__license">{{ t('settings.pluginWisemappingLicense') }}</p>
+
+      <div v-if="wmManifestError" class="plugin-card__warn">
+        {{ t('settings.pluginManifestError') }}: {{ wmManifestError }}
+      </div>
+      <div v-else-if="wmManifest" class="plugin-card__meta">
+        <span v-if="wmManifest.version">{{ t('settings.pluginRemoteVersion') }}: {{ wmManifest.version }}</span>
+        <span v-if="wmStatus?.version">{{ t('settings.pluginInstalledVersion') }}: {{ wmStatus.version }}</span>
+        <span>{{ t('settings.pluginSize') }}: {{ formatBytes(wmManifest.size) }}</span>
+      </div>
+      <p
+        v-if="wmStatus?.state === 'ready' && wmStatus.userInstalled === false"
+        class="plugin-card__builtin-hint"
+      >
+        {{ t('settings.pluginBuiltinWisemappingHint') }}
+      </p>
+
+      <div v-if="wmInstallError" class="plugin-card__error">
+        {{ wmInstallError }}
+      </div>
+
+      <div
+        v-if="wmProgress && wmProgress.phase !== 'done' && wmProgress.phase !== 'error'"
+        class="plugin-card__progress"
+      >
+        <div class="plugin-card__progress-label">
+          <template v-if="wmProgress.phase === 'downloading'">{{ t('settings.pluginPhaseDownloading') }}</template>
+          <template v-else-if="wmProgress.phase === 'verifying'">{{ t('settings.pluginPhaseVerifying') }}</template>
+          <template v-else-if="wmProgress.phase === 'extracting'">{{ t('settings.pluginPhaseExtracting') }}</template>
+        </div>
+        <div class="plugin-card__progress-bar">
+          <div
+            class="plugin-card__progress-fill"
+            :style="{ width: `${wmProgress.percent ?? 0}%` }"
+          />
+        </div>
+        <div class="plugin-card__progress-footer">
+          <span class="plugin-card__progress-size">
+            <template v-if="wmProgress.total">
+              {{ formatBytes(wmProgress.received) }} / {{ formatBytes(wmProgress.total) }}
+            </template>
+            <template v-else>
+              {{ formatBytes(wmProgress.received) }}
+            </template>
+          </span>
+          <span
+            v-if="wmProgress.phase === 'downloading' && wmProgress.bytesPerSecond"
+            class="plugin-card__progress-speed"
+          >
+            {{ t('settings.pluginDownloadSpeed') }} {{ formatSpeed(wmProgress.bytesPerSecond) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="plugin-card__actions">
+        <template v-if="wmStatus?.userInstalled">
+          <button
+            v-if="canUpdateWm()"
+            type="button"
+            class="btn-primary"
+            :disabled="anyBusy()"
+            @click="onWmInstallOrUpdate"
+          >
+            <Download :size="16" :stroke-width="1.5" class="btn-ic" />
+            {{ t('settings.pluginUpdate') }}
+          </button>
+          <button
+            type="button"
+            class="btn-danger"
+            :disabled="anyBusy()"
+            @click="askRemoveWm"
+          >
+            <Trash2 :size="16" :stroke-width="1.5" class="btn-ic" />
+            {{ t('settings.pluginRemove') }}
+          </button>
+        </template>
+        <button
+          v-else
+          type="button"
+          class="btn-primary"
+          :disabled="anyBusy()"
+          @click="onWmInstallOrUpdate"
+        >
+          <Download :size="16" :stroke-width="1.5" class="btn-ic" />
+          {{ t('settings.pluginInstall') }}
+        </button>
+      </div>
+    </div>
+
     <ConfirmDialog
       :visible="drawioRemoveConfirmVisible"
       :title="t('settings.pluginRemoveConfirmTitle')"
@@ -491,6 +699,17 @@ defineExpose({
       confirm-variant="danger"
       @confirm="onConfirmRemoveEx"
       @cancel="exRemoveConfirmVisible = false"
+    />
+
+    <ConfirmDialog
+      :visible="wmRemoveConfirmVisible"
+      :title="t('settings.pluginRemoveWisemappingConfirmTitle')"
+      :message="t('settings.pluginRemoveWisemappingConfirmMessage')"
+      :confirm-text="t('settings.pluginRemove')"
+      :cancel-text="t('dialog.cancel')"
+      confirm-variant="danger"
+      @confirm="onConfirmRemoveWm"
+      @cancel="wmRemoveConfirmVisible = false"
     />
   </div>
 </template>

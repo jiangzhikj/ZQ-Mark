@@ -23,6 +23,7 @@ import { CodeBlock } from './code-block';
 import { ColumnBlock, ColumnsBlock } from './columns';
 import { DrawioBlock } from './drawio';
 import { ExcalidrawBlock } from './excalidraw';
+import { WisemappingBlock } from './wisemapping';
 import { ZqHeading } from './heading';
 import { FontSize } from './font-size';
 import { ImageBlock } from './image';
@@ -151,6 +152,7 @@ export function createEditorExtensions(
     TableOfContents,
     DrawioBlock,
     ExcalidrawBlock,
+    WisemappingBlock,
     ...mathExtensions,
     // 与 editor.scss /标题折叠共用：20（手柄视觉区）+ 4 + 22（折叠按钮），使折叠图标落在手柄右侧
     GlobalDragHandle.configure({

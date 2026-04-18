@@ -17,7 +17,9 @@
     "build:web": "vite build --config vite.web.config.ts",
     "hash:drawio": "node scripts/hash-drawio-zip.mjs",
     "hash:excalidraw": "node scripts/hash-excalidraw-zip.mjs",
+    "hash:wisemapping": "node scripts/hash-wisemapping-zip.mjs",
     "build:excalidraw-embed": "cd excalidraw-embed && npm run build",
+    "build:wisemapping-embed": "cd wisemapping-embed && npm install && npm run build",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -35,7 +37,9 @@
       "!resources/drawio/**/*",
       "!resources/drawio-*.zip",
       "!resources/excalidraw/**/*",
-      "!resources/excalidraw-*.zip"
+      "!resources/excalidraw-*.zip",
+      "!resources/wisemapping/**/*",
+      "!resources/wisemapping-*.zip"
     ],
     "fileAssociations": [
       {

@@ -18,6 +18,7 @@ import Settings from '@/components/Settings.vue'
 import WelcomeScreen from '@/components/WelcomeScreen.vue'
 import DrawioStandaloneView from '@/components/zq-editor/extensions/drawio/DrawioStandaloneView.vue'
 import ExcalidrawStandaloneView from '@/components/zq-editor/extensions/excalidraw/ExcalidrawStandaloneView.vue'
+import WisemappingStandaloneView from '@/components/zq-editor/extensions/wisemapping/WisemappingStandaloneView.vue'
 import {
   DRAWIO_UI_LAYOUT_INJECT_KEY,
   type DrawioUiLayout
@@ -44,6 +45,7 @@ import {
 } from '@/platform/web-session'
 import { setSlashDrawioAvailable } from '@/components/zq-editor/extensions/slash-command/slash-drawio-state'
 import { setSlashExcalidrawAvailable } from '@/components/zq-editor/extensions/slash-command/slash-excalidraw-state'
+import { setSlashWisemappingAvailable } from '@/components/zq-editor/extensions/slash-command/slash-wisemapping-state'
 import { restoreWebLibraryFromSnapshot, serializeWebLibrarySnapshot } from '@/platform/web-electron'
 
 const { themeMode, setThemeMode } = useTheme()
@@ -120,8 +122,10 @@ const isNewDocWindow = urlSearchParams.get('newDoc') === '1'
 const drawioStandaloneMode = urlSearchParams.get('drawioStandalone') === '1'
 /** 独立 Excalidraw 子窗口（仅 Electron） */
 const excalidrawStandaloneMode = urlSearchParams.get('excalidrawStandalone') === '1'
+/** 独立 WiseMapping 子窗口（仅 Electron） */
+const wisemappingStandaloneMode = urlSearchParams.get('wisemappingStandalone') === '1'
 /** 主进程在创建独立窗口时附带 appLocale，与主窗口语言一致（先于首帧渲染） */
-if (drawioStandaloneMode || excalidrawStandaloneMode) {
+if (drawioStandaloneMode || excalidrawStandaloneMode || wisemappingStandaloneMode) {
   const al = urlSearchParams.get('appLocale')
   if (al === 'zh-CN' || al === 'zh-TW' || al === 'en') {
     locale.value = al
@@ -699,15 +703,34 @@ async function refreshExcalidrawBundleStatus() {
   setSlashExcalidrawAvailable(ready)
 }
 
+async function refreshWisemappingBundleStatus() {
+  if (appPlatform.value === 'web') {
+    setSlashWisemappingAvailable(false)
+    return
+  }
+  let ready = false
+  try {
+    const s = await window.electron.getWisemappingBundleStatus()
+    ready = s.state === 'ready'
+  } catch {
+    ready = false
+  }
+  setSlashWisemappingAvailable(ready)
+}
+
 let cleanupDrawioBundleReady: (() => void) | null = null
 let cleanupExcalidrawBundleReady: (() => void) | null = null
+let cleanupWisemappingBundleReady: (() => void) | null = null
 
 onMounted(async () => {
   const platform = await window.electron.getPlatform()
   document.documentElement.setAttribute('data-platform', platform)
   appPlatform.value = platform
 
-  if ((drawioStandaloneMode || excalidrawStandaloneMode) && platform !== 'web') {
+  if (
+    (drawioStandaloneMode || excalidrawStandaloneMode || wisemappingStandaloneMode) &&
+    platform !== 'web'
+  ) {
     const settings = await window.electron.getSettings()
     codeTheme.value = settings.codeTheme || 'intellij'
     document.documentElement.setAttribute('data-code-theme', codeTheme.value)
@@ -811,11 +834,15 @@ onMounted(async () => {
 
   await refreshDrawioBundleStatus()
   await refreshExcalidrawBundleStatus()
+  await refreshWisemappingBundleStatus()
   cleanupDrawioBundleReady = window.electron.onDrawioBundleReady(() => {
     void refreshDrawioBundleStatus()
   })
   cleanupExcalidrawBundleReady = window.electron.onExcalidrawBundleReady(() => {
     void refreshExcalidrawBundleStatus()
+  })
+  cleanupWisemappingBundleReady = window.electron.onWisemappingBundleReady(() => {
+    void refreshWisemappingBundleStatus()
   })
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
@@ -894,6 +921,7 @@ onUnmounted(() => {
   cleanupUpdateListener?.()
   cleanupDrawioBundleReady?.()
   cleanupExcalidrawBundleReady?.()
+  cleanupWisemappingBundleReady?.()
   cleanupWebLocale?.()
   cleanupBeforeUnload?.()
   if (webPersistTimer) {
@@ -904,7 +932,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <ExcalidrawStandaloneView v-if="excalidrawStandaloneMode" />
+  <WisemappingStandaloneView v-if="wisemappingStandaloneMode" />
+  <ExcalidrawStandaloneView v-else-if="excalidrawStandaloneMode" />
   <DrawioStandaloneView v-else-if="drawioStandaloneMode" />
   <div v-else class="app-shell">
     <WebAppMenu v-if="appPlatform === 'web'" />
@@ -1026,6 +1055,7 @@ onUnmounted(() => {
       @check-update="triggerCheckUpdate"
       @drawio-bundle-changed="refreshDrawioBundleStatus"
       @excalidraw-bundle-changed="refreshExcalidrawBundleStatus"
+      @wisemapping-bundle-changed="refreshWisemappingBundleStatus"
     />
     <InputDialog
       :visible="inputDialogVisible"

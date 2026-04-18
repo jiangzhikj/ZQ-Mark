@@ -43,6 +43,7 @@ const emit = defineEmits<{
   checkUpdate: []
   drawioBundleChanged: []
   excalidrawBundleChanged: []
+  wisemappingBundleChanged: []
 }>()
 
 const { t } = useI18n()
@@ -126,6 +127,10 @@ function onDrawioBundleChanged() {
 
 function onExcalidrawBundleChanged() {
   emit('excalidrawBundleChanged')
+}
+
+function onWisemappingBundleChanged() {
+  emit('wisemappingBundleChanged')
 }
 
 function onSaveFormatAskToggle(enabled: boolean) {
@@ -240,6 +245,7 @@ watch(() => props.visible, (v) => {
                   v-show="activeTab === 'plugins'"
                   @drawio-bundle-changed="onDrawioBundleChanged"
                   @excalidraw-bundle-changed="onExcalidrawBundleChanged"
+                  @wisemapping-bundle-changed="onWisemappingBundleChanged"
                 />
 
                 <SettingsAboutTab

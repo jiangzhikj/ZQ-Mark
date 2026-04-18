@@ -15,6 +15,7 @@ const ASSET_ATTRS: Record<string, string | string[]> = {
   attachment: 'url',
   drawioBlock: ['preview', 'xml'],
   excalidrawBlock: ['preview', 'scene'],
+  wisemappingBlock: ['preview', 'mapXml'],
 }
 
 function assetAttrKeysForType(nodeType: string): string[] {

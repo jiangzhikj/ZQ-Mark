@@ -6,6 +6,7 @@ export { default as ZqScrollbar } from './ZqScrollbar.vue'
 
 // Dialog
 export { default as ZqDialog } from './ZqDialog.vue'
+export { default as ZqImagePreviewOverlay } from './ZqImagePreviewOverlay.vue'
 export { default as InputDialog } from './InputDialog.vue'
 export { default as ConfirmDialog } from './ConfirmDialog.vue'
 export type { InputDialogField, InputDialogResult } from './InputDialog.vue'

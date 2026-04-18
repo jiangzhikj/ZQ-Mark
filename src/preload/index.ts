@@ -11,6 +11,11 @@ import type {
   ExcalidrawInstallProgress,
   ExcalidrawPluginManifest,
 } from '../shared/excalidraw-plugin'
+import type {
+  WisemappingBundleStatus,
+  WisemappingInstallProgress,
+  WisemappingPluginManifest,
+} from '../shared/wisemapping-plugin'
 
 export interface LocalFileResult {
   id: string
@@ -71,6 +76,8 @@ export interface ElectronAPI {
   saveFile: (data: { filePath: string | null; content: string }) => Promise<string | null>
   saveZqFile: (data: { filePath: string | null; json: any; title: string; existingMeta?: any }) => Promise<string | null>
   saveDroppedFile: (buffer: ArrayBuffer, fileName: string) => Promise<LocalFileResult>
+  /** 弹出「另存为」将二进制写入用户选择的路径；取消返回 null */
+  saveArrayBufferAs: (buffer: ArrayBuffer, defaultFileName: string) => Promise<string | null>
   /** 将 data URL 写入本地资源目录，用于 diagram 预览等；失败或 Web 返回 null */
   saveDataUrlAsset: (dataUrl: string) => Promise<LocalFileResult | null>
   /** 将 UTF-8 文本写入本地资源（.xml / .json）；失败或 Web 返回 null */
@@ -176,6 +183,38 @@ export interface ElectronAPI {
     }) => void,
   ) => () => void
 
+  /** 桌面端：WiseMapping embed index.html 的 local-asset URL；Web 为 null */
+  getWisemappingIndexUrl: () => Promise<string | null>
+  getWisemappingBundleStatus: () => Promise<WisemappingBundleStatus>
+  fetchWisemappingManifest: () => Promise<WisemappingPluginManifest>
+  installWisemappingBundle: () => Promise<{ ok: true }>
+  removeWisemappingBundle: () => Promise<{ ok: true }>
+  onWisemappingInstallProgress: (
+    callback: (payload: WisemappingInstallProgress) => void,
+  ) => () => void
+  onWisemappingBundleReady: (callback: () => void) => () => void
+
+  openWisemappingStandalone: (opts: {
+    mapXml: string
+    token: string
+  }) => Promise<{ ok: boolean }>
+  getWisemappingStandaloneInitial: () => Promise<{
+    mapXml: string
+    token: string
+  } | null>
+  wisemappingStandaloneCommit: (payload: {
+    mapXml: string
+    preview: string
+    token: string
+  }) => Promise<{ ok: boolean }>
+  onWisemappingStandaloneCommit: (
+    callback: (payload: {
+      token: string
+      mapXml: string
+      preview: string
+    }) => void,
+  ) => () => void
+
   // Platform & window controls
   getPlatform: () => Promise<string>
   windowMinimize: () => void
@@ -244,6 +283,8 @@ const api: ElectronAPI = {
   saveFile: (data) => ipcRenderer.invoke('dialog:save-file', data),
   saveZqFile: (data) => ipcRenderer.invoke('zq:save', data),
   saveDroppedFile: (buffer, fileName) => ipcRenderer.invoke('editor:save-dropped-file', buffer, fileName),
+  saveArrayBufferAs: (buffer, defaultFileName) =>
+    ipcRenderer.invoke('editor:save-array-buffer-as', buffer, defaultFileName),
   saveDataUrlAsset: (dataUrl) => ipcRenderer.invoke('editor:save-data-url-asset', dataUrl),
   saveTextAsset: (text, ext) => ipcRenderer.invoke('editor:save-text-asset', text, ext),
   openLocalFile: (options) => ipcRenderer.invoke('editor:open-local-file', options),
@@ -348,6 +389,40 @@ const api: ElectronAPI = {
     ) => callback(payload)
     ipcRenderer.on('excalidraw:standalone-commit', handler)
     return () => ipcRenderer.removeListener('excalidraw:standalone-commit', handler)
+  },
+
+  getWisemappingIndexUrl: () => ipcRenderer.invoke('wisemapping:get-index-url'),
+  getWisemappingBundleStatus: () => ipcRenderer.invoke('wisemapping:get-bundle-status'),
+  fetchWisemappingManifest: () => ipcRenderer.invoke('wisemapping:fetch-manifest'),
+  installWisemappingBundle: () => ipcRenderer.invoke('wisemapping:install-bundle'),
+  removeWisemappingBundle: () => ipcRenderer.invoke('wisemapping:remove-bundle'),
+  onWisemappingInstallProgress: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: WisemappingInstallProgress,
+    ) => callback(payload)
+    ipcRenderer.on('wisemapping:install-progress', handler)
+    return () => ipcRenderer.removeListener('wisemapping:install-progress', handler)
+  },
+  onWisemappingBundleReady: (callback) => {
+    const handler = () => callback()
+    ipcRenderer.on('wisemapping:bundle-ready', handler)
+    return () => ipcRenderer.removeListener('wisemapping:bundle-ready', handler)
+  },
+
+  openWisemappingStandalone: (opts) =>
+    ipcRenderer.invoke('wisemapping:open-standalone', opts),
+  getWisemappingStandaloneInitial: () =>
+    ipcRenderer.invoke('wisemapping:get-standalone-initial'),
+  wisemappingStandaloneCommit: (payload) =>
+    ipcRenderer.invoke('wisemapping:standalone-commit', payload),
+  onWisemappingStandaloneCommit: (callback) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      payload: { token: string; mapXml: string; preview: string },
+    ) => callback(payload)
+    ipcRenderer.on('wisemapping:standalone-commit', handler)
+    return () => ipcRenderer.removeListener('wisemapping:standalone-commit', handler)
   },
 
   // Platform & window controls

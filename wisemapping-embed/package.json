@@ -1,0 +1,35 @@
+{
+  "name": "zq-mark-wisemapping-embed",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.10",
+    "@mui/material": "^7.3.10",
+    "emoji-picker-react": "^4.18.0",
+    "fflate": "^0.8.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "lodash": "^4.18.1",
+    "react": "^19.2.5",
+    "react-color": "^2.19.3",
+    "react-dom": "^19.2.5",
+    "react-ga4": "^3.0.1",
+    "react-intl": "^10.1.2",
+    "react-loader-spinner": "^8.0.2",
+    "styled-components": "^6.4.0",
+    "xml-formatter": "^3.7.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.5"
+  }
+}

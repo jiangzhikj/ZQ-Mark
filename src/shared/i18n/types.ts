@@ -192,6 +192,11 @@ export interface AppLocale {
     pluginExcalidrawLicense: string
     pluginBuiltinExcalidraw: string
     pluginBuiltinExcalidrawHint: string
+    pluginWisemappingTitle: string
+    pluginWisemappingDesc: string
+    pluginWisemappingLicense: string
+    pluginBuiltinWisemapping: string
+    pluginBuiltinWisemappingHint: string
     pluginInstall: string
     pluginUpdate: string
     pluginRemove: string
@@ -207,6 +212,8 @@ export interface AppLocale {
     pluginRemoveConfirmTitle: string
     pluginRemoveConfirmMessage: string
     drawioLayoutRequiresPlugin: string
+    pluginRemoveWisemappingConfirmTitle: string
+    pluginRemoveWisemappingConfirmMessage: string
   }
   update: {
     currentVersion: string

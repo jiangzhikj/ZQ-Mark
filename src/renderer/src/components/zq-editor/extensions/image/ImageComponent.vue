@@ -5,10 +5,15 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  Download,
   ImageOff,
   RotateCw,
   Trash2,
 } from '@/components/icons';
+
+import { ZqImagePreviewOverlay, ZqMessage } from '@/components/ui';
+
+import { $t } from '../../utils/i18n';
 
 import { NodeViewWrapper } from '@tiptap/vue-3';
 
@@ -42,6 +47,7 @@ const resizeDirection = ref('');
 const contextMenuVisible = ref(false);
 const contextMenuPosition = ref({ x: 0, y: 0 });
 const originalRatio = ref(1);
+const previewOpen = ref(false);
 
 const showError = computed(() => {
   if (!displaySrc.value) return true;
@@ -220,6 +226,68 @@ function handleDelete() {
   closeContextMenu();
 }
 
+function suggestedImageFileName(): string {
+  const fid = props.node.attrs.fileId as string | null | undefined;
+  if (fid && /\.[a-z0-9]+$/i.test(fid)) {
+    const base = fid.split(/[/\\]/).pop() || fid;
+    return base;
+  }
+  const src = displaySrc.value;
+  try {
+    if (src.startsWith('data:')) {
+      const m = src.match(/^data:image\/([\w+.-]+);/i);
+      const mimeExt = m?.[1]?.toLowerCase().replace('jpeg', 'jpg') || 'png';
+      return `image.${mimeExt}`;
+    }
+    const u = new URL(src, window.location.href);
+    const last = u.pathname.split('/').filter(Boolean).pop();
+    if (last && /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(last)) {
+      return decodeURIComponent(last);
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'image.png';
+}
+
+async function handleDownload() {
+  const url = displaySrc.value;
+  if (!url || !imageVisible.value || hasError.value) return;
+  closeContextMenu();
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(String(res.status));
+    const buf = await res.arrayBuffer();
+    const name = suggestedImageFileName();
+    if (typeof window.electron?.saveArrayBufferAs === 'function') {
+      const saved = await window.electron.saveArrayBufferAs(buf, name);
+      if (saved) ZqMessage.success($t('zq-editor.image.downloadSaved'));
+      return;
+    }
+    const blob = new Blob([buf]);
+    const objUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = name;
+    a.rel = 'noopener';
+    a.click();
+    URL.revokeObjectURL(objUrl);
+  } catch {
+    ZqMessage.error($t('zq-editor.image.downloadFailed'));
+  }
+}
+
+function openImagePreview(e: MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (!displaySrc.value || !imageVisible.value || hasError.value) return;
+  previewOpen.value = true;
+}
+
+function closeImagePreview() {
+  previewOpen.value = false;
+}
+
 onBeforeUnmount(() => {
   document.removeEventListener('mousemove', handleResize);
   document.removeEventListener('mouseup', stopResize);
@@ -262,6 +330,7 @@ onBeforeUnmount(() => {
         @load="handleImageLoad"
         @error="handleImageError"
         @contextmenu="handleContextMenu"
+        @dblclick="openImagePreview"
       />
 
       <template v-if="selected && imageVisible">
@@ -325,6 +394,10 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div class="zq-image-menu__divider" />
+        <button class="zq-image-menu__item" @click="handleDownload">
+          <Download class="zq-image-menu__item-icon" />
+          <span>{{ $t('zq-editor.image.download') }}</span>
+        </button>
         <button class="zq-image-menu__item" @click="resetSize">
           <RotateCw class="zq-image-menu__item-icon" />
           <span>{{ $t('zq-editor.image.reset') }}</span>
@@ -335,6 +408,13 @@ onBeforeUnmount(() => {
         </button>
       </div>
     </Teleport>
+
+    <ZqImagePreviewOverlay
+      :visible="previewOpen"
+      :src="displaySrc"
+      :alt="node.attrs.alt"
+      @close="closeImagePreview"
+    />
   </NodeViewWrapper>
 </template>
 
@@ -441,6 +521,7 @@ onBeforeUnmount(() => {
 
 .zq-image.is-visible {
   opacity: 1;
+  cursor: zoom-in;
 }
 
 .zq-resize-handle {

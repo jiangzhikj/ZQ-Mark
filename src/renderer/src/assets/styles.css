@@ -167,6 +167,15 @@ html.zq-excalidraw-dialog-fullscreen-open .sidebar-header {
   -webkit-app-region: no-drag !important;
 }
 
+html.zq-wisemapping-dialog-fullscreen-open #app {
+  pointer-events: none;
+}
+
+html.zq-wisemapping-dialog-fullscreen-open aside.sidebar,
+html.zq-wisemapping-dialog-fullscreen-open .sidebar-header {
+  -webkit-app-region: no-drag !important;
+}
+
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI',

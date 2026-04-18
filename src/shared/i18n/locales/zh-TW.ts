@@ -196,6 +196,14 @@ const zhTW: AppLocale = {
     pluginBuiltinExcalidraw: '內建資源',
     pluginBuiltinExcalidrawHint:
       '目前使用開發目錄或建置產出的嵌入頁；未安裝外掛中心副本時仍可編輯。正式發行請上傳 ZIP 並於清單填寫校驗碼。',
+    pluginWisemappingTitle: 'WiseMapping 心智圖',
+    pluginWisemappingDesc:
+      '在文件中插入 WiseMapping 心智圖。首次使用請於下方下載資源包（以 mindplot 嵌入建置）。',
+    pluginWisemappingLicense:
+      'WiseMapping 相關元件依 WiseMapping Public License v1.0 授權，詳見 wisemapping.org/license；編輯器內會顯示 Powered by 署名。',
+    pluginBuiltinWisemapping: '內建資源',
+    pluginBuiltinWisemappingHint:
+      '目前使用開發目錄下 resources/wisemapping 的建置產出；正式發行請上傳 ZIP 並更新清單校驗碼。',
     pluginInstall: '下載並安裝',
     pluginUpdate: '更新',
     pluginRemove: '解除安裝',
@@ -213,6 +221,9 @@ const zhTW: AppLocale = {
       '解除後將無法編輯文件中的流程圖，可隨時在外掛中心重新安裝。',
     drawioLayoutRequiresPlugin:
       '請先於「外掛」中下載並安裝流程圖元件，再調整流程圖編輯器版面。',
+    pluginRemoveWisemappingConfirmTitle: '要解除安裝 WiseMapping 元件嗎？',
+    pluginRemoveWisemappingConfirmMessage:
+      '解除後將無法編輯文件中的心智圖，可隨時在外掛中心重新安裝。',
   },
   update: {
     currentVersion: '目前版本',
@@ -454,11 +465,14 @@ const zhTW: AppLocale = {
       emoji: '表情',
       emojiDesc: '插入表情符號',
       drawio: '流程圖 (draw.io)',
-      drawioDesc: '插入 diagrams.net 流程圖或圖表（僅桌面版）',
+      drawioDesc: '插入 diagrams.net 流程圖或圖表',
       drawioRequiresPlugin: '請開啟偏好設定 → 外掛，下載並安裝流程圖元件',
       excalidraw: 'Excalidraw',
-      excalidrawDesc: '插入 Excalidraw 手繪白板（僅桌面版）',
+      excalidrawDesc: '插入 Excalidraw 手繪白板',
       excalidrawRequiresPlugin: '請開啟偏好設定 → 外掛，下載並安裝 Excalidraw 元件',
+      wisemapping: '心智圖 (WiseMapping)',
+      wisemappingDesc: '插入 WiseMapping 心智圖',
+      wisemappingRequiresPlugin: '請開啟偏好設定 → 外掛，下載並安裝 WiseMapping 元件',
       noResult: '無符合結果'
     },
     drawio: {
@@ -493,6 +507,22 @@ const zhTW: AppLocale = {
       desktopOnly: 'Excalidraw 僅支援 ZQ Mark 桌面版。',
       missingBundle:
         '尚未安裝 Excalidraw 元件。請開啟「偏好設定 → 外掛」，下載並安裝資源包。',
+      refreshBundle: '重新檢測元件',
+    },
+    wisemapping: {
+      title: '心智圖',
+      edit: '編輯',
+      delete: '刪除',
+      done: '完成',
+      export: '匯出',
+      exportPng: '匯出為 PNG',
+      exportSvg: '匯出為 SVG',
+      openStandalone: '獨立視窗',
+      clickToEdit: '按兩下或使用工具列編輯',
+      hintHasMap: '按兩下編輯心智圖',
+      desktopOnly: 'WiseMapping 僅支援 ZQ Mark 桌面版。',
+      missingBundle:
+        '尚未安裝 WiseMapping 元件。請開啟「偏好設定 → 外掛」，下載並安裝資源包。',
       refreshBundle: '重新檢測元件',
     },
     table: {
@@ -537,6 +567,16 @@ const zhTW: AppLocale = {
     },
     image: {
       loadFailed: '圖片載入失敗',
+      previewTitle: '圖片預覽',
+      previewClose: '關閉',
+      previewZoomIn: '放大',
+      previewZoomOut: '縮小',
+      previewRotateLeft: '向左旋轉',
+      previewRotateRight: '向右旋轉',
+      previewResetView: '重設檢視',
+      download: '下載',
+      downloadSaved: '圖片已儲存',
+      downloadFailed: '下載失敗',
       retry: '重試',
       alignment: '對齊方式',
       alignLeft: '靠左對齊',

@@ -32,6 +32,9 @@ import {
   createExcalidrawStandaloneWindow,
   getExcalidrawStandaloneSession,
   deleteExcalidrawStandaloneSession,
+  createWisemappingStandaloneWindow,
+  getWisemappingStandaloneSession,
+  deleteWisemappingStandaloneSession,
 } from './window-manager'
 import { createTray, rebuildTrayMenu, destroyTray, showOrCreateMainWindow } from './tray'
 import {
@@ -48,6 +51,13 @@ import {
   installExcalidrawUsingUpdateUrl,
   removeExcalidrawBundle,
 } from './excalidraw-bundle'
+import {
+  getWisemappingIndexAssetUrl,
+  getWisemappingBundleStatus,
+  fetchWisemappingManifest,
+  installWisemappingUsingUpdateUrl,
+  removeWisemappingBundle,
+} from './wisemapping-bundle'
 
 const MAX_RECENT = 10
 let recentFiles: string[] = []
@@ -143,7 +153,7 @@ interface AppSettings {
   autoSave: boolean
   updateUrl: string
   codeTheme: string
-  /** 是否向服务端上报装机与活跃统计（含本机登录名、内网 IP、计算机名） */
+
   telemetryEnabled: boolean
   drawioUiLayout: 'full' | 'minimal'
   /** 桌面端：UI 语言选择（可为 system，渲染侧会解析为具体 locale） */
@@ -409,6 +419,30 @@ ipcMain.handle('excalidraw:remove-bundle', async () => {
   return { ok: true as const }
 })
 
+ipcMain.handle('wisemapping:get-index-url', () => {
+  const url = getWisemappingIndexAssetUrl()
+  if (!url) {
+    console.warn('[wisemapping] embed bundle not found (install from Settings → Plugins)')
+  }
+  return url
+})
+
+ipcMain.handle('wisemapping:get-bundle-status', () => getWisemappingBundleStatus())
+
+ipcMain.handle('wisemapping:fetch-manifest', async () => {
+  return await fetchWisemappingManifest(appSettings.updateUrl)
+})
+
+ipcMain.handle('wisemapping:install-bundle', async () => {
+  await installWisemappingUsingUpdateUrl(appSettings.updateUrl)
+  return { ok: true as const }
+})
+
+ipcMain.handle('wisemapping:remove-bundle', async () => {
+  await removeWisemappingBundle()
+  return { ok: true as const }
+})
+
 ipcMain.handle(
   'drawio:open-standalone',
   (
@@ -507,6 +541,57 @@ ipcMain.handle(
       })
     }
     deleteExcalidrawStandaloneSession(win.id)
+    return { ok: true }
+  },
+)
+
+ipcMain.handle(
+  'wisemapping:open-standalone',
+  (
+    event,
+    opts: { mapXml: string; token: string },
+  ): { ok: boolean } => {
+    const parent = BrowserWindow.fromWebContents(event.sender)
+    if (!parent) return { ok: false }
+    createWisemappingStandaloneWindow({
+      parentId: parent.id,
+      token: opts.token,
+      mapXml: opts.mapXml,
+    })
+    return { ok: true }
+  },
+)
+
+ipcMain.handle(
+  'wisemapping:get-standalone-initial',
+  (event): { mapXml: string; token: string } | null => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return null
+    const s = getWisemappingStandaloneSession(win.id)
+    if (!s) return null
+    return { mapXml: s.mapXml, token: s.token }
+  },
+)
+
+ipcMain.handle(
+  'wisemapping:standalone-commit',
+  (
+    event,
+    payload: { mapXml: string; preview: string; token: string },
+  ): { ok: boolean } => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return { ok: false }
+    const s = getWisemappingStandaloneSession(win.id)
+    if (!s || s.token !== payload.token) return { ok: false }
+    const parent = BrowserWindow.fromId(s.parentId)
+    if (parent && !parent.isDestroyed()) {
+      parent.webContents.send('wisemapping:standalone-commit', {
+        token: payload.token,
+        mapXml: payload.mapXml,
+        preview: payload.preview,
+      })
+    }
+    deleteWisemappingStandaloneSession(win.id)
     return { ok: true }
   },
 )
@@ -839,6 +924,27 @@ ipcMain.handle('editor:save-dropped-file', async (_event, buffer: ArrayBuffer, f
     size: byteLength
   }
 })
+
+ipcMain.handle(
+  'editor:save-array-buffer-as',
+  async (event, buffer: ArrayBuffer, defaultFileName: string) => {
+    const win = getWinFromEvent(event)
+    if (!win) return null
+    const { canceled, filePath } = await dialog.showSaveDialog(win, {
+      defaultPath: defaultFileName || 'image.png',
+      filters: [
+        {
+          name: 'Images',
+          extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'avif'],
+        },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    })
+    if (canceled || !filePath) return null
+    await writeFile(filePath, Buffer.from(buffer))
+    return filePath
+  },
+)
 
 /** 将 data URL（如 SVG 预览）写入 editor-assets，返回 local-asset URL，供 .zq 打包时收集为 assets/ */
 ipcMain.handle('editor:save-data-url-asset', async (_event, dataUrl: string) => {

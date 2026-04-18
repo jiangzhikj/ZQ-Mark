@@ -31,6 +31,8 @@ const ASSET_ATTRS: Record<string, string | string[]> = {
   drawioBlock: ['preview', 'xml'],
   /** 缩略图 SVG + scene JSON */
   excalidrawBlock: ['preview', 'scene'],
+  /** 缩略图 PNG + map XML */
+  wisemappingBlock: ['preview', 'mapXml'],
 }
 
 function assetAttrKeysForType(nodeType: string): string[] {

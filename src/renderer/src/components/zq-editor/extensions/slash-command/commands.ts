@@ -7,6 +7,7 @@ import tippy from 'tippy.js';
 import { $t } from '../../utils/i18n';
 import { isSlashDrawioAvailable } from './slash-drawio-state';
 import { isSlashExcalidrawAvailable } from './slash-excalidraw-state';
+import { isSlashWisemappingAvailable } from './slash-wisemapping-state';
 import LinkEditor from '../../menus/LinkEditor.vue';
 import TableSizePicker from '../../menus/TableSizePicker.vue';
 
@@ -372,6 +373,23 @@ export function getSlashCommands(): SlashCommandItem[] {
         command: ({ editor, range }) => {
           if (!isSlashExcalidrawAvailable()) return;
           editor.chain().focus().deleteRange(range).setExcalidrawBlock().run();
+        },
+      } satisfies SlashCommandItem;
+    })(),
+    (() => {
+      const wmOk = isSlashWisemappingAvailable();
+      return {
+        title: $t('zq-editor.slash.wisemapping'),
+        description: wmOk
+          ? $t('zq-editor.slash.wisemappingDesc')
+          : $t('zq-editor.slash.wisemappingRequiresPlugin'),
+        icon: 'Workflow',
+        category: $t('zq-editor.slash.category.media'),
+        aliases: ['wisemapping', 'mindmap', '思维导图', '心智图'],
+        disabled: !wmOk,
+        command: ({ editor, range }) => {
+          if (!isSlashWisemappingAvailable()) return;
+          editor.chain().focus().deleteRange(range).setWisemappingBlock().run();
         },
       } satisfies SlashCommandItem;
     })(),

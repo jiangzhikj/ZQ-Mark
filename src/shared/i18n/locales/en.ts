@@ -200,6 +200,14 @@ const en: AppLocale = {
     pluginBuiltinExcalidraw: 'Built-in',
     pluginBuiltinExcalidrawHint:
       'Using the dev-folder or built embed output. For releases, upload a ZIP and set checksums in the manifest.',
+    pluginWisemappingTitle: 'WiseMapping (mind map)',
+    pluginWisemappingDesc:
+      'Insert WiseMapping mind maps in documents. Build requires the open-source frontend repo next to this project; download the ZIP from your update server for end users.',
+    pluginWisemappingLicense:
+      'WiseMapping is under WiseMapping Public License v1.0; see wisemapping.org/license.',
+    pluginBuiltinWisemapping: 'Built-in',
+    pluginBuiltinWisemappingHint:
+      'Using the dev-folder or built embed under resources/wisemapping. For releases, upload a ZIP and set checksums in the manifest.',
     pluginInstall: 'Download and install',
     pluginUpdate: 'Update',
     pluginRemove: 'Remove',
@@ -217,6 +225,9 @@ const en: AppLocale = {
       'You will not be able to edit diagrams until you install again from the plugin center.',
     drawioLayoutRequiresPlugin:
       'Install the diagram bundle under Plugins first, then you can change the diagram editor layout.',
+    pluginRemoveWisemappingConfirmTitle: 'Remove WiseMapping?',
+    pluginRemoveWisemappingConfirmMessage:
+      'You will not be able to edit mind maps until you install again from the plugin center.',
   },
   update: {
     currentVersion: 'Current Version',
@@ -466,6 +477,10 @@ const en: AppLocale = {
       excalidrawDesc: 'Insert an Excalidraw sketch (desktop app only)',
       excalidrawRequiresPlugin:
         'Install the Excalidraw bundle under Preferences → Plugins first.',
+      wisemapping: 'Mind map (WiseMapping)',
+      wisemappingDesc: 'Insert a WiseMapping mind map (desktop app only)',
+      wisemappingRequiresPlugin:
+        'Install the WiseMapping bundle under Preferences → Plugins first.',
       noResult: 'No results'
     },
     drawio: {
@@ -500,6 +515,22 @@ const en: AppLocale = {
       desktopOnly: 'Excalidraw is only available in the ZQ Mark desktop app.',
       missingBundle:
         'The Excalidraw bundle is not installed. Open Preferences → Plugins and download it.',
+      refreshBundle: 'Check again',
+    },
+    wisemapping: {
+      title: 'Mind map',
+      edit: 'Edit',
+      delete: 'Delete',
+      done: 'Done',
+      export: 'Export',
+      exportPng: 'Export map as PNG',
+      exportSvg: 'Export map as SVG',
+      openStandalone: 'Open in new window',
+      clickToEdit: 'Double-click or use the toolbar to edit',
+      hintHasMap: 'Double-click to edit the map',
+      desktopOnly: 'WiseMapping is only available in the ZQ Mark desktop app.',
+      missingBundle:
+        'The WiseMapping bundle is not installed. Open Preferences → Plugins and download it.',
       refreshBundle: 'Check again',
     },
     table: {
@@ -544,6 +575,16 @@ const en: AppLocale = {
     },
     image: {
       loadFailed: 'Image failed to load',
+      previewTitle: 'Image preview',
+      previewClose: 'Close',
+      previewZoomIn: 'Zoom in',
+      previewZoomOut: 'Zoom out',
+      previewRotateLeft: 'Rotate left',
+      previewRotateRight: 'Rotate right',
+      previewResetView: 'Reset view',
+      download: 'Download',
+      downloadSaved: 'Image saved',
+      downloadFailed: 'Download failed',
       retry: 'Retry',
       alignment: 'Alignment',
       alignLeft: 'Align left',

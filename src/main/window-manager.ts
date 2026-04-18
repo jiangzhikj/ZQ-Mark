@@ -182,6 +182,82 @@ export function createExcalidrawStandaloneWindow(
   return win
 }
 
+/** WiseMapping 独立子窗口：仅 Electron */
+export interface WisemappingStandaloneSession {
+  parentId: number
+  token: string
+  mapXml: string
+}
+
+const wisemappingStandaloneSessions = new Map<number, WisemappingStandaloneSession>()
+
+export function getWisemappingStandaloneSession(
+  winId: number,
+): WisemappingStandaloneSession | undefined {
+  return wisemappingStandaloneSessions.get(winId)
+}
+
+export function deleteWisemappingStandaloneSession(winId: number): void {
+  wisemappingStandaloneSessions.delete(winId)
+}
+
+export function createWisemappingStandaloneWindow(
+  session: WisemappingStandaloneSession,
+): BrowserWindow {
+  const isMac = process.platform === 'darwin'
+
+  const win = new BrowserWindow({
+    width: 1280,
+    height: 820,
+    minWidth: 640,
+    minHeight: 400,
+    show: false,
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 15, y: 15 } }
+      : { frame: false }),
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      sandbox: false,
+    },
+  })
+
+  wisemappingStandaloneSessions.set(win.id, session)
+
+  win.on('closed', () => {
+    wisemappingStandaloneSessions.delete(win.id)
+  })
+
+  win.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
+  })
+
+  win.on('ready-to-show', () => {
+    win.show()
+  })
+
+  const query: Record<string, string> = {
+    windowId: String(win.id),
+    mode: 'document',
+    wisemappingStandalone: '1',
+    wisemappingToken: session.token,
+    parentWindowId: String(session.parentId),
+    appLocale: getLocale(),
+  }
+
+  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
+    const url = new URL(process.env['ELECTRON_RENDERER_URL'])
+    for (const [k, v] of Object.entries(query)) {
+      url.searchParams.set(k, v)
+    }
+    win.loadURL(url.toString())
+  } else {
+    win.loadFile(join(__dirname, '../renderer/index.html'), { query })
+  }
+
+  return win
+}
+
 export function setLocale(locale: SupportedLocale): void {
   currentLocale = locale
 }

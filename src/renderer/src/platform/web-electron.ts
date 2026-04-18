@@ -311,6 +311,33 @@ export function createWebElectronApi(): ElectronAPI {
       }
     },
 
+    saveArrayBufferAs: async (buffer, defaultFileName) => {
+      const name = defaultFileName || 'image.png'
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: name,
+            types: [
+              {
+                accept: {
+                  'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.avif'],
+                },
+              },
+            ],
+          })
+          const w = await handle.createWritable()
+          await w.write(new Blob([buffer]))
+          await w.close()
+          const f = await handle.getFile()
+          return f.name
+        } catch {
+          return null
+        }
+      }
+      downloadUint8Array(new Uint8Array(buffer), name, 'application/octet-stream')
+      return name
+    },
+
     saveDataUrlAsset: async () => null,
     saveTextAsset: async () => null,
 
@@ -556,6 +583,28 @@ export function createWebElectronApi(): ElectronAPI {
     openExcalidrawStandalone: async () => ({ ok: false }),
     getExcalidrawStandaloneInitial: async () => null,
     excalidrawStandaloneCommit: async () => ({ ok: false }),
-    onExcalidrawStandaloneCommit: () => () => {}
+    onExcalidrawStandaloneCommit: () => () => {},
+
+    getWisemappingIndexUrl: async () => null,
+    getWisemappingBundleStatus: async () => ({
+      state: 'missing' as const,
+      userInstalled: false,
+    }),
+    fetchWisemappingManifest: async () => {
+      throw new Error('WiseMapping plugin is desktop-only')
+    },
+    installWisemappingBundle: async () => {
+      throw new Error('WiseMapping plugin is desktop-only')
+    },
+    removeWisemappingBundle: async () => {
+      throw new Error('WiseMapping plugin is desktop-only')
+    },
+    onWisemappingInstallProgress: () => () => {},
+    onWisemappingBundleReady: () => () => {},
+
+    openWisemappingStandalone: async () => ({ ok: false }),
+    getWisemappingStandaloneInitial: async () => null,
+    wisemappingStandaloneCommit: async () => ({ ok: false }),
+    onWisemappingStandaloneCommit: () => () => {},
   }
 }

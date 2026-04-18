@@ -196,6 +196,14 @@ const zhCN: AppLocale = {
     pluginBuiltinExcalidraw: '内置资源',
     pluginBuiltinExcalidrawHint:
       '当前使用开发目录或构建产出的嵌入页；未安装插件中心副本时仍可编辑。发布渠道需上传 ZIP 并在清单中填写校验和。',
+    pluginWisemappingTitle: 'WiseMapping 思维导图',
+    pluginWisemappingDesc:
+      '在文档中插入 WiseMapping 思维导图。开发构建需将开源前端仓库置于本项目同级目录；正式用户可通过更新服务器下载 ZIP。',
+    pluginWisemappingLicense:
+      'WiseMapping 采用 WiseMapping Public License v1.0，详见 wisemapping.org/license。',
+    pluginBuiltinWisemapping: '内置资源',
+    pluginBuiltinWisemappingHint:
+      '当前使用开发目录或 resources/wisemapping 构建产出；发布渠道需上传 ZIP 并在清单中填写校验和。',
     pluginInstall: '下载并安装',
     pluginUpdate: '更新',
     pluginRemove: '卸载',
@@ -213,6 +221,9 @@ const zhCN: AppLocale = {
       '卸载后将无法编辑文档中的流程图，可随时在插件中心重新安装。',
     drawioLayoutRequiresPlugin:
       '请先在「插件」中下载并安装流程图组件，再调整流程图编辑器布局。',
+    pluginRemoveWisemappingConfirmTitle: '卸载 WiseMapping 组件？',
+    pluginRemoveWisemappingConfirmMessage:
+      '卸载后将无法编辑文档中的思维导图，可随时在插件中心重新安装。',
   },
   update: {
     currentVersion: '当前版本',
@@ -459,6 +470,9 @@ const zhCN: AppLocale = {
       excalidraw: 'Excalidraw',
       excalidrawDesc: '插入 Excalidraw 手绘白板（仅桌面版）',
       excalidrawRequiresPlugin: '请打开偏好设置 → 插件，下载并安装 Excalidraw 组件',
+      wisemapping: '思维导图 (WiseMapping)',
+      wisemappingDesc: '插入 WiseMapping 思维导图（仅桌面版）',
+      wisemappingRequiresPlugin: '请打开偏好设置 → 插件，下载并安装 WiseMapping 组件',
       noResult: '无匹配结果'
     },
     drawio: {
@@ -493,6 +507,22 @@ const zhCN: AppLocale = {
       desktopOnly: 'Excalidraw 仅支持 ZQ Mark 桌面版。',
       missingBundle:
         '未安装 Excalidraw 组件。请打开 偏好设置 → 插件，下载并安装资源包。',
+      refreshBundle: '重新检测组件',
+    },
+    wisemapping: {
+      title: '思维导图',
+      edit: '编辑',
+      delete: '删除',
+      done: '完成',
+      export: '导出',
+      exportPng: '导出为 PNG',
+      exportSvg: '导出为 SVG',
+      openStandalone: '在独立窗口编辑',
+      clickToEdit: '双击或使用工具栏编辑',
+      hintHasMap: '双击编辑思维导图',
+      desktopOnly: 'WiseMapping 仅支持 ZQ Mark 桌面版。',
+      missingBundle:
+        '未安装 WiseMapping 组件。请打开 偏好设置 → 插件，下载并安装资源包。',
       refreshBundle: '重新检测组件',
     },
     table: {
@@ -537,6 +567,16 @@ const zhCN: AppLocale = {
     },
     image: {
       loadFailed: '图片加载失败',
+      previewTitle: '图片预览',
+      previewClose: '关闭',
+      previewZoomIn: '放大',
+      previewZoomOut: '缩小',
+      previewRotateLeft: '向左旋转',
+      previewRotateRight: '向右旋转',
+      previewResetView: '重置视图',
+      download: '下载',
+      downloadSaved: '图片已保存',
+      downloadFailed: '下载失败',
       retry: '重试',
       alignment: '对齐方式',
       alignLeft: '左对齐',

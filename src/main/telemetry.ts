@@ -170,7 +170,7 @@ async function postInstallationPayload(main: Record<string, string>, eventLabel:
 }
 
 /**
- * 上报装机与按日活跃（含本机登录名、内网 IP、计算机名；可设置关闭）。失败静默，下次启动重试。
+ * 失败静默，下次启动重试。
  */
 export async function reportInstallationTelemetry(telemetryEnabled: boolean): Promise<void> {
   logInfo('run', {

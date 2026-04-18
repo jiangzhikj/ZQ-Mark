@@ -1,0 +1,25 @@
+{
+  "include": [
+    "src/**/*"
+, "../mindplot/src/components/widget/FloatingTip.ts"  ],
+  "compilerOptions": {
+    "jsx": "react",
+    "outDir": "./dist/",
+    "sourceMap": true,
+    "noImplicitAny": false,
+    "module": "amd",
+    "moduleResolution": "node",
+    "strict": false,
+    "target": "es6",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "declaration": true,
+    "rootDirs": [
+      "src",
+    ],
+    "resolveJsonModule": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}

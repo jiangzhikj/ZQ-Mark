@@ -102,6 +102,7 @@ export {
   Quote,
   Redo2,
   RotateCw,
+  RotateCcw,
   Rows2,
   Rows3,
   Save,
