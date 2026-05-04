@@ -171,6 +171,8 @@ const en: AppLocale = {
       'Standard matches the default diagrams.net layout. Compact uses the minimal embedded toolbar.',
     drawioUiLayoutFull: 'Standard',
     drawioUiLayoutMinimal: 'Compact',
+    spellcheck: 'Spell Check',
+    spellcheckDesc: 'Enable to show red wavy underlines for misspelled words in the editor',
     saveFormatAsk: 'Ask format on save',
     saveFormatAskDesc: 'When saving a single document, show a dialog to choose Markdown or ZQ Document',
     saveFormatDefaultLabel: 'Default when not asking',
@@ -288,6 +290,8 @@ const en: AppLocale = {
     saveFormatTitle: 'Choose save format',
     saveFormatSubtitle:
       'Both formats work. For complex layout, embedded assets, or rich styling, ZQ Document is better as the primary copy.',
+    newDocFormatTitle: 'New Document',
+    newDocFormatSubtitle: 'Choose document format. Markdown retains plain text compatibility. ZQ Document preserves all styles and embedded resources.',
     saveFormatMdBadge: 'Portable · Plain text',
     saveFormatZqBadge: 'Recommended · Full fidelity',
     saveFormatMdTitle: 'Markdown (.md)',

@@ -472,40 +472,14 @@
   }
 }
 
-// Columns block
+// Columns block — layout delegated to ColumnsComponent NodeView
 .zq-editor__wrapper .ProseMirror {
   .columns-block {
-    display: grid;
-    gap: 1.5rem;
     margin: 0.75rem 0;
-
-    &[data-columns='2'] {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    &[data-columns='3'] {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    &[data-columns='4'] {
-      grid-template-columns: repeat(4, 1fr);
-    }
   }
 
   .column-block {
     min-width: 0;
-    padding: 0.5rem;
-    border-radius: 6px;
-    border: 1px dashed transparent;
-    transition: border-color 0.2s;
-
-    &:hover {
-      border-color: var(--el-border-color-light);
-    }
-
-    &:focus-within {
-      border-color: var(--el-color-primary-light-5);
-    }
   }
 }
 

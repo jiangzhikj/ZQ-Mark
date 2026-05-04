@@ -13,6 +13,7 @@ import {
 import { $t } from '../utils/i18n';
 
 import { Editor } from '@tiptap/vue-3';
+import { Fragment, Slice } from '@tiptap/pm/model';
 
 import { createEditorExtensions } from '../extensions';
 
@@ -31,6 +32,38 @@ const EMPTY_DOC: JSONContent = {
   type: 'doc',
   content: [{ type: 'paragraph' }],
 };
+
+/**
+ * 复制时剥离分栏外壳——只保留内部段落/标题等原生块，
+ * 避免粘贴时被 parseHTML 重新解析出分栏结构。
+ */
+function flattenColumnsInSlice(slice: Slice): Slice {
+  let hasColumns = false;
+  slice.content.forEach((node) => {
+    if (node.type.name === 'columnsBlock') {
+      hasColumns = true;
+    }
+  });
+  if (!hasColumns) return slice;
+
+  const newNodes: any[] = [];
+  slice.content.forEach((node) => {
+    if (node.type.name === 'columnsBlock') {
+      node.forEach((col: any) => {
+        col.forEach((block: any) => {
+          newNodes.push(block.copy(block.content));
+        });
+      });
+    } else {
+      newNodes.push(node);
+    }
+  });
+  return new Slice(
+    Fragment.fromArray(newNodes),
+    Math.min(slice.openStart, 1),
+    Math.min(slice.openEnd, 1),
+  );
+}
 
 export function useZqEditor({ props, emit }: UseZqEditorOptions) {
   const placeholder = computed(
@@ -53,7 +86,9 @@ export function useZqEditor({ props, emit }: UseZqEditorOptions) {
       editorProps: {
         attributes: {
           class: 'zq-editor-prosemirror',
+          spellcheck: 'false',
         },
+        transformCopied: (slice) => flattenColumnsInSlice(slice),
       },
       onUpdate: ({ editor: e }) => {
         const json = e.getJSON();

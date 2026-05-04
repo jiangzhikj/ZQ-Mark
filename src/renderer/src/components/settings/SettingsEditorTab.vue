@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import { ZqSwitch } from '@/components/ui'
 import CodeThemeSelect from './CodeThemeSelect.vue'
 
 defineProps<{
   codeTheme: string
   drawioUiLayout: 'full' | 'minimal'
+  spellcheck: boolean
   /** 已下载流程图插件时为 true */
   drawioBundleReady: boolean
 }>()
@@ -12,6 +14,7 @@ defineProps<{
 const emit = defineEmits<{
   'update:codeTheme': [value: string]
   'update:drawioUiLayout': [value: 'full' | 'minimal']
+  'update:spellcheck': [value: boolean]
 }>()
 
 const { t } = useI18n()
@@ -22,6 +25,10 @@ function onCodeThemeInput(v: string) {
 
 function onDrawioLayoutInput(v: 'full' | 'minimal') {
   emit('update:drawioUiLayout', v)
+}
+
+function onSpellcheckInput(v: boolean) {
+  emit('update:spellcheck', v)
 }
 </script>
 
@@ -36,6 +43,19 @@ function onDrawioLayoutInput(v: 'full' | 'minimal') {
       </div>
 
       <CodeThemeSelect :model-value="codeTheme" @update:model-value="onCodeThemeInput" />
+    </div>
+
+    <div class="setting-group">
+      <div class="setting-row">
+        <div class="setting-label">
+          <span class="label-text">{{ t('settings.spellcheck') }}</span>
+          <span class="label-desc">{{ t('settings.spellcheckDesc') }}</span>
+        </div>
+        <ZqSwitch
+          :model-value="spellcheck"
+          @update:model-value="onSpellcheckInput"
+        />
+      </div>
     </div>
 
     <div v-if="drawioBundleReady" class="setting-group">

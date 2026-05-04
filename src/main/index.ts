@@ -164,6 +164,8 @@ interface AppSettings {
   saveFormatAskDialog: boolean
   /** 关闭询问后默认保存格式 */
   saveFormatDefault: 'md' | 'zq'
+  /** 拼写检查 */
+  spellcheck: boolean
 }
 
 /** Base URL for `{base}/latest.json`. */
@@ -176,7 +178,8 @@ const defaultSettings: AppSettings = {
   uiLocale: 'system',
   uiThemeMode: 'system',
   saveFormatAskDialog: true,
-  saveFormatDefault: 'md'
+  saveFormatDefault: 'md',
+  spellcheck: false
 }
 
 /** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */
@@ -1011,6 +1014,32 @@ ipcMain.handle('editor:open-local-file', async (event, options: { filters?: { na
     url: localPathToAssetUrl(localPath),
     name: basename(filePath),
     size
+  }
+})
+
+// ─── IPC: Import local file by absolute path ───
+
+ipcMain.handle('editor:import-local-path', async (_event, localSrc: string) => {
+  if (typeof localSrc !== 'string') return null
+  const absPath = decodeURIComponent(localSrc.replace(/^file:\/\//, ''))
+  if (!absPath.startsWith('/') && !/^[A-Za-z]:[\\/]/.test(absPath)) return null
+  try {
+    await ensureAssetsDir()
+    const ext = extname(absPath) || '.png'
+    const id = randomUUID()
+    const localName = `${id}${ext}`
+    const localPath = join(assetsDir, localName)
+    await copyFile(absPath, localPath)
+    const { size } = await stat(localPath)
+    return {
+      id: localName,
+      path: localPath,
+      url: localPathToAssetUrl(localPath),
+      name: basename(absPath),
+      size,
+    }
+  } catch {
+    return null
   }
 })
 

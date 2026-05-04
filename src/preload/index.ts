@@ -50,6 +50,7 @@ export interface AppSettings {
   uiThemeMode: 'system' | 'light' | 'dark'
   saveFormatAskDialog: boolean
   saveFormatDefault: 'md' | 'zq'
+  spellcheck: boolean
 }
 
 export interface ElectronAPI {
@@ -83,6 +84,7 @@ export interface ElectronAPI {
   /** 将 UTF-8 文本写入本地资源（.xml / .json）；失败或 Web 返回 null */
   saveTextAsset: (text: string, ext: string) => Promise<LocalFileResult | null>
   openLocalFile: (options: { filters?: { name: string; extensions: string[] }[] }) => Promise<LocalFileResult | null>
+  importLocalPath: (localSrc: string) => Promise<LocalFileResult | null>
   exportFile: (options: { format: string; html: string; title: string; css?: string }) => Promise<string | null>
   showInFolder: (filePath: string) => Promise<void>
   openAssetUrl: (url: string) => Promise<{ ok: boolean; error?: string }>
@@ -288,6 +290,7 @@ const api: ElectronAPI = {
   saveDataUrlAsset: (dataUrl) => ipcRenderer.invoke('editor:save-data-url-asset', dataUrl),
   saveTextAsset: (text, ext) => ipcRenderer.invoke('editor:save-text-asset', text, ext),
   openLocalFile: (options) => ipcRenderer.invoke('editor:open-local-file', options),
+  importLocalPath: (localSrc) => ipcRenderer.invoke('editor:import-local-path', localSrc),
   exportFile: (options) => ipcRenderer.invoke('export:run', options),
   showInFolder: (filePath) => ipcRenderer.invoke('shell:show-in-folder', filePath),
   openAssetUrl: (url) => ipcRenderer.invoke('shell:open-asset-url', url),

@@ -181,19 +181,63 @@ function getNode() {
 }
 
 function deleteBlock() {
-  const node = getNode();
-  if (!node || currentNodePos === null) return;
+  if (currentNodePos === null) return;
   const { state, dispatch } = props.editor.view;
-  dispatch(state.tr.delete(currentNodePos, currentNodePos + node.nodeSize));
+
+  // 从当前位置向上查找：如果在 columnsBlock 内，则删除整个分栏
+  const $pos = state.doc.resolve(currentNodePos);
+  for (let d = $pos.depth; d > 0; d--) {
+    const ancestor = $pos.node(d);
+    if (ancestor.type.name === 'columnsBlock') {
+      dispatch(state.tr.delete($pos.before(d), $pos.before(d) + ancestor.nodeSize));
+      close();
+      return;
+    }
+  }
+
+  // 不在分栏内，按原逻辑删除当前节点
+  const node = state.doc.nodeAt(currentNodePos);
+  if (node) {
+    dispatch(state.tr.delete(currentNodePos, currentNodePos + node.nodeSize));
+  }
   close();
 }
 
 function duplicateBlock() {
-  const node = getNode();
-  if (!node || currentNodePos === null) return;
+  if (currentNodePos === null) return;
   const { state, dispatch } = props.editor.view;
-  const insertPos = currentNodePos + node.nodeSize;
-  dispatch(state.tr.insert(insertPos, node.copy(node.content)));
+
+  const $pos = state.doc.resolve(currentNodePos);
+
+  // 如果在分栏内，只复制各栏内的内容（段落等），不复制分栏结构本身
+  for (let d = $pos.depth; d > 0; d--) {
+    const ancestor = $pos.node(d);
+    if (ancestor.type.name === 'columnsBlock') {
+      const contentBlocks: any[] = [];
+      ancestor.forEach((col: any) => {
+        col.forEach((block: any) => {
+          contentBlocks.push(block.copy(block.content));
+        });
+      });
+      const insertAfter = $pos.before(d) + ancestor.nodeSize;
+      const tr = state.tr;
+      let pos = insertAfter;
+      for (const block of contentBlocks) {
+        tr.insert(pos, block);
+        pos += block.nodeSize;
+      }
+      dispatch(tr);
+      close();
+      return;
+    }
+  }
+
+  // 普通块：正常复制
+  const node = state.doc.nodeAt(currentNodePos);
+  if (node) {
+    const insertPos = currentNodePos + node.nodeSize;
+    dispatch(state.tr.insert(insertPos, node.copy(node.content)));
+  }
   close();
 }
 

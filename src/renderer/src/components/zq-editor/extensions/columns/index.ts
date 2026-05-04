@@ -73,6 +73,27 @@ export const ColumnsBlock = Node.create({
     return VueNodeViewRenderer(ColumnsComponent as any);
   },
 
+  addKeyboardShortcuts() {
+    return {
+      Backspace: () => {
+        const { $anchor } = this.editor.state.selection;
+        // 必须在 columnBlock 内
+        if ($anchor.parent.type.name !== 'columnBlock') return false;
+        // 光标必须在开头位置（pos 0）
+        if ($anchor.parentOffset !== 0) return false;
+        // 必须是 columnsBlock 的第一个子节点
+        const colsNode = $anchor.node($anchor.depth - 1);
+        if (colsNode?.type.name !== 'columnsBlock') return false;
+        if (colsNode.firstChild !== $anchor.parent) return false;
+        // 删除整个 columnsBlock
+        const colsPos = $anchor.before($anchor.depth - 1);
+        const tr = this.editor.state.tr.delete(colsPos, colsPos + colsNode.nodeSize);
+        this.editor.view.dispatch(tr);
+        return true;
+      },
+    };
+  },
+
   addCommands() {
     return {
       setColumns:

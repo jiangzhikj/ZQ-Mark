@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import {
   AlignCenter,
@@ -28,15 +28,48 @@ const props = defineProps<{
 const imageVisible = ref(false);
 const hasError = ref(false);
 
+function isLocalAbsolutePath(s: string): boolean {
+  if (!s) return false;
+  if (s.startsWith('local-asset:') || s.startsWith('http:') || s.startsWith('https:') || s.startsWith('data:') || s.startsWith('blob:')) return false;
+  if (s.startsWith('file://')) return true;
+  if (s.startsWith('/') && !s.startsWith('//')) return true;
+  if (/^[A-Za-z]:[\\/]/.test(s)) return true;
+  return false;
+}
+
+let importingPath = '';
+
+async function tryImportLocalPath(src: string) {
+  if (!isLocalAbsolutePath(src) || !window.electron?.importLocalPath) return;
+  if (importingPath === src) return;
+  importingPath = src;
+  try {
+    const result = await window.electron.importLocalPath(src);
+    if (result && importingPath === src) {
+      props.updateAttributes({ src: result.url, fileId: result.id });
+    }
+  } catch {
+    /* import failed, image will show error state naturally */
+  } finally {
+    if (importingPath === src) importingPath = '';
+  }
+}
+
 const displaySrc = computed(() => props.node.attrs.src || '');
 
 watch(
   () => props.node.attrs.src,
-  () => {
+  (newSrc) => {
     hasError.value = false;
     imageVisible.value = false;
+    if (newSrc) tryImportLocalPath(newSrc);
   },
 );
+
+onMounted(() => {
+  const src = props.node.attrs.src;
+  if (src) tryImportLocalPath(src);
+});
 
 const imgRef = ref<HTMLImageElement | null>(null);
 const isResizing = ref(false);

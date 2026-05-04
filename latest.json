@@ -1,22 +1,22 @@
 {
-  "version": "1.0.8",
-  "notes": "- 修复主题和语言设置后，重启失效的bug\n- 修复代码块选中语言不能搜索的bug\n- 优化代码块里全选时只需要选中当前代码块代码的问题\n- 新增代码块可折叠的功能\n- 新增标题折叠的功能\n- 新增文件中打开最近项目的功能",
+  "version": "1.1.0",
+  "notes": "- 添加单词检查开关，默认关闭\n- 修复其他md编辑中添加本地图片，不显示的问题.\n- 修复其他的体验",
   "pub_date": "2026-04-09T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.8/ZQ%20Mark-1.0.8-arm64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark-1.1.0-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.8/ZQ%20Mark-1.0.8.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark-1.1.0.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.8/ZQ%20Mark%20Setup%201.0.8.exe",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark%20Setup%201.1.0.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.0.8/ZQ%20Mark-1.0.8-x86_64.AppImage",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark-1.1.0-x86_64.AppImage",
       "size": 95000000
     }
   }

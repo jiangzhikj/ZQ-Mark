@@ -54,6 +54,7 @@ const defaultSettings = (): AppSettings => ({
   drawioUiLayout: 'full',
   uiLocale: 'system',
   uiThemeMode: 'system',
+  spellcheck: false,
 })
 
 function readSettings(): AppSettings {

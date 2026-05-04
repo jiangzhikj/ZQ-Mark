@@ -24,6 +24,7 @@ const props = defineProps<{
   codeTheme: string
   telemetryEnabled: boolean
   drawioUiLayout: 'full' | 'minimal'
+  spellcheck: boolean
   saveFormatAskDialog: boolean
   saveFormatDefault: 'md' | 'zq'
   drawioBundleReady: boolean
@@ -40,6 +41,7 @@ const emit = defineEmits<{
   changeSaveFormatAsk: [enabled: boolean]
   changeSaveFormatDefault: [format: 'md' | 'zq']
   changeDrawioUiLayout: [layout: 'full' | 'minimal']
+  changeSpellcheck: [enabled: boolean]
   checkUpdate: []
   drawioBundleChanged: []
   excalidrawBundleChanged: []
@@ -58,6 +60,7 @@ const selectedAutoSave = ref(props.autoSave)
 const selectedTelemetryEnabled = ref(props.telemetryEnabled)
 const selectedCodeTheme = ref(props.codeTheme)
 const selectedDrawioUiLayout = ref(props.drawioUiLayout)
+const selectedSpellcheck = ref(props.spellcheck)
 const selectedSaveFormatAsk = ref(props.saveFormatAskDialog)
 const selectedSaveFormatDefault = ref(props.saveFormatDefault)
 
@@ -78,6 +81,9 @@ watch(() => props.codeTheme, (v) => {
 })
 watch(() => props.drawioUiLayout, (v) => {
   selectedDrawioUiLayout.value = v
+})
+watch(() => props.spellcheck, (v) => {
+  selectedSpellcheck.value = v
 })
 watch(() => props.saveFormatAskDialog, (v) => {
   selectedSaveFormatAsk.value = v
@@ -114,6 +120,11 @@ function onCodeThemeChange(theme: string) {
 function onDrawioUiLayoutChange(layout: 'full' | 'minimal') {
   selectedDrawioUiLayout.value = layout
   emit('changeDrawioUiLayout', layout)
+}
+
+function onSpellcheckChange(enabled: boolean) {
+  selectedSpellcheck.value = enabled
+  emit('changeSpellcheck', enabled)
 }
 
 function onCheckUpdate() {
@@ -236,9 +247,11 @@ watch(() => props.visible, (v) => {
                   v-show="activeTab === 'editor'"
                   :code-theme="selectedCodeTheme"
                   :drawio-ui-layout="selectedDrawioUiLayout"
+                  :spellcheck="selectedSpellcheck"
                   :drawio-bundle-ready="drawioBundleReady"
                   @update:code-theme="onCodeThemeChange"
                   @update:drawio-ui-layout="onDrawioUiLayoutChange"
+                  @update:spellcheck="onSpellcheckChange"
                 />
 
                 <SettingsPluginsTab

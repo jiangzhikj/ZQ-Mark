@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 
 import {
+  Download,
   RotateCcw,
   RotateCw,
   X,
@@ -54,6 +55,28 @@ function resetView() {
   rotation.value = 0;
   panX.value = 0;
   panY.value = 0;
+}
+
+async function downloadImage() {
+  try {
+    const response = await fetch(props.src)
+    const blob = await response.blob()
+    const buffer = await blob.arrayBuffer()
+    const urlPath = props.src.split('?')[0]
+    const fileName = urlPath.split('/').pop() || 'image.png'
+    if (window.electron) {
+      await window.electron.saveArrayBufferAs(buffer, fileName)
+    } else {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      a.click()
+      URL.revokeObjectURL(url)
+    }
+  } catch (err) {
+    console.error('Failed to download image:', err)
+  }
 }
 
 function close() {
@@ -238,12 +261,12 @@ onBeforeUnmount(() => {
         <span class="zq-image-preview__toolbar-sep" aria-hidden="true" />
         <button
           type="button"
-          class="zq-image-preview__tool zq-image-preview__tool--text"
-          :title="$t('zq-editor.image.previewResetView')"
-          :aria-label="$t('zq-editor.image.previewResetView')"
-          @click="resetView"
+          class="zq-image-preview__tool"
+          :title="$t('zq-editor.image.download')"
+          :aria-label="$t('zq-editor.image.download')"
+          @click="downloadImage"
         >
-          {{ $t('zq-editor.image.previewResetView') }}
+          <Download class="h-5 w-5" />
         </button>
       </div>
     </div>
@@ -259,7 +282,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   background: rgba(0, 0, 0, 0.78);
   box-sizing: border-box;
-  padding: 52px 16px 88px;
+  padding: 0;
 }
 
 .zq-image-preview__close {
@@ -338,6 +361,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
 }
 
+
 .zq-image-preview__toolbar-sep {
   width: 1px;
   height: 22px;
@@ -365,10 +389,5 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 
-.zq-image-preview__tool--text {
-  min-width: auto;
-  padding: 0 14px;
-  font-size: 0.8125rem;
-  font-weight: 500;
-}
+
 </style>

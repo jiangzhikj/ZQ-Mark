@@ -5,9 +5,16 @@ import { FileArchive, FileText } from '@/components/icons'
 import { ZqDialog, ZqButton } from '@/components/ui'
 import { ZqCheckbox } from '@/components/ui/form'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean
-}>()
+  titleKey?: string
+  subtitleKey?: string
+  showRemember?: boolean
+}>(), {
+  titleKey: 'dialog.saveFormatTitle',
+  subtitleKey: 'dialog.saveFormatSubtitle',
+  showRemember: true,
+})
 
 const emit = defineEmits<{
   pick: [payload: { format: 'md' | 'zq'; remember: boolean }]
@@ -37,8 +44,8 @@ function onCancel() {
   <ZqDialog :visible="visible" width="560px" @close="onCancel">
     <template #header>
       <div class="sf-header">
-        <h2 class="sf-title">{{ t('dialog.saveFormatTitle') }}</h2>
-        <p class="sf-subtitle">{{ t('dialog.saveFormatSubtitle') }}</p>
+        <h2 class="sf-title">{{ t(props.titleKey) }}</h2>
+        <p v-if="props.subtitleKey" class="sf-subtitle">{{ t(props.subtitleKey) }}</p>
       </div>
     </template>
 
@@ -73,10 +80,12 @@ function onCancel() {
         </div>
       </div>
 
-      <ZqCheckbox v-model="rememberNext" class="sf-remember">
-        {{ t('dialog.saveFormatRemember') }}
-      </ZqCheckbox>
-      <p class="sf-hint">{{ t('dialog.saveFormatRememberHint') }}</p>
+      <template v-if="props.showRemember">
+        <ZqCheckbox v-model="rememberNext" class="sf-remember">
+          {{ t('dialog.saveFormatRemember') }}
+        </ZqCheckbox>
+        <p class="sf-hint">{{ t('dialog.saveFormatRememberHint') }}</p>
+      </template>
     </div>
 
     <template #footer>

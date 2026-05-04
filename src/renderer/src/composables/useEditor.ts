@@ -23,6 +23,8 @@ const windowMode = ref<'document' | 'library'>('document')
 const libraryDocId = ref<string | null>(null)
 const dirtyDocIds = new Set<string>()
 const autoSaveEnabled = ref(true)
+/** 文档格式：'md' 为标准 Markdown，'zq' 为 ZQ 自定义格式 */
+const documentFormat = ref<'md' | 'zq'>('md')
 
 let _getMarkdown: (() => string) | null = null
 let _getHTML: (() => string) | null = null
@@ -82,6 +84,16 @@ function resetTruncation() {
   largeFileLoadedLines.value = 0
   largeFileTotalLines.value = 0
   largeFileLoading.value = false
+}
+
+/** 对 Markdown 中的图片/链接路径做空格编码，避免 markdown-it 在空格处截断 URL */
+function encodeUrlSpacesInMarkdown(md: string): string {
+  return md.replace(
+    /(!?\[[^\]]*\]\()([^)]*)(\))/g,
+    (_match, prefix: string, url: string, suffix: string) => {
+      return `${prefix}${url.replace(/ /g, '%20')}${suffix}`
+    }
+  )
 }
 
 export function useEditor() {
@@ -163,6 +175,7 @@ export function useEditor() {
       }
     } else {
       let md = _getMarkdown?.() || ''
+      md = md.replace(/local-asset:\/\//g, 'file://')
       if (largeFileTruncated.value && _fullContent) {
         const editedPart = md
         const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
@@ -272,6 +285,7 @@ export function useEditor() {
 
     filePath.value = result.filePath
     fileName.value = fileNameFromPath(result.filePath)
+    documentFormat.value = result.isZq ? 'zq' : 'md'
 
     _suppressUpdate = true
     if (result.isZq && result.json) {
@@ -286,7 +300,7 @@ export function useEditor() {
       isZqFormat.value = false
       zqMeta.value = null
       const fullMd = result.content ?? ''
-      const md = applyTruncation(fullMd)
+      const md = applyTruncation(encodeUrlSpacesInMarkdown(fullMd))
       markdownContent.value = md
       if (_setContent) {
         _setContent(md)
@@ -301,6 +315,8 @@ export function useEditor() {
 
   async function doSaveMd(path: string | null) {
     let md = _getMarkdown?.() || ''
+    // 替换 local-asset:// 为 file://，使其他 Markdown 编辑器也能显示图片
+    md = md.replace(/local-asset:\/\//g, 'file://')
     if (largeFileTruncated.value && _fullContent) {
       const editedPart = md
       const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
@@ -332,9 +348,7 @@ export function useEditor() {
       return
     }
 
-    const choice = _resolveSaveFormat ? await _resolveSaveFormat() : 'md'
-    if (choice === 'cancel') return
-    if (choice === 'zq') {
+    if (documentFormat.value === 'zq') {
       await saveAsZq(filePath.value)
     } else {
       await doSaveMd(filePath.value)
@@ -351,6 +365,10 @@ export function useEditor() {
 
   function setUnsavedDialog(fn: () => Promise<'save' | 'discard' | 'cancel'>) {
     _unsavedDialog = fn
+  }
+
+  function setDocumentFormat(format: 'md' | 'zq') {
+    documentFormat.value = format
   }
 
   async function saveAsZq(path: string | null) {
@@ -386,6 +404,7 @@ export function useEditor() {
   function loadFileResult(result: { filePath: string; content: string; json?: any; meta?: any; isZq: boolean }) {
     filePath.value = result.filePath
     fileName.value = fileNameFromPath(result.filePath)
+    documentFormat.value = result.isZq ? 'zq' : 'md'
 
     _suppressUpdate = true
     if (result.isZq && result.json) {
@@ -401,7 +420,7 @@ export function useEditor() {
       isZqFormat.value = false
       zqMeta.value = null
       const fullMd = result.content ?? ''
-      const md = applyTruncation(fullMd)
+      const md = applyTruncation(encodeUrlSpacesInMarkdown(fullMd))
       markdownContent.value = md
       if (_setContent) {
         _setContent(md)
@@ -542,6 +561,7 @@ export function useEditor() {
     fileName,
     isModified,
     isZqFormat,
+    documentFormat,
     zqMeta,
     stats,
     windowMode,
@@ -557,6 +577,7 @@ export function useEditor() {
     saveFile,
     saveAsMd,
     saveAsZq,
+    setDocumentFormat,
     setSaveFormatResolver,
     setUnsavedDialog,
     newFile,

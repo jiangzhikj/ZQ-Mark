@@ -10,6 +10,7 @@ import { isSlashExcalidrawAvailable } from './slash-excalidraw-state';
 import { isSlashWisemappingAvailable } from './slash-wisemapping-state';
 import LinkEditor from '../../menus/LinkEditor.vue';
 import TableSizePicker from '../../menus/TableSizePicker.vue';
+import ColumnCountPicker from '../../menus/ColumnCountPicker.vue';
 
 export interface SlashCommandItem {
   title: string;
@@ -35,6 +36,40 @@ function showTableSizePicker(editor: Editor) {
           .focus()
           .insertTable({ rows, cols, withHeaderRow: true })
           .run();
+        popup?.destroy();
+        component.destroy();
+      },
+    },
+    editor,
+  });
+
+  const ref = document.createElement('div');
+  const instances = tippy(ref, {
+    getReferenceClientRect: () =>
+      new DOMRect(coords.left, coords.top, 0, coords.bottom - coords.top),
+    appendTo: () => document.body,
+    content: component.element as HTMLElement,
+    showOnCreate: true,
+    interactive: true,
+    trigger: 'manual',
+    placement: 'bottom-start',
+    onClickOutside: () => {
+      popup?.destroy();
+      component.destroy();
+    },
+  });
+  popup = Array.isArray(instances) ? instances[0]! : instances;
+}
+
+function showColumnCountPicker(editor: Editor) {
+  const { view } = editor;
+  const coords = view.coordsAtPos(view.state.selection.from);
+  let popup: TippyInstance | null = null;
+
+  const component = new VueRenderer(ColumnCountPicker, {
+    props: {
+      onSelect: (count: number) => {
+        editor.chain().focus().setColumns({ count }).run();
         popup?.destroy();
         component.destroy();
       },
@@ -252,9 +287,10 @@ export function getSlashCommands(): SlashCommandItem[] {
       description: $t('zq-editor.slash.columnsDesc'),
       icon: 'Columns2',
       category: $t('zq-editor.slash.category.advanced'),
-      aliases: ['columns', 'col', 'layout', 'grid'],
+      aliases: ['columns', 'col', 'layout', 'grid', '2栏', '3栏'],
       command: ({ editor, range }) => {
-        editor.chain().focus().deleteRange(range).setColumns({ count: 2 }).run();
+        editor.chain().focus().deleteRange(range).run();
+        showColumnCountPicker(editor);
       },
     },
     {

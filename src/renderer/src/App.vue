@@ -56,6 +56,7 @@ const {
   filePath,
   isModified,
   isZqFormat,
+  documentFormat,
   zqMeta,
   stats,
   windowMode,
@@ -71,6 +72,7 @@ const {
   newLibrary,
   loadFileResult,
   setWindowMode,
+  setDocumentFormat,
   setSaveFormatResolver,
   setUnsavedDialog,
   loadMoreLines,
@@ -105,6 +107,7 @@ const updateUrl = ref('')
 const telemetryEnabled = ref(true)
 const codeTheme = ref('intellij')
 const drawioUiLayout = ref<DrawioUiLayout>('full')
+const spellcheckEnabled = ref(false)
 provide(DRAWIO_UI_LAYOUT_INJECT_KEY, drawioUiLayout)
 /** 是否已在插件中心安装流程图（diagrams.net）资源 */
 const drawioBundleReady = ref(false)
@@ -200,6 +203,7 @@ const sourceTextareaRef = ref<HTMLTextAreaElement>()
 let suppressSourceSync = false
 
 const saveFormatDialogVisible = ref(false)
+const newDocFormatDialogVisible = ref(false)
 let saveFormatResolve: ((choice: 'md' | 'zq' | 'cancel') => void) | null = null
 const saveFormatAskDialog = ref(true)
 const saveFormatDefault = ref<'md' | 'zq'>('md')
@@ -428,6 +432,18 @@ async function onChangeDrawioUiLayout(layout: DrawioUiLayout) {
   await window.electron.setSettings({ drawioUiLayout: layout })
 }
 
+async function onChangeSpellcheck(enabled: boolean) {
+  spellcheckEnabled.value = enabled
+  await window.electron.setSettings({ spellcheck: enabled })
+  applySpellcheck()
+}
+
+function applySpellcheck() {
+  if (tiptapEditor.value) {
+    tiptapEditor.value.view.dom.spellcheck = spellcheckEnabled.value
+  }
+}
+
 function onEditorReady(editor: any) {
   tiptapEditor.value = editor as Editor
   registerEditorApi({
@@ -437,6 +453,8 @@ function onEditorReady(editor: any) {
     setContent: (content: string) => editor.commands.setContent(content),
     setContentJSON: (json: any) => editor.commands.setContent(json)
   })
+
+  applySpellcheck()
 
   if (pendingWebLibraryDocId.value) {
     const id = pendingWebLibraryDocId.value
@@ -582,6 +600,12 @@ async function onWelcomeOpenFile() {
 }
 
 function onWelcomeNewDocument() {
+  newDocFormatDialogVisible.value = true
+}
+
+function onNewDocFormatPick(payload: { format: 'md' | 'zq'; remember: boolean }) {
+  newDocFormatDialogVisible.value = false
+  setDocumentFormat(payload.format)
   hasOpenedFile.value = true
 }
 
@@ -829,6 +853,7 @@ onMounted(async () => {
   document.documentElement.setAttribute('data-code-theme', codeTheme.value)
   drawioUiLayout.value =
     settings.drawioUiLayout === 'minimal' ? 'minimal' : 'full'
+  spellcheckEnabled.value = settings.spellcheck === true
   saveFormatAskDialog.value = settings.saveFormatAskDialog !== false
   saveFormatDefault.value = settings.saveFormatDefault === 'zq' ? 'zq' : 'md'
 
@@ -883,6 +908,10 @@ onMounted(async () => {
     }
     if (s.drawioUiLayout === 'minimal' || s.drawioUiLayout === 'full') {
       drawioUiLayout.value = s.drawioUiLayout
+    }
+    if (s.spellcheck !== undefined) {
+      spellcheckEnabled.value = s.spellcheck === true
+      applySpellcheck()
     }
     if (s.saveFormatAskDialog !== undefined) {
       saveFormatAskDialog.value = s.saveFormatAskDialog !== false
@@ -1039,6 +1068,7 @@ onUnmounted(() => {
       :code-theme="codeTheme"
       :telemetry-enabled="telemetryEnabled"
       :drawio-ui-layout="drawioUiLayout"
+      :spellcheck="spellcheckEnabled"
       :save-format-ask-dialog="saveFormatAskDialog"
       :save-format-default="saveFormatDefault"
       :drawio-bundle-ready="drawioBundleReady"
@@ -1052,6 +1082,7 @@ onUnmounted(() => {
       @change-save-format-ask="onChangeSaveFormatAsk"
       @change-save-format-default="onChangeSaveFormatDefault"
       @change-drawio-ui-layout="onChangeDrawioUiLayout"
+      @change-spellcheck="onChangeSpellcheck"
       @check-update="triggerCheckUpdate"
       @drawio-bundle-changed="refreshDrawioBundleStatus"
       @excalidraw-bundle-changed="refreshExcalidrawBundleStatus"
@@ -1081,6 +1112,14 @@ onUnmounted(() => {
       :cancel-text="$t('dialog.cancel')"
       @confirm="onConfirmSourceMode"
       @cancel="onCancelSourceMode"
+    />
+    <SaveFormatDialog
+      :visible="newDocFormatDialogVisible"
+      title-key="dialog.newDocFormatTitle"
+      subtitle-key="dialog.newDocFormatSubtitle"
+      :show-remember="false"
+      @pick="onNewDocFormatPick"
+      @cancel="newDocFormatDialogVisible = false"
     />
     <SaveFormatDialog
       :visible="saveFormatDialogVisible"

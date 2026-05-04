@@ -171,6 +171,8 @@ export interface AppLocale {
     drawioUiLayoutDesc: string
     drawioUiLayoutFull: string
     drawioUiLayoutMinimal: string
+    spellcheck: string
+    spellcheckDesc: string
     saveFormatAsk: string
     saveFormatAskDesc: string
     saveFormatDefaultLabel: string
@@ -273,6 +275,8 @@ export interface AppLocale {
     sourceModeConfirm: string
     saveFormatTitle: string
     saveFormatSubtitle: string
+    newDocFormatTitle: string
+    newDocFormatSubtitle: string
     saveFormatMdBadge: string
     saveFormatZqBadge: string
     saveFormatMdTitle: string
