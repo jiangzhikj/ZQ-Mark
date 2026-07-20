@@ -11,10 +11,11 @@ const props = defineProps<{
   editor?: Editor
   visible: boolean
   scrollContainer?: HTMLElement
-  isLibraryMode: boolean
-  libraryName: string
+  showFileTree: boolean
+  fileTreeMode: 'library' | 'folder'
+  treeName: string
   tree: LibraryNode[]
-  activeDocId: string | null
+  activeId: string | null
   expandedFolders: Set<string>
 }>()
 
@@ -36,22 +37,22 @@ const MIN_WIDTH = 160
 const MAX_WIDTH = 400
 
 type TabId = 'files' | 'outline'
-const activeTab = ref<TabId>(props.isLibraryMode ? 'files' : 'outline')
+const activeTab = ref<TabId>(props.showFileTree ? 'files' : 'outline')
 
-watch(() => props.isLibraryMode, (val) => {
+watch(() => props.showFileTree, (val) => {
   if (val) activeTab.value = 'files'
 })
 
 const tabs = computed(() => {
   const items: { id: TabId; label: string }[] = []
-  if (props.isLibraryMode) {
+  if (props.showFileTree) {
     items.push({ id: 'files', label: t('sidebar.fileTree') })
   }
   items.push({ id: 'outline', label: t('sidebar.outline') })
   return items
 })
 
-const showTabs = computed(() => props.isLibraryMode)
+const showTabs = computed(() => props.showFileTree)
 
 function startResize(e: MouseEvent) {
   e.preventDefault()
@@ -102,10 +103,11 @@ function startResize(e: MouseEvent) {
 
     <div class="sidebar-body">
       <FileTree
-        v-if="isLibraryMode && activeTab === 'files'"
-        :library-name="libraryName"
+        v-if="showFileTree && activeTab === 'files'"
+        :mode="fileTreeMode"
+        :tree-name="treeName"
         :tree="tree"
-        :active-doc-id="activeDocId"
+        :active-doc-id="activeId"
         :expanded-folders="expandedFolders"
         @select-doc="emit('select-doc', $event)"
         @toggle-folder="emit('toggle-folder', $event)"

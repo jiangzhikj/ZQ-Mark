@@ -17,4 +17,4 @@ export interface LibraryIndex {
   tree: LibraryNode[]
 }
 
-export type WindowMode = 'document' | 'library'
+export type WindowMode = 'document' | 'library' | 'folder'

@@ -5,9 +5,12 @@ import { onMounted, ref } from 'vue';
 
 import { ZqMessage } from '@/components/ui';
 import { $t } from '../utils/i18n';
+import { normalizeMdAssetSettings, mdAssetStoredSrc } from '../../../../../shared/markdown-assets';
 
 const props = defineProps<{
   editor: Editor;
+  docPath?: string | null;
+  isMdDocument?: boolean;
 }>();
 
 const emit = defineEmits<{ close: [] }>();
@@ -50,11 +53,28 @@ function insertFromUrl() {
 
 async function pickLocalFile() {
   try {
-    const result = await window.electron.openLocalFile({
-      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] }],
-    });
+    const filters = [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'] }];
+    let result = null;
+
+    if (props.docPath && props.isMdDocument !== false) {
+      const settings = await window.electron.getSettings();
+      const assetSettings = normalizeMdAssetSettings(settings);
+      if (assetSettings.mdAssetMode === 'relative' && window.electron.openLocalFileForDoc) {
+        result = await window.electron.openLocalFileForDoc({
+          docPath: props.docPath,
+          settings: assetSettings,
+          filters,
+        });
+      }
+    }
+
+    if (!result) {
+      result = await window.electron.openLocalFile({ filters });
+    }
+
     if (result) {
-      props.editor.chain().focus().setImageBlock({ src: result.url, fileId: result.id }).run();
+      const src = mdAssetStoredSrc(result);
+      props.editor.chain().focus().setImageBlock({ src, fileId: result.id }).run();
       notifyClose();
     }
   } catch {

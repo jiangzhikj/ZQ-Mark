@@ -36,6 +36,10 @@ export interface FileUploadOptions {
   parentId?: string;
   maxSize?: number;
   source?: string;
+  /** 当前 Markdown 文档路径（用于相对路径资源保存） */
+  getDocPath?: () => string | null;
+  /** 是否为 Markdown 模式（非 .zq） */
+  isMdDocument?: () => boolean;
 }
 
 export interface SlashCommandItem {

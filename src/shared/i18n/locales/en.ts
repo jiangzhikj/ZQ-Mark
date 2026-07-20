@@ -100,8 +100,10 @@ const en: AppLocale = {
     untitled: 'Untitled'
   },
   welcome: {
-    openFile: 'Open File',
-    openFileDesc: 'Open an existing file or library',
+    openFile: 'Open',
+    openFileDesc: 'Open a file, library, or browse documents in a folder',
+    openFolder: 'Open Folder',
+    openFolderDesc: 'Browse documents in a folder on your computer',
     newDocument: 'New Document',
     newDocumentDesc: 'Create a new blank document',
     newLibrary: 'New Library',
@@ -141,6 +143,10 @@ const en: AppLocale = {
     folderNameLabel: 'Folder Name',
     folderNamePlaceholder: 'Enter folder name'
   },
+  folder: {
+    emptyFolder: 'Folder is empty\nClick the buttons above to create a document',
+    selectOrCreateFile: 'Select or create a file to start editing'
+  },
   settings: {
     title: 'Preferences',
     general: 'General',
@@ -173,6 +179,27 @@ const en: AppLocale = {
     drawioUiLayoutMinimal: 'Compact',
     spellcheck: 'Spell Check',
     spellcheckDesc: 'Enable to show red wavy underlines for misspelled words in the editor',
+    mdAssetMode: 'Markdown asset storage',
+    mdAssetModeDesc: 'How images, videos, audio, and attachments are stored when saving .md files',
+    mdAssetModeRelative: 'Copy to document folder (relative paths)',
+    mdAssetModeAbsolute: 'App cache (absolute paths)',
+    mdAssetFolder: 'Asset folder',
+    mdAssetFolderDesc: 'Subfolder next to the Markdown file for copied assets',
+    mdAssetFolderAssets: './assets/',
+    mdAssetFolderDocNamed: './{filename}.assets/',
+    mdAssetFolderSame: 'Same folder as document',
+    mdAssetFolderCustom: 'Custom',
+    mdAssetCustomFolder: 'Custom folder',
+    mdAssetCustomFolderDesc:
+      'Full path shown here; Markdown files store relative paths for sharing',
+    mdAssetCustomFolderPlaceholder: 'e.g. /Users/you/project/assets',
+    mdAssetCustomFolderBrowse: 'Choose folder…',
+    mdAssetCustomFolderEmptyHint: 'Choose a folder to store copied assets',
+    mdAssetFileName: 'File naming',
+    mdAssetFileNameDesc: 'How copied asset files are named',
+    mdAssetFileNameOriginal: 'Keep original name',
+    mdAssetFileNameUuid: 'Random UUID name',
+    mdAssetDesktopOnlyHint: 'Copying assets beside the document is only available in the desktop app.',
     saveFormatAsk: 'Ask format on save',
     saveFormatAskDesc: 'When saving a single document, show a dialog to choose Markdown or ZQ Document',
     saveFormatDefaultLabel: 'Default when not asking',
@@ -266,7 +293,35 @@ const en: AppLocale = {
   exportMsg: {
     exporting: 'Exporting...',
     success: 'Export successful',
-    failed: 'Export failed'
+    failed: 'Export failed',
+    openFolder: 'Show in folder'
+  },
+  exportPdf: {
+    untitled: 'Untitled',
+    subtitle: 'PDF export settings',
+    export: 'Export',
+    close: 'Close',
+    firstPage: 'First page',
+    prevPage: 'Previous',
+    nextPage: 'Next',
+    lastPage: 'Last page',
+    paperSize: 'Paper size',
+    margins: 'Margins',
+    orientation: 'Orientation',
+    portrait: 'Portrait',
+    landscape: 'Landscape',
+    margin: {
+      normal: 'Normal',
+      narrow: 'Narrow',
+      wide: 'Wide',
+      minimal: 'Minimal',
+      custom: 'Custom'
+    },
+    marginTop: 'Top',
+    marginBottom: 'Bottom',
+    marginLeft: 'Left',
+    marginRight: 'Right',
+    marginUnit: 'Unit: inches (0–2)',
   },
   saveMsg: {
     success: 'File saved'

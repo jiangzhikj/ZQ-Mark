@@ -4,6 +4,7 @@ import type { FileUploadOptions } from '../types';
 
 import { $t } from '../utils/i18n';
 import { ZqMessage } from '@/components/ui';
+import { normalizeMdAssetSettings, mdAssetStoredSrc } from '../../../../../shared/markdown-assets';
 
 const IMAGE_TYPES = [
   'image/jpeg',
@@ -39,6 +40,28 @@ export function useFileUpload(
 ) {
   const maxSize = _options?.maxSize || DEFAULT_MAX_SIZE;
 
+  async function saveFileLocally(file: File) {
+    const buffer = await file.arrayBuffer();
+    const docPath = _options?.getDocPath?.() ?? null;
+    const isMd = _options?.isMdDocument?.() ?? true;
+
+    if (docPath && isMd) {
+      const settings = await window.electron.getSettings();
+      const assetSettings = normalizeMdAssetSettings(settings);
+      if (assetSettings.mdAssetMode === 'relative' && window.electron.saveMdAsset) {
+        const result = await window.electron.saveMdAsset({
+          buffer,
+          fileName: file.name,
+          docPath,
+          settings: assetSettings,
+        });
+        if (result) return result;
+      }
+    }
+
+    return window.electron.saveDroppedFile(buffer, file.name);
+  }
+
   async function handleFile(file: File): Promise<void> {
     const e = editor();
     if (!e) return;
@@ -59,15 +82,11 @@ export function useFileUpload(
     }
   }
 
-  async function saveFileLocally(file: File) {
-    const buffer = await file.arrayBuffer();
-    return window.electron.saveDroppedFile(buffer, file.name);
-  }
-
   async function uploadImage(e: Editor, file: File) {
     try {
       const result = await saveFileLocally(file);
-      e.chain().focus().setImageBlock({ src: result.url, fileId: result.id }).run();
+      const src = mdAssetStoredSrc(result);
+      e.chain().focus().setImageBlock({ src, fileId: result.id }).run();
     } catch {
       ZqMessage.error($t('zq-editor.upload.imageUploadFailed'));
     }
@@ -76,7 +95,8 @@ export function useFileUpload(
   async function uploadVideo(e: Editor, file: File) {
     try {
       const result = await saveFileLocally(file);
-      e.chain().focus().setVideoBlock({ src: result.url, id: result.id }).run();
+      const src = mdAssetStoredSrc(result);
+      e.chain().focus().setVideoBlock({ src, id: result.id }).run();
     } catch {
       ZqMessage.error($t('zq-editor.upload.videoUploadFailed'));
     }
@@ -85,7 +105,8 @@ export function useFileUpload(
   async function uploadAudio(e: Editor, file: File) {
     try {
       const result = await saveFileLocally(file);
-      e.chain().focus().setAudioBlock({ src: result.url, id: result.id }).run();
+      const src = mdAssetStoredSrc(result);
+      e.chain().focus().setAudioBlock({ src, id: result.id }).run();
     } catch {
       ZqMessage.error($t('zq-editor.upload.audioUploadFailed'));
     }
@@ -99,7 +120,7 @@ export function useFileUpload(
         name: file.name,
         size: file.size,
         type: file.type,
-        url: result.url,
+        url: mdAssetStoredSrc(result),
       }).run();
     } catch {
       ZqMessage.error($t('zq-editor.upload.attachmentUploadFailed'));
@@ -139,5 +160,6 @@ export function useFileUpload(
     handleFile,
     handleDrop,
     handlePaste,
+    saveFileLocally,
   };
 }

@@ -11,7 +11,7 @@ export interface MenuLocale {
     label: string
     new: string
     newLibrary: string
-       open: string
+    open: string
     openRecent: string
     /** 文件菜单中「最近项目」子菜单标题（与欢迎页列表含义一致） */
     recentProjects: string
@@ -104,6 +104,8 @@ export interface AppLocale {
   welcome: {
     openFile: string
     openFileDesc: string
+    openFolder: string
+    openFolderDesc: string
     newDocument: string
     newDocumentDesc: string
     newLibrary: string
@@ -143,6 +145,10 @@ export interface AppLocale {
     folderNameLabel: string
     folderNamePlaceholder: string
   }
+  folder: {
+    emptyFolder: string
+    selectOrCreateFile: string
+  }
   settings: {
     title: string
     general: string
@@ -173,6 +179,26 @@ export interface AppLocale {
     drawioUiLayoutMinimal: string
     spellcheck: string
     spellcheckDesc: string
+    mdAssetMode: string
+    mdAssetModeDesc: string
+    mdAssetModeRelative: string
+    mdAssetModeAbsolute: string
+    mdAssetFolder: string
+    mdAssetFolderDesc: string
+    mdAssetFolderAssets: string
+    mdAssetFolderDocNamed: string
+    mdAssetFolderSame: string
+    mdAssetFolderCustom: string
+    mdAssetCustomFolder: string
+    mdAssetCustomFolderDesc: string
+    mdAssetCustomFolderPlaceholder: string
+    mdAssetCustomFolderBrowse: string
+    mdAssetCustomFolderEmptyHint: string
+    mdAssetFileName: string
+    mdAssetFileNameDesc: string
+    mdAssetFileNameOriginal: string
+    mdAssetFileNameUuid: string
+    mdAssetDesktopOnlyHint: string
     saveFormatAsk: string
     saveFormatAskDesc: string
     saveFormatDefaultLabel: string
@@ -253,6 +279,34 @@ export interface AppLocale {
     exporting: string
     success: string
     failed: string
+    openFolder: string
+  }
+  exportPdf: {
+    untitled: string
+    subtitle: string
+    export: string
+    close: string
+    firstPage: string
+    prevPage: string
+    nextPage: string
+    lastPage: string
+    paperSize: string
+    margins: string
+    orientation: string
+    portrait: string
+    landscape: string
+    margin: {
+      normal: string
+      narrow: string
+      wide: string
+      minimal: string
+      custom: string
+    }
+    marginTop: string
+    marginBottom: string
+    marginLeft: string
+    marginRight: string
+    marginUnit: string
   }
   saveMsg: {
     success: string

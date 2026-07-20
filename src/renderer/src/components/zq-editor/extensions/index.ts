@@ -169,7 +169,7 @@ export function createEditorExtensions(
       tightLists: true,
       tightListClass: 'tight',
       transformPastedText: true,
-      transformCopiedText: true,
+      transformCopiedText: false,
     }),
     ZqMarkdownMath,
     ...extraExtensions,

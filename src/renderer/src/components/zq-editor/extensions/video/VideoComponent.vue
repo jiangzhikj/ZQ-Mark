@@ -8,6 +8,8 @@ import {
   Trash2,
 } from '@/components/icons';
 
+import { useMdAssetUrl } from '../../utils/use-md-asset-url';
+
 import { NodeViewWrapper } from '@tiptap/vue-3';
 
 const props = defineProps<{
@@ -27,7 +29,12 @@ const resizeStartWidth = ref(0);
 const resizeCorner = ref('se');
 const originalRatio = ref(16 / 9);
 
-const displaySrc = computed(() => props.node.attrs.src || '');
+const { renderUrl: displaySrc } = useMdAssetUrl({
+  getRawUrl: () => props.node.attrs.src || '',
+  onImport: (_raw, url, id) => {
+    props.updateAttributes({ src: url, id: id ?? props.node.attrs.id });
+  },
+});
 
 const alignment = computed(() => props.node.attrs.alignment || 'center');
 const nodeStyle = computed(() => {
@@ -125,7 +132,8 @@ onBeforeUnmount(() => {
     >
       <video
         ref="videoRef"
-        :src="displaySrc"
+        :key="displaySrc"
+        :src="displaySrc || undefined"
         controls
         class="zq-video"
         @loadedmetadata="handleVideoLoaded"

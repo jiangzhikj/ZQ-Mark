@@ -13,6 +13,7 @@ import {
 import { $t } from '../utils/i18n';
 
 import { Editor } from '@tiptap/vue-3';
+import { NodeSelection } from '@tiptap/pm/state';
 import { Fragment, Slice } from '@tiptap/pm/model';
 
 import { createEditorExtensions } from '../extensions';
@@ -88,7 +89,37 @@ export function useZqEditor({ props, emit }: UseZqEditorOptions) {
           class: 'zq-editor-prosemirror',
           spellcheck: 'false',
         },
-        transformCopied: (slice) => flattenColumnsInSlice(slice),
+        transformCopied: (slice) => {
+          slice = flattenColumnsInSlice(slice);
+
+          const sel = editor.value?.state.selection;
+          const isTextSelectionInCodeBlock =
+            sel &&
+            !(sel instanceof NodeSelection) &&
+            sel.$from.parent.type.name === 'codeBlock';
+
+          if (isTextSelectionInCodeBlock) {
+            const newNodes: any[] = [];
+            slice.content.forEach((node) => {
+              if (node.type.name === 'codeBlock') {
+                const para = node.type.schema.nodes.paragraph?.create(
+                  {},
+                  node.content
+                );
+                newNodes.push(para || node);
+              } else {
+                newNodes.push(node);
+              }
+            });
+            return new Slice(
+              Fragment.fromArray(newNodes),
+              Math.min(slice.openStart, 1),
+              Math.min(slice.openEnd, 1),
+            );
+          }
+
+          return slice;
+        },
       },
       onUpdate: ({ editor: e }) => {
         const json = e.getJSON();

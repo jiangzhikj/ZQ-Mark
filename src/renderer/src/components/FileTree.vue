@@ -8,7 +8,8 @@ import type { ContextMenuItem } from './ui'
 import type { LibraryNode } from '../../../shared/types'
 
 const props = defineProps<{
-  libraryName: string
+  mode: 'library' | 'folder'
+  treeName: string
   tree: LibraryNode[]
   activeDocId: string | null
   expandedFolders: Set<string>
@@ -131,7 +132,7 @@ function findParentId(tree: LibraryNode[], childId: string, parentId: string | n
 <template>
   <div class="file-tree" @contextmenu.self="onBackgroundContextMenu">
     <div class="file-tree-header">
-      <span class="header-library-name" :title="libraryName">{{ libraryName }}</span>
+      <span class="header-library-name" :title="treeName">{{ treeName }}</span>
       <div class="header-actions">
         <button class="header-btn" :title="t('library.newFile')" @click.stop="emit('create-doc', null)">
           <FilePlus :size="15" />
@@ -148,7 +149,9 @@ function findParentId(tree: LibraryNode[], childId: string, parentId: string | n
           <div class="file-tree-empty__icon-wrap" aria-hidden="true">
             <LibraryBig class="file-tree-empty__icon" :size="40" :stroke-width="1.35" />
           </div>
-          <p class="file-tree-empty__text">{{ t('library.emptyLibrary') }}</p>
+          <p class="file-tree-empty__text">{{
+            mode === 'folder' ? t('folder.emptyFolder') : t('library.emptyLibrary')
+          }}</p>
         </div>
       </div>
       <FileTreeItem

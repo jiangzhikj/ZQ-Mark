@@ -59,58 +59,60 @@ function getFileDir(fp: string): string {
         <h1 class="welcome-title">ZQ Mark</h1>
       </div>
 
-      <div class="welcome-actions">
-        <button class="welcome-card" @click="emit('open-file')">
-          <div class="card-icon">
-            <FolderOpen :size="28" :stroke-width="1.5" />
-          </div>
-          <div class="card-text">
-            <span class="card-label">{{ t('welcome.openFile') }}</span>
-            <span class="card-desc">{{ t('welcome.openFileDesc') }}</span>
-          </div>
-        </button>
+      <div class="welcome-main">
+        <div class="welcome-actions">
+          <button class="welcome-card" @click="emit('open-file')">
+            <div class="card-icon">
+              <FolderOpen :size="28" :stroke-width="1.5" />
+            </div>
+            <div class="card-text">
+              <span class="card-label">{{ t('welcome.openFile') }}</span>
+              <span class="card-desc">{{ t('welcome.openFileDesc') }}</span>
+            </div>
+          </button>
 
-        <button class="welcome-card" @click="emit('new-document')">
-          <div class="card-icon">
-            <FilePlus :size="28" :stroke-width="1.5" />
-          </div>
-          <div class="card-text">
-            <span class="card-label">{{ t('welcome.newDocument') }}</span>
-            <span class="card-desc">{{ t('welcome.newDocumentDesc') }}</span>
-          </div>
-        </button>
+          <button class="welcome-card" @click="emit('new-document')">
+            <div class="card-icon">
+              <FilePlus :size="28" :stroke-width="1.5" />
+            </div>
+            <div class="card-text">
+              <span class="card-label">{{ t('welcome.newDocument') }}</span>
+              <span class="card-desc">{{ t('welcome.newDocumentDesc') }}</span>
+            </div>
+          </button>
 
-        <button class="welcome-card" @click="emit('new-library')">
-          <div class="card-icon">
-            <Library :size="28" :stroke-width="1.5" />
-          </div>
-          <div class="card-text">
-            <span class="card-label">{{ t('welcome.newLibrary') }}</span>
-            <span class="card-desc">{{ t('welcome.newLibraryDesc') }}</span>
-          </div>
-        </button>
-      </div>
-
-      <div v-if="recentFiles.length > 0" class="recent-section">
-        <div class="recent-header">
-          <Clock :size="14" />
-          <span>{{ t('welcome.recentProjects') }}</span>
+          <button class="welcome-card" @click="emit('new-library')">
+            <div class="card-icon">
+              <Library :size="28" :stroke-width="1.5" />
+            </div>
+            <div class="card-text">
+              <span class="card-label">{{ t('welcome.newLibrary') }}</span>
+              <span class="card-desc">{{ t('welcome.newLibraryDesc') }}</span>
+            </div>
+          </button>
         </div>
-        <div class="recent-list">
-          <ZqScrollbar height="250px">
-            <button
-              v-for="fp in recentFiles"
-              :key="fp"
-              class="recent-item"
-              @click="emit('open-recent', fp)"
-            >
-              <FileText :size="16" class="recent-icon" />
-              <div class="recent-info">
-                <span class="recent-name">{{ getFileName(fp) }}</span>
-                <span class="recent-path">{{ getFileDir(fp) }}</span>
-              </div>
-            </button>
-          </ZqScrollbar>
+
+        <div v-if="recentFiles.length > 0" class="recent-section">
+          <div class="recent-header">
+            <Clock :size="14" />
+            <span>{{ t('welcome.recentProjects') }}</span>
+          </div>
+          <div class="recent-list">
+            <ZqScrollbar height="250px">
+              <button
+                v-for="fp in recentFiles"
+                :key="fp"
+                class="recent-item"
+                @click="emit('open-recent', fp)"
+              >
+                <FileText :size="16" class="recent-icon" />
+                <div class="recent-info">
+                  <span class="recent-name">{{ getFileName(fp) }}</span>
+                  <span class="recent-path">{{ getFileDir(fp) }}</span>
+                </div>
+              </button>
+            </ZqScrollbar>
+          </div>
         </div>
       </div>
     </div>
@@ -121,90 +123,106 @@ function getFileDir(fp: string): string {
 <style scoped>
 .welcome-screen {
   flex: 1;
+  min-height: 0;
   display: flex;
-  background: var(--bg-editor);
-  -webkit-app-region: drag;
-  overflow: hidden;
+  flex-direction: column;
+  background: var(--bg-primary);
 }
 
 .welcome-screen :deep(.zq-scrollbar) {
   flex: 1;
+  min-height: 0;
+  width: 100%;
 }
 
 .welcome-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
-  padding: 40px 0;
-  min-height: 100%;
   justify-content: center;
-  -webkit-app-region: no-drag;
+  width: 100%;
+  min-height: 100%;
+  padding: 48px 24px 64px;
+  box-sizing: border-box;
 }
 
 .welcome-logo {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  margin-bottom: 40px;
 }
 
 .logo-icon {
-  flex-shrink: 0;
+  border-radius: 14px;
 }
 
 .welcome-title {
+  margin: 0;
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
-  letter-spacing: -0.5px;
+  letter-spacing: -0.02em;
+}
+
+.welcome-main {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
 .welcome-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
+  margin-bottom: 48px;
+}
+
+@media (max-width: 720px) {
+  .welcome-main {
+    max-width: 320px;
+  }
+
+  .welcome-actions {
+    grid-template-columns: 1fr;
+  }
 }
 
 .welcome-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  width: 160px;
-  padding: 28px 16px 20px;
+  gap: 14px;
+  padding: 28px 20px;
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  background: var(--bg-editor);
+  background: var(--bg-secondary);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   text-align: center;
 }
 
 .welcome-card:hover {
   border-color: var(--accent-color);
   background: var(--bg-hover);
-  box-shadow: 0 2px 12px var(--accent-shadow);
   transform: translateY(-2px);
-}
-
-.welcome-card:active {
-  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
+  width: 52px;
+  height: 52px;
   border-radius: 12px;
   background: var(--bg-hover);
   color: var(--text-secondary);
-  transition: all 0.2s;
 }
 
 .welcome-card:hover .card-icon {
-  background: var(--accent-shadow);
+  background: color-mix(in srgb, var(--accent-color) 12%, transparent);
   color: var(--accent-color);
 }
 
@@ -215,37 +233,33 @@ function getFileDir(fp: string): string {
 }
 
 .card-label {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .card-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-tertiary);
   line-height: 1.4;
-}
-
-.recent-section {
-  width: 100%;
-  max-width: 520px;
 }
 
 .recent-header {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 4px 8px;
+  margin-bottom: 10px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-tertiary);
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.5px;
 }
 
 .recent-list {
   border: 1px solid var(--border-color);
   border-radius: 8px;
+  background: var(--bg-secondary);
   overflow: hidden;
 }
 
@@ -253,17 +267,13 @@ function getFileDir(fp: string): string {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 10px 14px;
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: background-color 0.1s;
   text-align: left;
-  width: 100%;
-}
-
-.recent-item:not(:last-child) {
-  border-bottom: 1px solid var(--border-color);
+  transition: background 0.1s;
 }
 
 .recent-item:hover {

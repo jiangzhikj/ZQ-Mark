@@ -3,7 +3,7 @@ import type { JSONContent } from '@tiptap/vue-3';
 
 import type { FileUploadOptions } from './types';
 
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, computed, provide } from 'vue';
 
 import { isTextSelection } from '@tiptap/core';
 import { CellSelection } from '@tiptap/pm/tables';
@@ -15,6 +15,7 @@ import { $t } from './utils/i18n';
 
 import { useZqEditor } from './composables/use-editor';
 import { useFileUpload } from './composables/use-file-upload';
+import { normalizeMdAssetSettings, mdAssetStoredSrc } from '../../../../shared/markdown-assets';
 import BubbleToolbar from './menus/BubbleToolbar.vue';
 import DragHandleMenu from './menus/DragHandleMenu.vue';
 import EmojiPicker from './menus/EmojiPicker.vue';
@@ -73,6 +74,12 @@ const {
   isEmpty,
 } = useZqEditor({ props, emit });
 
+const mdDocPath = computed(() => props.uploadOptions?.getDocPath?.() ?? null);
+const isMdDocument = computed(() => props.uploadOptions?.isMdDocument?.() ?? true);
+
+provide('mdDocPath', mdDocPath);
+provide('isMdDocument', isMdDocument);
+
 const { handleFile, handleDrop, handlePaste } = useFileUpload(
   () => editor.value,
   props.uploadOptions,
@@ -124,20 +131,38 @@ async function onOpenFileSelector(e: Event) {
         : mode === 'audio'
           ? [{ name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'aac', 'flac', 'm4a', 'webm', 'opus'] }]
           : [];
-    const result = await window.electron.openLocalFile({ filters });
+    const docPath = mdDocPath.value;
+    let result = null;
+
+    if (docPath && isMdDocument.value) {
+      const settings = await window.electron.getSettings();
+      const assetSettings = normalizeMdAssetSettings(settings);
+      if (assetSettings.mdAssetMode === 'relative' && window.electron.openLocalFileForDoc) {
+        result = await window.electron.openLocalFileForDoc({
+          docPath,
+          settings: assetSettings,
+          filters,
+        });
+      }
+    }
+
+    if (!result) {
+      result = await window.electron.openLocalFile({ filters });
+    }
     if (!result) return;
 
+    const src = mdAssetStoredSrc(result);
     if (mode === 'video') {
-      editor.value.chain().focus().setVideoBlock({ src: result.url, id: result.id }).run();
+      editor.value.chain().focus().setVideoBlock({ src, id: result.id }).run();
     } else if (mode === 'audio') {
-      editor.value.chain().focus().setAudioBlock({ src: result.url, id: result.id }).run();
+      editor.value.chain().focus().setAudioBlock({ src, id: result.id }).run();
     } else {
       editor.value.chain().focus().setAttachmentBlock({
         id: result.id,
         name: result.name,
         size: result.size || 0,
         type: '',
-        url: result.url,
+        url: src,
       }).run();
     }
   } catch {
@@ -346,7 +371,12 @@ defineExpose({
         class="zq-editor__image-insert-overlay"
         @click.self="closeImageInsertDialog"
       >
-        <ImageInsertDialog :editor="editor" @close="closeImageInsertDialog" />
+        <ImageInsertDialog
+          :editor="editor"
+          :doc-path="mdDocPath"
+          :is-md-document="isMdDocument"
+          @close="closeImageInsertDialog"
+        />
       </div>
     </Teleport>
   </div>

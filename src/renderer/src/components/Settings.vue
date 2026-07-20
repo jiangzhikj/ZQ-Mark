@@ -25,6 +25,11 @@ const props = defineProps<{
   telemetryEnabled: boolean
   drawioUiLayout: 'full' | 'minimal'
   spellcheck: boolean
+  mdAssetMode: 'relative' | 'absolute'
+  mdAssetFolder: 'assets' | 'docNamed' | 'same' | 'custom'
+  mdAssetCustomFolder: string
+  mdAssetFileName: 'original' | 'uuid'
+  isWebPlatform: boolean
   saveFormatAskDialog: boolean
   saveFormatDefault: 'md' | 'zq'
   drawioBundleReady: boolean
@@ -42,6 +47,10 @@ const emit = defineEmits<{
   changeSaveFormatDefault: [format: 'md' | 'zq']
   changeDrawioUiLayout: [layout: 'full' | 'minimal']
   changeSpellcheck: [enabled: boolean]
+  changeMdAssetMode: [mode: 'relative' | 'absolute']
+  changeMdAssetFolder: [folder: 'assets' | 'docNamed' | 'same' | 'custom']
+  changeMdAssetCustomFolder: [folder: string]
+  changeMdAssetFileName: [naming: 'original' | 'uuid']
   checkUpdate: []
   drawioBundleChanged: []
   excalidrawBundleChanged: []
@@ -61,6 +70,10 @@ const selectedTelemetryEnabled = ref(props.telemetryEnabled)
 const selectedCodeTheme = ref(props.codeTheme)
 const selectedDrawioUiLayout = ref(props.drawioUiLayout)
 const selectedSpellcheck = ref(props.spellcheck)
+const selectedMdAssetMode = ref(props.mdAssetMode)
+const selectedMdAssetFolder = ref(props.mdAssetFolder)
+const selectedMdAssetCustomFolder = ref(props.mdAssetCustomFolder)
+const selectedMdAssetFileName = ref(props.mdAssetFileName)
 const selectedSaveFormatAsk = ref(props.saveFormatAskDialog)
 const selectedSaveFormatDefault = ref(props.saveFormatDefault)
 
@@ -84,6 +97,18 @@ watch(() => props.drawioUiLayout, (v) => {
 })
 watch(() => props.spellcheck, (v) => {
   selectedSpellcheck.value = v
+})
+watch(() => props.mdAssetMode, (v) => {
+  selectedMdAssetMode.value = v
+})
+watch(() => props.mdAssetFolder, (v) => {
+  selectedMdAssetFolder.value = v
+})
+watch(() => props.mdAssetCustomFolder, (v) => {
+  selectedMdAssetCustomFolder.value = v
+})
+watch(() => props.mdAssetFileName, (v) => {
+  selectedMdAssetFileName.value = v
 })
 watch(() => props.saveFormatAskDialog, (v) => {
   selectedSaveFormatAsk.value = v
@@ -125,6 +150,26 @@ function onDrawioUiLayoutChange(layout: 'full' | 'minimal') {
 function onSpellcheckChange(enabled: boolean) {
   selectedSpellcheck.value = enabled
   emit('changeSpellcheck', enabled)
+}
+
+function onMdAssetModeChange(mode: 'relative' | 'absolute') {
+  selectedMdAssetMode.value = mode
+  emit('changeMdAssetMode', mode)
+}
+
+function onMdAssetFolderChange(folder: 'assets' | 'docNamed' | 'same' | 'custom') {
+  selectedMdAssetFolder.value = folder
+  emit('changeMdAssetFolder', folder)
+}
+
+function onMdAssetCustomFolderChange(folder: string) {
+  selectedMdAssetCustomFolder.value = folder
+  emit('changeMdAssetCustomFolder', folder)
+}
+
+function onMdAssetFileNameChange(naming: 'original' | 'uuid') {
+  selectedMdAssetFileName.value = naming
+  emit('changeMdAssetFileName', naming)
 }
 
 function onCheckUpdate() {
@@ -248,10 +293,19 @@ watch(() => props.visible, (v) => {
                   :code-theme="selectedCodeTheme"
                   :drawio-ui-layout="selectedDrawioUiLayout"
                   :spellcheck="selectedSpellcheck"
+                  :md-asset-mode="selectedMdAssetMode"
+                  :md-asset-folder="selectedMdAssetFolder"
+                  :md-asset-custom-folder="selectedMdAssetCustomFolder"
+                  :md-asset-file-name="selectedMdAssetFileName"
+                  :is-web-platform="isWebPlatform"
                   :drawio-bundle-ready="drawioBundleReady"
                   @update:code-theme="onCodeThemeChange"
                   @update:drawio-ui-layout="onDrawioUiLayoutChange"
                   @update:spellcheck="onSpellcheckChange"
+                  @update:md-asset-mode="onMdAssetModeChange"
+                  @update:md-asset-folder="onMdAssetFolderChange"
+                  @update:md-asset-custom-folder="onMdAssetCustomFolderChange"
+                  @update:md-asset-file-name="onMdAssetFileNameChange"
                 />
 
                 <SettingsPluginsTab

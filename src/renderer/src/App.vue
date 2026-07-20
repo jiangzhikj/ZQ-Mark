@@ -28,11 +28,14 @@ import type { InputDialogField, InputDialogResult } from '@/components/ui'
 import AboutDialog from '@/components/AboutDialog.vue'
 import UpdateDialog from '@/components/UpdateDialog.vue'
 import SaveFormatDialog from '@/components/SaveFormatDialog.vue'
+import ExportPdfDialog from '@/components/ExportPdfDialog.vue'
 import WebAppMenu from '@/components/WebAppMenu.vue'
 import { ZqEditor } from '@/components/zq-editor'
+import { replaceEditorContent } from '@/components/zq-editor/utils/replace-editor-content'
 import { useTheme } from '@/composables/useTheme'
 import { useEditor } from '@/composables/useEditor'
 import { useLibrary } from '@/composables/useLibrary'
+import { useFolderWorkspace } from '@/composables/useFolderWorkspace'
 import type { LibraryNode } from '../../shared/types'
 import { FileText } from '@/components/icons'
 import {
@@ -47,6 +50,7 @@ import { setSlashDrawioAvailable } from '@/components/zq-editor/extensions/slash
 import { setSlashExcalidrawAvailable } from '@/components/zq-editor/extensions/slash-command/slash-excalidraw-state'
 import { setSlashWisemappingAvailable } from '@/components/zq-editor/extensions/slash-command/slash-wisemapping-state'
 import { restoreWebLibraryFromSnapshot, serializeWebLibrarySnapshot } from '@/platform/web-electron'
+import { normalizeMdAssetSettings, normalizeMdAssetCustomFolder } from '../../shared/markdown-assets'
 
 const { themeMode, setThemeMode } = useTheme()
 const { t, locale } = useI18n()
@@ -68,15 +72,23 @@ const {
   registerEditorApi,
   onEditorUpdate,
   switchLibraryDoc,
+  switchFolderFile,
   openFile,
   newLibrary,
   loadFileResult,
   setWindowMode,
+  folderRootPath,
+  clearEditor,
   setDocumentFormat,
   setSaveFormatResolver,
+  setPdfExportResolver,
   setUnsavedDialog,
   loadMoreLines,
-  loadAllLines
+  loadAllLines,
+  prepareWorkspaceDocSwitch,
+  getMarkdownForSourceView,
+  applyMarkdownFromSource,
+  registerSourceMarkdownProvider,
 } = useEditor()
 
 const {
@@ -99,6 +111,27 @@ const {
   setActiveDocId
 } = useLibrary()
 
+const {
+  tree: folderTree,
+  activeFilePath,
+  activeFileName,
+  folderName,
+  expandedFolders: folderExpandedFolders,
+  isFolderMode,
+  initFolder,
+  refreshTree: refreshFolderTree,
+  refreshFolderName,
+  createDoc: createFolderDoc,
+  createFolder: createFolderDir,
+  renameItem: renameFolderItem,
+  deleteItem: deleteFolderItem,
+  moveItem: moveFolderItem,
+  toggleFolder: toggleFolderDir,
+  setActiveFilePath,
+  enterFolderMode,
+  setFolderRoot,
+} = useFolderWorkspace()
+
 const sidebarVisible = ref(true)
 const settingsVisible = ref(false)
 const aboutDialogVisible = ref(false)
@@ -108,10 +141,28 @@ const telemetryEnabled = ref(true)
 const codeTheme = ref('intellij')
 const drawioUiLayout = ref<DrawioUiLayout>('full')
 const spellcheckEnabled = ref(false)
+const mdAssetMode = ref<'relative' | 'absolute'>('relative')
+const mdAssetFolder = ref<'assets' | 'docNamed' | 'same' | 'custom'>('assets')
+const mdAssetCustomFolder = ref('assets')
+const mdAssetFileName = ref<'original' | 'uuid'>('original')
 provide(DRAWIO_UI_LAYOUT_INJECT_KEY, drawioUiLayout)
 /** 是否已在插件中心安装流程图（diagrams.net）资源 */
 const drawioBundleReady = ref(false)
 const editorRef = ref<InstanceType<typeof ZqEditor>>()
+const editorReadyEpoch = ref(0)
+let pendingEditorReadyResolvers: Array<() => void> = []
+
+function resolveEditorReadyWaiters() {
+  const waiters = pendingEditorReadyResolvers
+  pendingEditorReadyResolvers = []
+  waiters.forEach((resolve) => resolve())
+}
+
+function waitForEditorApi(): Promise<void> {
+  return new Promise((resolve) => {
+    pendingEditorReadyResolvers.push(resolve)
+  })
+}
 const localeMode = ref<'system' | string>('system')
 const tiptapEditor = ref<Editor>()
 const editorScrollbarRef = ref<ComponentPublicInstance | null>(null)
@@ -202,9 +253,15 @@ const sourceContent = ref('')
 const sourceTextareaRef = ref<HTMLTextAreaElement>()
 let suppressSourceSync = false
 
+registerSourceMarkdownProvider(() => (sourceMode.value ? sourceContent.value : null))
+
 const saveFormatDialogVisible = ref(false)
 const newDocFormatDialogVisible = ref(false)
+const exportPdfDialogVisible = ref(false)
+const exportPdfHtml = ref('')
+const exportPdfTitle = ref('')
 let saveFormatResolve: ((choice: 'md' | 'zq' | 'cancel') => void) | null = null
+let pdfExportResolve: ((settings: import('../../shared/pdf-export').PdfExportSettings | null) => void) | null = null
 const saveFormatAskDialog = ref(true)
 const saveFormatDefault = ref<'md' | 'zq'>('md')
 
@@ -232,6 +289,33 @@ setSaveFormatResolver(async () => {
     saveFormatDialogVisible.value = true
   })
 })
+
+setPdfExportResolver(async () => {
+  if (appPlatform.value === 'web') return null
+
+  const html = (editorRef.value as any)?.getHTML?.() || tiptapEditor.value?.getHTML?.() || ''
+  if (!html) return null
+
+  exportPdfHtml.value = html
+  exportPdfTitle.value = fileName.value?.replace(/\.[^.]+$/, '') || 'untitled'
+
+  return new Promise<import('../../shared/pdf-export').PdfExportSettings | null>((resolve) => {
+    pdfExportResolve = resolve
+    exportPdfDialogVisible.value = true
+  })
+})
+
+function onExportPdfCancel() {
+  exportPdfDialogVisible.value = false
+  pdfExportResolve?.(null)
+  pdfExportResolve = null
+}
+
+function onExportPdfConfirm(settings: import('../../shared/pdf-export').PdfExportSettings) {
+  exportPdfDialogVisible.value = false
+  pdfExportResolve?.(settings)
+  pdfExportResolve = null
+}
 
 function onSaveFormatCancel() {
   saveFormatDialogVisible.value = false
@@ -296,22 +380,87 @@ function onInputDialogCancel() {
 }
 
 const showWelcome = computed(() => {
-  if (isLibraryMode.value) return false
+  if (isLibraryMode.value || isFolderMode.value) return false
   return !hasOpenedFile.value && !fileName.value
 })
 
+const showFileTree = computed(() => isLibraryMode.value || isFolderMode.value)
+
+const fileTreeMode = computed<'library' | 'folder'>(() =>
+  isFolderMode.value ? 'folder' : 'library'
+)
+
+const sidebarTree = computed(() => (isFolderMode.value ? folderTree.value : tree.value))
+
+const sidebarTreeName = computed(() =>
+  isFolderMode.value ? folderName.value : libraryName.value
+)
+
+const sidebarActiveId = computed(() =>
+  isFolderMode.value ? activeFilePath.value : activeDocId.value
+)
+
+const sidebarExpandedFolders = computed(() =>
+  isFolderMode.value ? folderExpandedFolders.value : expandedFolders.value
+)
+
 const displayFileName = computed(() => {
   if (isLibraryMode.value) return activeDocName.value || ''
+  if (isFolderMode.value) return activeFileName.value || fileName.value || ''
   return fileName.value
 })
 
-const showLibraryEmptyState = computed(() => {
-  return isLibraryMode.value && !activeDocId.value
+const showWorkspaceEmptyState = computed(() => {
+  if (windowMode.value === 'library' && !activeDocId.value) return true
+  if (windowMode.value === 'folder' && !activeFilePath.value) return true
+  return false
 })
 
-watch(fileName, (val) => {
-  if (val) hasOpenedFile.value = true
-  if (appPlatform.value === 'web') schedulePersistWebState()
+const editorDocumentKey = computed(() => {
+  if (windowMode.value === 'folder') return `folder:${activeFilePath.value ?? ''}`
+  if (windowMode.value === 'library') return `library:${activeDocId.value ?? ''}`
+  return `doc:${filePath.value ?? 'untitled'}`
+})
+
+const editorUploadOptions = computed(() => ({
+  getDocPath: (): string | null => {
+    // folder 模式下 switchFolderFile 先更新 filePath，再更新 activeFilePath
+    if (windowMode.value === 'folder') return filePath.value ?? activeFilePath.value
+    if (windowMode.value === 'library') return null
+    return filePath.value
+  },
+  isMdDocument: (): boolean => {
+    if (windowMode.value === 'library') return false
+    if (isZqFormat.value || documentFormat.value === 'zq') return false
+    const path =
+      windowMode.value === 'folder'
+        ? (filePath.value ?? activeFilePath.value)
+        : filePath.value
+    if (path?.replace(/^web:/, '').toLowerCase().endsWith('.zq')) return false
+    return true
+  },
+}))
+
+function applyMdAssetSettingsFromPartial(partial: {
+  mdAssetMode?: string
+  mdAssetFolder?: string
+  mdAssetCustomFolder?: string
+  mdAssetFileName?: string
+}) {
+  const asset = normalizeMdAssetSettings(partial)
+  mdAssetMode.value = asset.mdAssetMode
+  mdAssetFolder.value = asset.mdAssetFolder
+  mdAssetCustomFolder.value = asset.mdAssetCustomFolder
+  mdAssetFileName.value = asset.mdAssetFileName
+}
+
+watch(windowMode, (mode) => {
+  if (mode !== 'folder') {
+    isFolderMode.value = false
+  }
+  if (mode !== 'library') {
+    isLibraryMode.value = false
+  }
 })
 
 watch(
@@ -337,31 +486,26 @@ const sourceModeConfirmVisible = ref(false)
 
 function toggleSourceMode() {
   if (sourceMode.value) {
-    // Switching back to rich text: show editor first, then set content
     const md = sourceContent.value
     sourceMode.value = false
-    nextTick(() => {
-      if (tiptapEditor.value) {
-        suppressSourceSync = true
-        tiptapEditor.value.commands.setContent(md)
-        suppressSourceSync = false
-      }
+    setSourceModeActive(false)
+    void nextTick(async () => {
+      suppressSourceSync = true
+      await applyMarkdownFromSource(md)
+      suppressSourceSync = false
     })
   } else {
-    // Show confirmation dialog before switching to source mode
     sourceModeConfirmVisible.value = true
   }
 }
 
-function onConfirmSourceMode() {
+async function onConfirmSourceMode() {
   sourceModeConfirmVisible.value = false
-  if (editorRef.value) {
-    sourceContent.value = (editorRef.value as any).getMarkdown?.() || ''
-  }
+  sourceContent.value = await getMarkdownForSourceView()
   sourceMode.value = true
-  nextTick(() => {
-    sourceTextareaRef.value?.focus()
-  })
+  setSourceModeActive(true)
+  await nextTick()
+  sourceTextareaRef.value?.focus()
 }
 
 function onCancelSourceMode() {
@@ -438,6 +582,27 @@ async function onChangeSpellcheck(enabled: boolean) {
   applySpellcheck()
 }
 
+async function onChangeMdAssetMode(mode: 'relative' | 'absolute') {
+  mdAssetMode.value = mode
+  await window.electron.setSettings({ mdAssetMode: mode })
+}
+
+async function onChangeMdAssetFolder(folder: 'assets' | 'docNamed' | 'same' | 'custom') {
+  mdAssetFolder.value = folder
+  await window.electron.setSettings({ mdAssetFolder: folder })
+}
+
+async function onChangeMdAssetCustomFolder(folder: string) {
+  const normalized = normalizeMdAssetCustomFolder(folder)
+  mdAssetCustomFolder.value = normalized
+  await window.electron.setSettings({ mdAssetCustomFolder: normalized })
+}
+
+async function onChangeMdAssetFileName(naming: 'original' | 'uuid') {
+  mdAssetFileName.value = naming
+  await window.electron.setSettings({ mdAssetFileName: naming })
+}
+
 function applySpellcheck() {
   if (tiptapEditor.value) {
     tiptapEditor.value.view.dom.spellcheck = spellcheckEnabled.value
@@ -450,10 +615,16 @@ function onEditorReady(editor: any) {
     getMarkdown: () => editor.storage?.markdown?.getMarkdown() || '',
     getHTML: () => editor.getHTML?.() || '',
     getJSON: () => editor.getJSON?.() || {},
-    setContent: (content: string) => editor.commands.setContent(content),
-    setContentJSON: (json: any) => editor.commands.setContent(json)
+    setContent: (content: string, resetHistory = true) => {
+      replaceEditorContent(editor, content, { emitUpdate: false, resetHistory })
+    },
+    setContentJSON: (json: any, resetHistory = true) => {
+      replaceEditorContent(editor, json, { emitUpdate: false, resetHistory })
+    }
   })
 
+  editorReadyEpoch.value++
+  resolveEditorReadyWaiters()
   applySpellcheck()
 
   if (pendingWebLibraryDocId.value) {
@@ -473,6 +644,11 @@ function onEditorReady(editor: any) {
 
   if (isLibraryMode.value && tree.value.length > 0 && !activeDocId.value) {
     autoOpenFirstDoc()
+    return
+  }
+
+  if (isFolderMode.value && folderTree.value.length > 0 && !activeFilePath.value) {
+    autoOpenFirstDoc()
   }
 }
 
@@ -488,11 +664,16 @@ function onEditorChange() {
 }
 
 async function autoOpenFirstDoc() {
-  const firstFile = findFirstFile(tree.value)
-  if (firstFile) {
-    const ok = await switchLibraryDoc(firstFile.id)
-    if (ok) setActiveDocId(firstFile.id, firstFile.name)
+  const nodes = isFolderMode.value ? folderTree.value : tree.value
+  const firstFile = findFirstFile(nodes)
+  if (!firstFile) return
+  if (isFolderMode.value) {
+    const ok = await switchFolderFile(firstFile.id)
+    if (ok) setActiveFilePath(firstFile.id, firstFile.name)
+    return
   }
+  const ok = await switchLibraryDoc(firstFile.id)
+  if (ok) setActiveDocId(firstFile.id, firstFile.name)
 }
 
 function findFirstFile(nodes: LibraryNode[]): LibraryNode | null {
@@ -506,10 +687,51 @@ function findFirstFile(nodes: LibraryNode[]): LibraryNode | null {
   return null
 }
 
+watch(fileName, (val) => {
+  if (val) hasOpenedFile.value = true
+  if (appPlatform.value === 'web') schedulePersistWebState()
+})
+
+async function syncSourceContentAfterSwitch() {
+  if (sourceMode.value) {
+    sourceMode.value = false
+    setSourceModeActive(false)
+  }
+  await nextTick()
+}
+
 async function onSelectDoc(node: LibraryNode) {
   if (node.type !== 'file') return
-  const ok = await switchLibraryDoc(node.id)
-  if (ok) setActiveDocId(node.id, node.name)
+
+  const isFolder = windowMode.value === 'folder'
+  const isLibrary = windowMode.value === 'library'
+  if (!isFolder && !isLibrary) return
+
+  const currentId = isFolder ? activeFilePath.value : activeDocId.value
+  const switchingDoc = currentId !== null && currentId !== node.id
+
+  if (switchingDoc) {
+    await prepareWorkspaceDocSwitch()
+    const waitReady = waitForEditorApi()
+    if (isFolder) setActiveFilePath(node.id, node.name)
+    else setActiveDocId(node.id, node.name)
+    await waitReady
+  }
+
+  if (isFolder) {
+    const ok = await switchFolderFile(node.id, { skipFlush: switchingDoc })
+    if (ok) {
+      if (!switchingDoc) setActiveFilePath(node.id, node.name)
+      await syncSourceContentAfterSwitch()
+    }
+    return
+  }
+
+  const ok = await switchLibraryDoc(node.id, { skipSave: switchingDoc })
+  if (ok) {
+    if (!switchingDoc) setActiveDocId(node.id, node.name)
+    await syncSourceContentAfterSwitch()
+  }
 }
 
 async function onCreateDoc(parentId: string | null) {
@@ -523,6 +745,14 @@ async function onCreateDoc(parentId: string | null) {
   ])
   if (!result) return
   const name = result.name.trim() || t('library.untitledDoc')
+  if (isFolderMode.value) {
+    const node = await createFolderDoc(parentId, name)
+    if (node) {
+      const ok = await switchFolderFile(node.id)
+      if (ok) setActiveFilePath(node.id, node.name)
+    }
+    return
+  }
   const node = await createDoc(parentId, name)
   if (node) {
     const ok = await switchLibraryDoc(node.id)
@@ -541,11 +771,16 @@ async function onCreateFolder(parentId: string | null) {
   ])
   if (!result) return
   const name = result.name.trim() || t('library.untitledFolder')
+  if (isFolderMode.value) {
+    await createFolderDir(parentId, name)
+    return
+  }
   await createFolder(parentId, name)
 }
 
 async function onRenameItem(id: string, oldName: string) {
-  const isFolder = findNodeType(tree.value, id) === 'folder'
+  const nodes = isFolderMode.value ? folderTree.value : tree.value
+  const isFolder = findNodeType(nodes, id) === 'folder'
   const result = await showInputDialog(
     t('library.rename'),
     [{
@@ -558,6 +793,15 @@ async function onRenameItem(id: string, oldName: string) {
   if (!result) return
   const name = result.name.trim()
   if (!name || name === oldName) return
+  if (isFolderMode.value) {
+    const wasActive = id === activeFilePath.value
+    await renameFolderItem(id, name)
+    if (wasActive && activeFilePath.value) {
+      filePath.value = activeFilePath.value
+      fileName.value = activeFileName.value
+    }
+    return
+  }
   await renameItem(id, name)
 }
 
@@ -573,16 +817,61 @@ function findNodeType(nodes: LibraryNode[], id: string): string | null {
 }
 
 async function onDeleteItem(id: string) {
+  if (isFolderMode.value) {
+    const activePath = activeFilePath.value
+    const affectsActive =
+      !!activePath && (id === activePath || activePath.startsWith(`${id}/`) || activePath.startsWith(`${id}\\`))
+    await deleteFolderItem(id)
+    if (affectsActive) {
+      clearEditor()
+    }
+    return
+  }
   await deleteItem(id)
 }
 
 async function onMoveItem(id: string, newParentId: string | null, index: number) {
+  if (isFolderMode.value) {
+    const wasActive = id === activeFilePath.value
+    await moveFolderItem(id, newParentId, index)
+    if (wasActive && activeFilePath.value) {
+      filePath.value = activeFilePath.value
+    }
+    return
+  }
   await moveItem(id, newParentId, index)
+}
+
+function onToggleFolder(id: string) {
+  if (isFolderMode.value) {
+    toggleFolderDir(id)
+    return
+  }
+  toggleFolder(id)
+}
+
+async function enterFolderWorkspace(rootPath: string) {
+  isLibraryMode.value = false
+  setActiveDocId(null)
+  enterFolderMode(rootPath)
+  setFolderRoot(rootPath)
+  folderRootPath.value = rootPath
+  setWindowMode('folder')
+  await refreshFolderTree()
+  await refreshFolderName()
+  hasOpenedFile.value = true
+  if (folderTree.value.length > 0) {
+    await autoOpenFirstDoc()
+  } else {
+    clearEditor()
+    setActiveFilePath(null)
+  }
 }
 
 async function onWelcomeOpenFile() {
   const result = await openFile()
   if (result === 'library-in-place') {
+    isFolderMode.value = false
     isLibraryMode.value = true
     setWindowMode('library')
     if (appPlatform.value === 'web') setWebStoredWindowMode('library')
@@ -593,9 +882,15 @@ async function onWelcomeOpenFile() {
       await autoOpenFirstDoc()
     }
     if (appPlatform.value === 'web') schedulePersistWebState()
-  } else if (result === 'opened' && appPlatform.value === 'web') {
-    setWebStoredWindowMode('document')
-    schedulePersistWebState()
+  } else if (result === 'folder-in-place' && folderRootPath.value) {
+    await enterFolderWorkspace(folderRootPath.value)
+  } else if (result === 'opened') {
+    isFolderMode.value = false
+    isLibraryMode.value = false
+    if (appPlatform.value === 'web') {
+      setWebStoredWindowMode('document')
+      schedulePersistWebState()
+    }
   }
 }
 
@@ -664,6 +959,7 @@ async function onWelcomeOpenRecent(fp: string) {
     if (!result) return
 
     if (result.opened === 'library-in-place') {
+      isFolderMode.value = false
       isLibraryMode.value = true
       setWindowMode('library')
       await refreshTree()
@@ -677,7 +973,16 @@ async function onWelcomeOpenRecent(fp: string) {
 
     if (result.opened === 'library-window') return
 
-    loadFileResult(result)
+    if (result.opened === 'folder-in-place') {
+      await enterFolderWorkspace(result.filePath)
+      return
+    }
+
+    if (result.opened === 'folder-window') return
+
+    isFolderMode.value = false
+    isLibraryMode.value = false
+    await loadFileResult(result)
     hasOpenedFile.value = true
   } catch (e) {
     console.error('Open recent failed:', e)
@@ -794,6 +1099,17 @@ onMounted(async () => {
   }
 
   await initLibrary()
+  await initFolder()
+
+  if (isFolderMode.value) {
+    hasOpenedFile.value = true
+    if (folderRootPath.value) {
+      setFolderRoot(folderRootPath.value)
+    }
+    if (folderTree.value.length > 0 && !activeFilePath.value) {
+      await autoOpenFirstDoc()
+    }
+  }
 
   if (platform === 'web' && !isNewDocWindow && !isNewLibWindow && webSnap?.v === 1) {
     if (webSnap.view === 'document') {
@@ -803,7 +1119,7 @@ onMounted(async () => {
       } else {
         setWebStoredWindowMode('document')
         setWindowMode('document')
-        loadFileResult({
+        await loadFileResult({
           filePath: webSnap.filePath || 'web:untitled',
           content: (webSnap.markdown as string) ?? '',
           json: webSnap.docJson,
@@ -824,7 +1140,7 @@ onMounted(async () => {
   // Check if this window was opened with a file from the system (double-click, open-with, etc.)
   const pendingFile = await window.electron.getPendingFile()
   if (pendingFile) {
-    loadFileResult(pendingFile)
+    await loadFileResult(pendingFile)
     hasOpenedFile.value = true
   }
 
@@ -854,6 +1170,7 @@ onMounted(async () => {
   drawioUiLayout.value =
     settings.drawioUiLayout === 'minimal' ? 'minimal' : 'full'
   spellcheckEnabled.value = settings.spellcheck === true
+  applyMdAssetSettingsFromPartial(settings)
   saveFormatAskDialog.value = settings.saveFormatAskDialog !== false
   saveFormatDefault.value = settings.saveFormatDefault === 'zq' ? 'zq' : 'md'
 
@@ -871,6 +1188,10 @@ onMounted(async () => {
   })
 
   cleanupMenuAction = window.electron.onMenuAction((action) => {
+    if (action === 'file:open') {
+      void onWelcomeOpenFile()
+      return
+    }
     if (action.startsWith('file:openRecent:')) {
       const enc = action.slice('file:openRecent:'.length)
       try {
@@ -895,8 +1216,11 @@ onMounted(async () => {
   })
 
   cleanupLoadFile = window.electron.onLoadFile((data) => {
-    loadFileResult(data)
-    hasOpenedFile.value = true
+    isFolderMode.value = false
+    isLibraryMode.value = false
+    void loadFileResult(data).then(() => {
+      hasOpenedFile.value = true
+    })
   })
 
   cleanupSettingsChanged = window.electron.onSettingsChanged((s) => {
@@ -912,6 +1236,9 @@ onMounted(async () => {
     if (s.spellcheck !== undefined) {
       spellcheckEnabled.value = s.spellcheck === true
       applySpellcheck()
+    }
+    if (s.mdAssetMode !== undefined || s.mdAssetFolder !== undefined || s.mdAssetCustomFolder !== undefined || s.mdAssetFileName !== undefined) {
+      applyMdAssetSettingsFromPartial(s)
     }
     if (s.saveFormatAskDialog !== undefined) {
       saveFormatAskDialog.value = s.saveFormatAskDialog !== false
@@ -970,13 +1297,14 @@ onUnmounted(() => {
       :editor="tiptapEditor"
       :visible="sidebarVisible && !showWelcome"
       :scroll-container="editorAreaRef"
-      :is-library-mode="isLibraryMode"
-      :library-name="libraryName"
-      :tree="tree"
-      :active-doc-id="activeDocId"
-      :expanded-folders="expandedFolders"
+      :show-file-tree="showFileTree"
+      :file-tree-mode="fileTreeMode"
+      :tree-name="sidebarTreeName"
+      :tree="sidebarTree"
+      :active-id="sidebarActiveId"
+      :expanded-folders="sidebarExpandedFolders"
       @select-doc="onSelectDoc"
-      @toggle-folder="toggleFolder"
+      @toggle-folder="onToggleFolder"
       @create-doc="onCreateDoc"
       @create-folder="onCreateFolder"
       @rename-item="onRenameItem"
@@ -1006,7 +1334,7 @@ onUnmounted(() => {
           :sidebar-visible="sidebarVisible"
           @toggle-sidebar="toggleSidebar"
         />
-        <div v-if="showLibraryEmptyState" class="library-empty-state">
+        <div v-if="showWorkspaceEmptyState" class="library-empty-state">
           <div class="library-empty-icon">
             <FileText
               class="library-empty-icon__lucide"
@@ -1014,7 +1342,9 @@ onUnmounted(() => {
               :stroke-width="1.2"
             />
           </div>
-          <p class="library-empty-text">{{ $t('library.selectOrCreateDoc') }}</p>
+          <p class="library-empty-text">{{
+            isFolderMode ? $t('folder.selectOrCreateFile') : $t('library.selectOrCreateDoc')
+          }}</p>
         </div>
         <template v-else>
           <div v-show="sourceMode" class="editor-area source-mode-area">
@@ -1029,8 +1359,10 @@ onUnmounted(() => {
           <div v-show="!sourceMode" class="editor-area">
             <ZqScrollbar ref="editorScrollbarRef" height="100%">
               <ZqEditor
+                :key="editorDocumentKey"
                 ref="editorRef"
                 mode="full"
+                :upload-options="editorUploadOptions"
                 @ready="onEditorReady"
                 @change="onEditorChange"
               />
@@ -1069,6 +1401,11 @@ onUnmounted(() => {
       :telemetry-enabled="telemetryEnabled"
       :drawio-ui-layout="drawioUiLayout"
       :spellcheck="spellcheckEnabled"
+      :md-asset-mode="mdAssetMode"
+      :md-asset-folder="mdAssetFolder"
+      :md-asset-custom-folder="mdAssetCustomFolder"
+      :md-asset-file-name="mdAssetFileName"
+      :is-web-platform="appPlatform === 'web'"
       :save-format-ask-dialog="saveFormatAskDialog"
       :save-format-default="saveFormatDefault"
       :drawio-bundle-ready="drawioBundleReady"
@@ -1083,6 +1420,10 @@ onUnmounted(() => {
       @change-save-format-default="onChangeSaveFormatDefault"
       @change-drawio-ui-layout="onChangeDrawioUiLayout"
       @change-spellcheck="onChangeSpellcheck"
+      @change-md-asset-mode="onChangeMdAssetMode"
+      @change-md-asset-folder="onChangeMdAssetFolder"
+      @change-md-asset-custom-folder="onChangeMdAssetCustomFolder"
+      @change-md-asset-file-name="onChangeMdAssetFileName"
       @check-update="triggerCheckUpdate"
       @drawio-bundle-changed="refreshDrawioBundleStatus"
       @excalidraw-bundle-changed="refreshExcalidrawBundleStatus"
@@ -1125,6 +1466,13 @@ onUnmounted(() => {
       :visible="saveFormatDialogVisible"
       @pick="onSaveFormatPick"
       @cancel="onSaveFormatCancel"
+    />
+    <ExportPdfDialog
+      :visible="exportPdfDialogVisible"
+      :title="exportPdfTitle"
+      :html="exportPdfHtml"
+      @export="onExportPdfConfirm"
+      @cancel="onExportPdfCancel"
     />
     <ConfirmDialog
       :visible="unsavedDialogVisible"

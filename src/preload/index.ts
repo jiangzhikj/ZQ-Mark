@@ -16,6 +16,7 @@ import type {
   WisemappingInstallProgress,
   WisemappingPluginManifest,
 } from '../shared/wisemapping-plugin'
+import type { MdAssetSettings } from '../shared/markdown-assets'
 
 export interface LocalFileResult {
   id: string
@@ -23,6 +24,7 @@ export interface LocalFileResult {
   url: string
   name: string
   size?: number
+  relativePath?: string
 }
 
 export interface OpenFileResult {
@@ -31,7 +33,7 @@ export interface OpenFileResult {
   json?: any
   meta?: any
   isZq?: boolean
-  opened?: 'library-window' | 'library-in-place'
+  opened?: 'library-window' | 'library-in-place' | 'folder-window' | 'folder-in-place'
 }
 
 export interface AppSettings {
@@ -51,13 +53,17 @@ export interface AppSettings {
   saveFormatAskDialog: boolean
   saveFormatDefault: 'md' | 'zq'
   spellcheck: boolean
+  mdAssetMode: 'relative' | 'absolute'
+  mdAssetFolder: 'assets' | 'docNamed' | 'same' | 'custom'
+  mdAssetCustomFolder: string
+  mdAssetFileName: 'original' | 'uuid'
 }
 
 export interface ElectronAPI {
   getSystemLocale: () => Promise<string>
   getSystemTheme: () => Promise<'light' | 'dark'>
   changeLocale: (locale: string) => Promise<void>
-  getWindowMode: () => Promise<'document' | 'library'>
+  getWindowMode: () => Promise<'document' | 'library' | 'folder'>
   getSettings: () => Promise<AppSettings>
   setSettings: (partial: Partial<AppSettings>) => Promise<AppSettings>
   onSettingsChanged: (callback: (settings: AppSettings) => void) => () => void
@@ -75,8 +81,34 @@ export interface ElectronAPI {
   newLibraryWindow: () => void
   openFile: () => Promise<OpenFileResult | null>
   saveFile: (data: { filePath: string | null; content: string }) => Promise<string | null>
+  pickMdSavePath: (filePath: string | null) => Promise<string | null>
+  pickMdAssetCustomFolder: () => Promise<string | null>
   saveZqFile: (data: { filePath: string | null; json: any; title: string; existingMeta?: any }) => Promise<string | null>
   saveDroppedFile: (buffer: ArrayBuffer, fileName: string) => Promise<LocalFileResult>
+  saveMdAsset: (data: {
+    buffer: ArrayBuffer
+    fileName: string
+    docPath: string
+    settings?: Partial<MdAssetSettings>
+  }) => Promise<LocalFileResult | null>
+  materializeMdAssets: (data: {
+    json: any
+    docPath: string
+    settings?: Partial<MdAssetSettings>
+  }) => Promise<{ json: any }>
+  materializeMdContent: (data: {
+    md: string
+    docPath: string
+    settings?: Partial<MdAssetSettings>
+  }) => Promise<string>
+  resolveMdAssetsInJson: (data: { json: any; docPath: string }) => Promise<any>
+  resolveDocAssetUrl: (data: { docPath: string; assetPath: string }) => Promise<string | null>
+  resolveMdContent: (data: { md: string; docPath: string }) => Promise<string>
+  openLocalFileForDoc: (data: {
+    docPath: string
+    settings?: Partial<MdAssetSettings>
+    filters?: { name: string; extensions: string[] }[]
+  }) => Promise<LocalFileResult | null>
   /** 弹出「另存为」将二进制写入用户选择的路径；取消返回 null */
   saveArrayBufferAs: (buffer: ArrayBuffer, defaultFileName: string) => Promise<string | null>
   /** 将 data URL 写入本地资源目录，用于 diagram 预览等；失败或 Web 返回 null */
@@ -85,7 +117,13 @@ export interface ElectronAPI {
   saveTextAsset: (text: string, ext: string) => Promise<LocalFileResult | null>
   openLocalFile: (options: { filters?: { name: string; extensions: string[] }[] }) => Promise<LocalFileResult | null>
   importLocalPath: (localSrc: string) => Promise<LocalFileResult | null>
-  exportFile: (options: { format: string; html: string; title: string; css?: string }) => Promise<string | null>
+  exportFile: (options: {
+    format: string
+    html: string
+    title: string
+    css?: string
+    pdfSettings?: import('../shared/pdf-export').PdfExportSettings
+  }) => Promise<string | null>
   showInFolder: (filePath: string) => Promise<void>
   openAssetUrl: (url: string) => Promise<{ ok: boolean; error?: string }>
   initLibraryInPlace: () => Promise<boolean>
@@ -107,6 +145,24 @@ export interface ElectronAPI {
   libraryIsDirty: () => Promise<boolean>
   libraryGetName: () => Promise<string>
   librarySetName: (name: string) => Promise<boolean>
+
+  // Folder workspace API
+  folderGetTree: () => Promise<LibraryNode[]>
+  folderGetRoot: () => Promise<string | null>
+  folderGetName: () => Promise<string>
+  folderReadFile: (filePath: string) => Promise<{ content?: string; json?: any; meta?: any; isZq: boolean; name: string } | null>
+  folderWriteFile: (data: {
+    filePath: string
+    content?: string
+    json?: any
+    title?: string
+    meta?: any
+  }) => Promise<boolean>
+  folderCreateFile: (data: { parentId: string | null; name: string }) => Promise<LibraryNode | null>
+  folderCreateFolder: (data: { parentId: string | null; name: string }) => Promise<LibraryNode | null>
+  folderRename: (data: { id: string; newName: string }) => Promise<string | null>
+  folderDelete: (data: { id: string }) => Promise<boolean>
+  folderMove: (data: { id: string; newParentId: string | null; index: number }) => Promise<boolean>
 
   // Update API
   updateCheck: (updateUrl: string) => Promise<void>
@@ -283,8 +339,17 @@ const api: ElectronAPI = {
   newLibraryWindow: () => ipcRenderer.send('window:new-library'),
   openFile: () => ipcRenderer.invoke('dialog:open-file'),
   saveFile: (data) => ipcRenderer.invoke('dialog:save-file', data),
+  pickMdSavePath: (filePath) => ipcRenderer.invoke('dialog:pick-md-save-path', filePath),
+  pickMdAssetCustomFolder: () => ipcRenderer.invoke('dialog:pick-md-asset-custom-folder'),
   saveZqFile: (data) => ipcRenderer.invoke('zq:save', data),
   saveDroppedFile: (buffer, fileName) => ipcRenderer.invoke('editor:save-dropped-file', buffer, fileName),
+  saveMdAsset: (data) => ipcRenderer.invoke('editor:save-md-asset', data),
+  materializeMdAssets: (data) => ipcRenderer.invoke('editor:materialize-md-assets', data),
+  materializeMdContent: (data) => ipcRenderer.invoke('editor:materialize-md-content', data),
+  resolveMdAssetsInJson: (data) => ipcRenderer.invoke('editor:resolve-md-assets-in-json', data),
+  resolveDocAssetUrl: (data) => ipcRenderer.invoke('editor:resolve-doc-asset-url', data),
+  resolveMdContent: (data) => ipcRenderer.invoke('editor:resolve-md-content', data),
+  openLocalFileForDoc: (data) => ipcRenderer.invoke('editor:open-local-file-for-doc', data),
   saveArrayBufferAs: (buffer, defaultFileName) =>
     ipcRenderer.invoke('editor:save-array-buffer-as', buffer, defaultFileName),
   saveDataUrlAsset: (dataUrl) => ipcRenderer.invoke('editor:save-data-url-asset', dataUrl),
@@ -313,6 +378,18 @@ const api: ElectronAPI = {
   libraryIsDirty: () => ipcRenderer.invoke('library:is-dirty'),
   libraryGetName: () => ipcRenderer.invoke('library:get-name'),
   librarySetName: (name) => ipcRenderer.invoke('library:set-name', name),
+
+  // Folder workspace
+  folderGetTree: () => ipcRenderer.invoke('folder:get-tree'),
+  folderGetRoot: () => ipcRenderer.invoke('folder:get-root'),
+  folderGetName: () => ipcRenderer.invoke('folder:get-name'),
+  folderReadFile: (filePath) => ipcRenderer.invoke('folder:read-file', filePath),
+  folderWriteFile: (data) => ipcRenderer.invoke('folder:write-file', data),
+  folderCreateFile: (data) => ipcRenderer.invoke('folder:create-file', data),
+  folderCreateFolder: (data) => ipcRenderer.invoke('folder:create-folder', data),
+  folderRename: (data) => ipcRenderer.invoke('folder:rename', data),
+  folderDelete: (data) => ipcRenderer.invoke('folder:delete', data),
+  folderMove: (data) => ipcRenderer.invoke('folder:move', data),
 
   // Update
   updateCheck: (updateUrl) => ipcRenderer.invoke('update:check', updateUrl),

@@ -100,8 +100,10 @@ const zhCN: AppLocale = {
     untitled: '未命名'
   },
   welcome: {
-    openFile: '打开文件',
-    openFileDesc: '打开已有的文件或文件库',
+    openFile: '打开',
+    openFileDesc: '打开文件、文件库，或浏览电脑文件夹中的文档',
+    openFolder: '打开文件夹',
+    openFolderDesc: '浏览电脑文件夹中的文档',
     newDocument: '新建文档',
     newDocumentDesc: '创建一个新的空白文档',
     newLibrary: '新建文件库',
@@ -141,6 +143,10 @@ const zhCN: AppLocale = {
     folderNameLabel: '文件夹名称',
     folderNamePlaceholder: '请输入文件夹名称'
   },
+  folder: {
+    emptyFolder: '文件夹为空\n点击上方按钮创建文档',
+    selectOrCreateFile: '选择或创建一个文件开始编辑'
+  },
   settings: {
     title: '偏好设置',
     general: '通用',
@@ -171,6 +177,26 @@ const zhCN: AppLocale = {
     drawioUiLayoutMinimal: '精简布局',
     spellcheck: '拼写检查',
     spellcheckDesc: '启用后编辑器会对拼写错误的单词显示红色波浪线',
+    mdAssetMode: 'Markdown 资源存储',
+    mdAssetModeDesc: '保存 .md 文件时，图片、视频、音频与附件的存放方式',
+    mdAssetModeRelative: '复制到文档目录（相对路径）',
+    mdAssetModeAbsolute: '应用缓存（绝对路径）',
+    mdAssetFolder: '资源目录',
+    mdAssetFolderDesc: '复制到 Markdown 文件旁的子文件夹',
+    mdAssetFolderAssets: './assets/',
+    mdAssetFolderDocNamed: './{filename}.assets/',
+    mdAssetFolderSame: '与文档同目录',
+    mdAssetFolderCustom: '自定义',
+    mdAssetCustomFolder: '自定义目录',
+    mdAssetCustomFolderDesc: '设置中显示完整路径；保存到 .md 时写入相对路径，便于分享',
+    mdAssetCustomFolderPlaceholder: '例如 /Users/you/project/assets',
+    mdAssetCustomFolderBrowse: '选择文件夹…',
+    mdAssetCustomFolderEmptyHint: '请选择用于存放资源的文件夹',
+    mdAssetFileName: '文件命名',
+    mdAssetFileNameDesc: '复制资源文件时的命名方式',
+    mdAssetFileNameOriginal: '保留原文件名',
+    mdAssetFileNameUuid: '随机 UUID 文件名',
+    mdAssetDesktopOnlyHint: '将资源复制到文档旁仅桌面端可用。',
     saveFormatAsk: '保存时询问格式',
     saveFormatAskDesc: '保存单文件时弹出对话框，在 Markdown 与 ZQ 文档之间选择',
     saveFormatDefaultLabel: '不询问时默认使用',
@@ -262,7 +288,35 @@ const zhCN: AppLocale = {
   exportMsg: {
     exporting: '正在导出...',
     success: '导出成功',
-    failed: '导出失败'
+    failed: '导出失败',
+    openFolder: '打开目录'
+  },
+  exportPdf: {
+    untitled: '未命名',
+    subtitle: 'PDF 导出设置',
+    export: '导出',
+    close: '关闭',
+    firstPage: '首页',
+    prevPage: '上一页',
+    nextPage: '下一页',
+    lastPage: '尾页',
+    paperSize: '纸张类型',
+    margins: '纸张边距',
+    orientation: '纸张方向',
+    portrait: '纵向',
+    landscape: '横向',
+    margin: {
+      normal: '正常',
+      narrow: '窄',
+      wide: '宽',
+      minimal: '最小',
+      custom: '自定义'
+    },
+    marginTop: '上',
+    marginBottom: '下',
+    marginLeft: '左',
+    marginRight: '右',
+    marginUnit: '单位：英寸（0–2）',
   },
   saveMsg: {
     success: '文件已保存'

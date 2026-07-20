@@ -1,5 +1,5 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, nativeTheme, protocol, net } from 'electron'
-import { join, basename, extname } from 'path'
+import { join, basename, extname, resolve, sep as pathSep } from 'path'
 import { readFile, writeFile, mkdir, copyFile, stat } from 'fs/promises'
 import { existsSync } from 'fs'
 import { randomUUID } from 'crypto'
@@ -13,6 +13,26 @@ import {
   libraryCreateDoc, libraryCreateFolder, libraryRenameItem,
   libraryDeleteItem, libraryMoveItem, libraryGetDoc, librarySaveDoc
 } from './zq-file'
+import {
+  saveBufferToDocFolder,
+  materializeMdAssetsInDoc,
+  copyLocalFileToDocFolder,
+  resolveMdAssetsInDoc,
+  resolveMdContentForLoad,
+  materializeMdContentForSave,
+} from './markdown-assets'
+import { resolveRelativeAssetPath, normalizeMdAssetSettings } from '../shared/markdown-assets'
+import {
+  scanFolderTree,
+  readFolderFile,
+  writeFolderFile,
+  createFolderFile,
+  createFolderDir,
+  renameFolderEntry,
+  deleteFolderEntry,
+  moveFolderEntry,
+  getFolderDisplayName,
+} from './folder-workspace'
 import { ASSET_PROTOCOL, localPathToAssetUrl, assetUrlToLocalPath } from './asset-protocol'
 import { messages } from '../shared/i18n'
 import type { SupportedLocale } from '../shared/i18n'
@@ -166,6 +186,14 @@ interface AppSettings {
   saveFormatDefault: 'md' | 'zq'
   /** 拼写检查 */
   spellcheck: boolean
+  /** Markdown 资源路径模式：relative 复制到文档旁 / absolute 使用应用缓存绝对路径 */
+  mdAssetMode: 'relative' | 'absolute'
+  /** Markdown 资源目录：assets / docNamed / same / custom */
+  mdAssetFolder: 'assets' | 'docNamed' | 'same' | 'custom'
+  /** 自定义资源目录（相对 Markdown 文件路径） */
+  mdAssetCustomFolder: string
+  /** Markdown 资源文件名：original / uuid */
+  mdAssetFileName: 'original' | 'uuid'
 }
 
 /** Base URL for `{base}/latest.json`. */
@@ -179,7 +207,11 @@ const defaultSettings: AppSettings = {
   uiThemeMode: 'system',
   saveFormatAskDialog: true,
   saveFormatDefault: 'md',
-  spellcheck: false
+  spellcheck: false,
+  mdAssetMode: 'relative',
+  mdAssetFolder: 'assets',
+  mdAssetCustomFolder: '',
+  mdAssetFileName: 'original',
 }
 
 /** 历史内置默认，启动时自动迁往当前 `defaultSettings.updateUrl` */
@@ -630,6 +662,17 @@ ipcMain.handle('dialog:select-directory', async (event) => {
   return filePaths[0]
 })
 
+/** 选择 Markdown 资源自定义目录，返回绝对路径供设置保存 */
+ipcMain.handle('dialog:pick-md-asset-custom-folder', async (event) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+    properties: ['openDirectory', 'createDirectory'],
+  })
+  if (canceled || filePaths.length === 0) return null
+  return filePaths[0]
+})
+
 ipcMain.handle('window:init-library-in-place', (event) => {
   const state = getStateByWebContents(event.sender)
   if (!state) return false
@@ -654,23 +697,64 @@ ipcMain.handle('library:set-name', (event, name: string) => {
   return true
 })
 
-// ─── IPC: Open file (auto-detect type) ───
+// ─── IPC: Open file or folder (auto-detect type) ───
+
+const OPEN_FILE_FILTERS: Electron.FileFilter[] = [
+  { name: 'ZQ Files', extensions: ['zq', 'zql', 'md', 'html'] },
+  { name: 'Markdown', extensions: ['md', 'markdown', 'txt'] },
+  { name: 'All Files', extensions: ['*'] },
+]
+
+async function showUnifiedOpenDialog(
+  win: BrowserWindow,
+): Promise<Electron.OpenDialogReturnValue> {
+  if (process.platform === 'darwin') {
+    return dialog.showOpenDialog(win, {
+      properties: ['openFile', 'openDirectory'],
+      filters: OPEN_FILE_FILTERS,
+    })
+  }
+
+  const locale = getLocale()
+  const w = messages[locale].welcome
+  const { response } = await dialog.showMessageBox(win, {
+    type: 'question',
+    message: w.openFile,
+    detail: w.openFileDesc,
+    buttons: [w.openFile, w.openFolder, messages[locale].dialog.cancel],
+    defaultId: 0,
+    cancelId: 2,
+  })
+  if (response === 2) return { canceled: true, filePaths: [] }
+  if (response === 1) {
+    return dialog.showOpenDialog(win, { properties: ['openDirectory'] })
+  }
+  return dialog.showOpenDialog(win, {
+    properties: ['openFile'],
+    filters: OPEN_FILE_FILTERS,
+  })
+}
 
 ipcMain.handle('dialog:open-file', async (event) => {
   const win = getWinFromEvent(event)
   if (!win) return null
 
-  const { canceled, filePaths } = await dialog.showOpenDialog(win, {
-    properties: ['openFile'],
-    filters: [
-      { name: 'ZQ Files', extensions: ['zq', 'zql', 'md', 'html'] },
-      { name: 'Markdown', extensions: ['md', 'markdown', 'txt'] },
-      { name: 'All Files', extensions: ['*'] }
-    ]
-  })
+  const { canceled, filePaths } = await showUnifiedOpenDialog(win)
   if (canceled || filePaths.length === 0) return null
 
   const fp = filePaths[0]
+
+  let entryStat
+  try {
+    entryStat = await stat(fp)
+  } catch {
+    return null
+  }
+
+  if (entryStat.isDirectory()) {
+    return openFolderPath(event, fp)
+  }
+
   const ext = extname(fp).toLowerCase()
 
   const isLibrary = ext === '.zql' || (ext === '.zq' && detectZqType(fp) === 'library')
@@ -699,13 +783,152 @@ ipcMain.handle('dialog:open-file', async (event) => {
 
   if (ext === '.zq') {
     const { json, meta } = await openZqDocument(fp)
+    switchWindowToDocument(getStateByWebContents(event.sender), fp)
     addRecentFile(fp)
     return { filePath: fp, content: '', json, meta, isZq: true }
   }
 
   const content = await readFile(fp, 'utf-8')
+  switchWindowToDocument(getStateByWebContents(event.sender), fp)
   addRecentFile(fp)
   return { filePath: fp, content, isZq: false }
+})
+
+function switchWindowToDocument(
+  state: ReturnType<typeof getStateByWebContents>,
+  documentPath: string,
+): void {
+  if (!state) return
+  state.mode = 'document'
+  state.libraryRuntime = null
+  state.filePath = documentPath
+}
+
+async function openFolderPath(
+  event: Electron.IpcMainInvokeEvent,
+  folderPath: string,
+): Promise<{ opened: 'folder-in-place' | 'folder-window'; filePath: string } | null> {
+  if (!existsSync(folderPath)) return null
+
+  let st
+  try {
+    st = await stat(folderPath)
+  } catch {
+    return null
+  }
+  if (!st.isDirectory()) return null
+
+  const existing = getWindowByPath(folderPath)
+  if (existing) {
+    existing.window.focus()
+    addRecentFile(folderPath)
+    return { opened: 'folder-window', filePath: folderPath }
+  }
+
+  const state = getStateByWebContents(event.sender)
+  if (state && !state.filePath && state.mode === 'document') {
+    state.mode = 'folder'
+    state.filePath = folderPath
+    addRecentFile(folderPath)
+    return { opened: 'folder-in-place', filePath: folderPath }
+  }
+
+  createWindow({ filePath: folderPath, mode: 'folder' })
+  addRecentFile(folderPath)
+  return { opened: 'folder-window', filePath: folderPath }
+}
+
+function getFolderRootFromEvent(event: Electron.IpcMainInvokeEvent): string | null {
+  const state = getStateByWebContents(event.sender)
+  if (!state || state.mode !== 'folder' || !state.filePath) return null
+  return state.filePath
+}
+
+ipcMain.handle('folder:get-tree', async (event) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return []
+  return scanFolderTree(root)
+})
+
+ipcMain.handle('folder:get-root', (event) => {
+  return getFolderRootFromEvent(event)
+})
+
+ipcMain.handle('folder:get-name', (event) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return ''
+  return getFolderDisplayName(root)
+})
+
+ipcMain.handle('folder:read-file', async (event, filePath: string) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return null
+  const resolvedRoot = resolve(root)
+  const resolvedFile = resolve(filePath)
+  if (resolvedFile !== resolvedRoot && !resolvedFile.startsWith(resolvedRoot + pathSep)) {
+    return null
+  }
+  return readFolderFile(filePath)
+})
+
+ipcMain.handle('folder:write-file', async (event, data: {
+  filePath: string
+  content?: string
+  json?: any
+  title?: string
+  meta?: any
+}) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return false
+  const resolvedRoot = resolve(root)
+  const resolvedFile = resolve(data.filePath)
+  if (resolvedFile !== resolvedRoot && !resolvedFile.startsWith(resolvedRoot + pathSep)) {
+    return false
+  }
+  await writeFolderFile(data.filePath, data)
+  return true
+})
+
+ipcMain.handle('folder:create-file', async (event, { parentId, name }: { parentId: string | null; name: string }) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return null
+  try {
+    return await createFolderFile(root, parentId, name)
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('folder:create-folder', async (event, { parentId, name }: { parentId: string | null; name: string }) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return null
+  try {
+    return await createFolderDir(root, parentId, name)
+  } catch {
+    return null
+  }
+})
+
+ipcMain.handle('folder:rename', async (event, { id, newName }: { id: string; newName: string }) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return false
+  try {
+    return await renameFolderEntry(root, id, newName)
+  } catch {
+    return false
+  }
+})
+
+ipcMain.handle('folder:delete', async (event, { id }: { id: string }) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return false
+  return deleteFolderEntry(root, id)
+})
+
+ipcMain.handle('folder:move', async (event, { id, newParentId, index }: { id: string; newParentId: string | null; index: number }) => {
+  const root = getFolderRootFromEvent(event)
+  if (!root) return false
+  return moveFolderEntry(root, id, newParentId, index)
 })
 
 ipcMain.handle('recent:get', () => {
@@ -713,6 +936,19 @@ ipcMain.handle('recent:get', () => {
 })
 
 ipcMain.handle('recent:open', async (event, fp: string) => {
+  if (!existsSync(fp)) return null
+
+  let entryStat
+  try {
+    entryStat = await stat(fp)
+  } catch {
+    return null
+  }
+
+  if (entryStat.isDirectory()) {
+    return openFolderPath(event, fp)
+  }
+
   const ext = extname(fp).toLowerCase()
   const isLibrary = ext === '.zql' || (ext === '.zq' && detectZqType(fp) === 'library')
 
@@ -736,16 +972,33 @@ ipcMain.handle('recent:open', async (event, fp: string) => {
 
   if (ext === '.zq') {
     const { json, meta } = await openZqDocument(fp)
+    switchWindowToDocument(getStateByWebContents(event.sender), fp)
     addRecentFile(fp)
     return { filePath: fp, content: '', json, meta, isZq: true }
   }
 
   const content = await readFile(fp, 'utf-8')
+  switchWindowToDocument(getStateByWebContents(event.sender), fp)
   addRecentFile(fp)
   return { filePath: fp, content, isZq: false }
 })
 
 // ─── IPC: Save document ───
+
+ipcMain.handle('dialog:pick-md-save-path', async (event, filePath: string | null) => {
+  const win = getWinFromEvent(event)
+  if (!win) return null
+  if (filePath) return filePath
+  const { canceled, filePath: chosen } = await dialog.showSaveDialog(win, {
+    filters: [
+      { name: 'Markdown', extensions: ['md'] },
+      { name: 'Text', extensions: ['txt', 'markdown'] },
+    ],
+    defaultPath: 'untitled.md',
+  })
+  if (canceled || !chosen) return null
+  return chosen
+})
 
 ipcMain.handle('dialog:save-file', async (event, { filePath, content }: { filePath: string | null; content: string }) => {
   const win = getWinFromEvent(event)
@@ -929,6 +1182,171 @@ ipcMain.handle('editor:save-dropped-file', async (_event, buffer: ArrayBuffer, f
 })
 
 ipcMain.handle(
+  'editor:save-md-asset',
+  async (
+    _event,
+    data: {
+      buffer: ArrayBuffer
+      fileName: string
+      docPath: string
+      settings?: Partial<AppSettings>
+    },
+  ) => {
+    const { buffer, fileName, docPath, settings } = data
+    if (!docPath || typeof docPath !== 'string') return null
+    const assetSettings = normalizeMdAssetSettings({
+      mdAssetMode: settings?.mdAssetMode ?? appSettings.mdAssetMode,
+      mdAssetFolder: settings?.mdAssetFolder ?? appSettings.mdAssetFolder,
+      mdAssetCustomFolder: settings?.mdAssetCustomFolder ?? appSettings.mdAssetCustomFolder,
+      mdAssetFileName: settings?.mdAssetFileName ?? appSettings.mdAssetFileName,
+    })
+    if (assetSettings.mdAssetMode !== 'relative') return null
+    try {
+      return await saveBufferToDocFolder(Buffer.from(buffer), fileName, docPath, assetSettings)
+    } catch {
+      return null
+    }
+  },
+)
+
+ipcMain.handle(
+  'editor:open-local-file-for-doc',
+  async (
+    event,
+    data: {
+      docPath: string
+      settings?: Partial<AppSettings>
+      filters?: { name: string; extensions: string[] }[]
+    },
+  ) => {
+    const win = getWinFromEvent(event)
+    if (!win) return null
+    const { docPath, settings, filters } = data
+    if (!docPath) return null
+    const assetSettings = normalizeMdAssetSettings({
+      mdAssetMode: settings?.mdAssetMode ?? appSettings.mdAssetMode,
+      mdAssetFolder: settings?.mdAssetFolder ?? appSettings.mdAssetFolder,
+      mdAssetCustomFolder: settings?.mdAssetCustomFolder ?? appSettings.mdAssetCustomFolder,
+      mdAssetFileName: settings?.mdAssetFileName ?? appSettings.mdAssetFileName,
+    })
+    const { canceled, filePaths } = await dialog.showOpenDialog(win, {
+      properties: ['openFile'],
+      filters,
+    })
+    if (canceled || filePaths.length === 0) return null
+    const picked = filePaths[0]
+    if (assetSettings.mdAssetMode === 'relative') {
+      try {
+        return await copyLocalFileToDocFolder(picked, docPath, assetSettings)
+      } catch {
+        return null
+      }
+    }
+    await ensureAssetsDir()
+    const ext = extname(picked)
+    const id = randomUUID()
+    const localName = `${id}${ext}`
+    const localPath = join(assetsDir, localName)
+    await copyFile(picked, localPath)
+    const { size } = await stat(localPath)
+    return {
+      id: localName,
+      path: localPath,
+      url: localPathToAssetUrl(localPath),
+      name: basename(picked),
+      size,
+      relativePath: '',
+    }
+  },
+)
+
+ipcMain.handle(
+  'editor:materialize-md-assets',
+  async (
+    _event,
+    data: {
+      json: any
+      docPath: string
+      settings?: Partial<AppSettings>
+    },
+  ) => {
+    const { json, docPath, settings } = data
+    if (!docPath || !json) return { json }
+    const assetSettings = normalizeMdAssetSettings({
+      mdAssetMode: settings?.mdAssetMode ?? appSettings.mdAssetMode,
+      mdAssetFolder: settings?.mdAssetFolder ?? appSettings.mdAssetFolder,
+      mdAssetCustomFolder: settings?.mdAssetCustomFolder ?? appSettings.mdAssetCustomFolder,
+      mdAssetFileName: settings?.mdAssetFileName ?? appSettings.mdAssetFileName,
+    })
+    try {
+      const result = await materializeMdAssetsInDoc(json, docPath, assetSettings)
+      return { json: result }
+    } catch {
+      return { json }
+    }
+  },
+)
+
+ipcMain.handle(
+  'editor:resolve-doc-asset-url',
+  (_event, data: { docPath: string; assetPath: string }) => {
+    const { docPath, assetPath } = data
+    if (!docPath || !assetPath) return null
+    try {
+      const abs = resolve(resolveRelativeAssetPath(docPath, assetPath))
+      if (!existsSync(abs)) return null
+      return localPathToAssetUrl(abs)
+    } catch {
+      return null
+    }
+  },
+)
+
+ipcMain.handle(
+  'editor:resolve-md-assets-in-json',
+  (_event, data: { json: any; docPath: string }) => {
+    const { json, docPath } = data
+    if (!json || !docPath) return json
+    return resolveMdAssetsInDoc(json, docPath)
+  },
+)
+
+ipcMain.handle(
+  'editor:materialize-md-content',
+  async (
+    _event,
+    data: {
+      md: string
+      docPath: string
+      settings?: Partial<AppSettings>
+    },
+  ) => {
+    const { md, docPath, settings } = data
+    if (!md || !docPath) return md
+    const assetSettings = normalizeMdAssetSettings({
+      mdAssetMode: settings?.mdAssetMode ?? appSettings.mdAssetMode,
+      mdAssetFolder: settings?.mdAssetFolder ?? appSettings.mdAssetFolder,
+      mdAssetCustomFolder: settings?.mdAssetCustomFolder ?? appSettings.mdAssetCustomFolder,
+      mdAssetFileName: settings?.mdAssetFileName ?? appSettings.mdAssetFileName,
+    })
+    try {
+      return await materializeMdContentForSave(md, docPath, assetSettings)
+    } catch {
+      return md
+    }
+  },
+)
+
+ipcMain.handle(
+  'editor:resolve-md-content',
+  (_event, data: { md: string; docPath: string }) => {
+    const { md, docPath } = data
+    if (!md || !docPath) return md
+    return resolveMdContentForLoad(md, docPath)
+  },
+)
+
+ipcMain.handle(
   'editor:save-array-buffer-as',
   async (event, buffer: ArrayBuffer, defaultFileName: string) => {
     const win = getWinFromEvent(event)
@@ -1058,7 +1476,7 @@ ipcMain.handle('shell:open-asset-url', async (_event, url: string) => {
 
 // ─── IPC: Export ───
 
-ipcMain.handle('export:run', async (event, options: { format: ExportFormat; html: string; title: string; css?: string }) => {
+ipcMain.handle('export:run', async (event, options: { format: ExportFormat; html: string; title: string; css?: string; pdfSettings?: import('../shared/pdf-export').PdfExportSettings }) => {
   const win = getWinFromEvent(event)
   if (!win) return null
   try {
@@ -1118,7 +1536,10 @@ app.whenReady().then(async () => {
     if (!filePath) {
       return new Response('Bad Request', { status: 400 })
     }
-    return net.fetch(pathToFileURL(filePath).href)
+    return net.fetch(pathToFileURL(filePath).href, {
+      method: request.method,
+      headers: request.headers,
+    })
   })
 
   loadRecentFiles()

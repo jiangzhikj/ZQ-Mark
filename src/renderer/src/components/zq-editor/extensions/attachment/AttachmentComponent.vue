@@ -16,6 +16,7 @@ import {
 } from '@/components/icons';
 import { ZqMessage } from '@/components/ui';
 import { $t } from '../../utils/i18n';
+import { useMdAssetUrl } from '../../utils/use-md-asset-url';
 
 import { NodeViewWrapper } from '@tiptap/vue-3';
 
@@ -34,13 +35,19 @@ const props = defineProps<{
   deleteNode: () => void;
   node: any;
   selected: boolean;
+  updateAttributes: (attrs: Record<string, any>) => void;
 }>();
 
 const name = computed(() => props.node.attrs.name || $t('zq-editor.attachment.untitled'));
 const size = computed(() => formatFileSize(props.node.attrs.size || 0));
 const fileType = computed(() => props.node.attrs.type || '');
 
-const resolvedUrl = computed(() => props.node.attrs.url || '');
+const { renderUrl: resolvedUrl } = useMdAssetUrl({
+  getRawUrl: () => props.node.attrs.url || '',
+  onImport: (_raw, url, id) => {
+    props.updateAttributes({ url, id: id ?? props.node.attrs.id });
+  },
+});
 
 const extFromName = computed(() => {
   const n = name.value;

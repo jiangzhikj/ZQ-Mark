@@ -1,5 +1,15 @@
 type MessageType = 'success' | 'warning' | 'error' | 'info'
 
+export interface ZqMessageAction {
+  label: string
+  onClick: () => void
+}
+
+export interface ZqMessageOptions {
+  duration?: number
+  action?: ZqMessageAction
+}
+
 const COLORS: Record<MessageType, { bg: string; border: string; text: string }> = {
   success: { bg: '#f0f9eb', border: '#e1f3d8', text: '#67c23a' },
   warning: { bg: '#fdf6ec', border: '#faecd8', text: '#e6a23c' },
@@ -19,29 +29,70 @@ function getColors(type: MessageType) {
   return isDark ? DARK_COLORS[type] : COLORS[type]
 }
 
-function show(message: string, type: MessageType, duration = 3000) {
+function show(message: string, type: MessageType, options: ZqMessageOptions = {}) {
   const colors = getColors(type)
+  const duration = options.duration ?? (options.action ? 12000 : 3000)
   const el = document.createElement('div')
-  el.textContent = message
   Object.assign(el.style, {
     position: 'fixed',
-    top: '20px',
+    top: 'calc(var(--titlebar-height, 52px) + 12px)',
     left: '50%',
     transform: 'translateX(-50%) translateY(-10px)',
     padding: '10px 20px',
     borderRadius: '8px',
     fontSize: '13px',
     fontFamily: 'inherit',
-    zIndex: '9999',
+    zIndex: '10051',
     opacity: '0',
-    transition: 'all 0.3s ease',
+    transition: 'opacity 0.3s ease, transform 0.3s ease',
     background: colors.bg,
     border: `1px solid ${colors.border}`,
     color: colors.text,
     boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-    pointerEvents: 'none',
+    pointerEvents: options.action ? 'auto' : 'none',
+    maxWidth: 'min(92vw, 480px)',
+    lineHeight: '1.4',
   })
 
+  if (options.action) {
+    el.style.setProperty('-webkit-app-region', 'no-drag')
+  }
+
+  const content = document.createElement('span')
+  content.textContent = message
+
+  if (options.action) {
+    content.appendChild(document.createTextNode(' · '))
+
+    const link = document.createElement('span')
+    link.textContent = options.action.label
+    link.setAttribute('role', 'button')
+    link.setAttribute('tabindex', '0')
+    Object.assign(link.style, {
+      cursor: 'pointer',
+      color: colors.text,
+      fontSize: 'inherit',
+      fontFamily: 'inherit',
+      fontWeight: 'inherit',
+      textDecoration: 'none',
+    })
+    link.style.setProperty('-webkit-app-region', 'no-drag')
+
+    const trigger = (e: Event) => {
+      e.preventDefault()
+      e.stopPropagation()
+      options.action?.onClick()
+    }
+
+    link.addEventListener('click', trigger)
+    link.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') trigger(e)
+    })
+
+    content.appendChild(link)
+  }
+
+  el.appendChild(content)
   document.body.appendChild(el)
 
   requestAnimationFrame(() => {
@@ -56,9 +107,11 @@ function show(message: string, type: MessageType, duration = 3000) {
   }, duration)
 }
 
+type ShowFn = (msg: string, options?: ZqMessageOptions) => void
+
 export const ZqMessage = {
-  success: (msg: string) => show(msg, 'success'),
-  warning: (msg: string) => show(msg, 'warning'),
-  error: (msg: string) => show(msg, 'error'),
-  info: (msg: string) => show(msg, 'info'),
+  success: ((msg, options) => show(msg, 'success', options)) as ShowFn,
+  warning: ((msg, options) => show(msg, 'warning', options)) as ShowFn,
+  error: ((msg, options) => show(msg, 'error', options)) as ShowFn,
+  info: ((msg, options) => show(msg, 'info', options)) as ShowFn,
 }

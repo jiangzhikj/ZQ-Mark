@@ -8,6 +8,8 @@ import {
   Trash2,
 } from '@/components/icons';
 
+import { useMdAssetUrl } from '../../utils/use-md-asset-url';
+
 import { NodeViewWrapper } from '@tiptap/vue-3';
 
 const props = defineProps<{
@@ -28,7 +30,12 @@ const resizeCorner = ref('se');
 const MIN_AUDIO_WIDTH = 160;
 const MAX_AUDIO_WIDTH = 1200;
 
-const displaySrc = computed(() => props.node.attrs.src || '');
+const { renderUrl: displaySrc } = useMdAssetUrl({
+  getRawUrl: () => props.node.attrs.src || '',
+  onImport: (_raw, url, id) => {
+    props.updateAttributes({ src: url, id: id ?? props.node.attrs.id });
+  },
+});
 
 const alignment = computed(() => props.node.attrs.alignment || 'center');
 const nodeStyle = computed(() => {

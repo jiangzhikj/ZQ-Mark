@@ -100,8 +100,10 @@ const zhTW: AppLocale = {
     untitled: '未命名'
   },
   welcome: {
-    openFile: '開啟檔案',
-    openFileDesc: '開啟已有的檔案或檔案庫',
+    openFile: '開啟',
+    openFileDesc: '開啟檔案、檔案庫，或瀏覽電腦資料夾中的文件',
+    openFolder: '開啟資料夾',
+    openFolderDesc: '瀏覽電腦資料夾中的文件',
     newDocument: '新建文件',
     newDocumentDesc: '建立一個新的空白文件',
     newLibrary: '新建檔案庫',
@@ -141,6 +143,10 @@ const zhTW: AppLocale = {
     folderNameLabel: '資料夾名稱',
     folderNamePlaceholder: '請輸入資料夾名稱'
   },
+  folder: {
+    emptyFolder: '資料夾為空\n點擊上方按鈕建立文件',
+    selectOrCreateFile: '選擇或建立一個檔案開始編輯'
+  },
   settings: {
     title: '偏好設定',
     general: '一般',
@@ -171,6 +177,26 @@ const zhTW: AppLocale = {
     drawioUiLayoutMinimal: '精簡版面',
     spellcheck: '拼字檢查',
     spellcheckDesc: '啟用後編輯器會對拼寫錯誤的單詞顯示紅色波浪線',
+    mdAssetMode: 'Markdown 資源儲存',
+    mdAssetModeDesc: '儲存 .md 檔案時，圖片、影片、音訊與附件的存放方式',
+    mdAssetModeRelative: '複製到文件目錄（相對路徑）',
+    mdAssetModeAbsolute: '應用快取（絕對路徑）',
+    mdAssetFolder: '資源目錄',
+    mdAssetFolderDesc: '複製到 Markdown 檔案旁的子資料夾',
+    mdAssetFolderAssets: './assets/',
+    mdAssetFolderDocNamed: './{filename}.assets/',
+    mdAssetFolderSame: '與文件同目錄',
+    mdAssetFolderCustom: '自訂',
+    mdAssetCustomFolder: '自訂目錄',
+    mdAssetCustomFolderDesc: '設定中顯示完整路徑；儲存到 .md 時寫入相對路徑，便於分享',
+    mdAssetCustomFolderPlaceholder: '例如 /Users/you/project/assets',
+    mdAssetCustomFolderBrowse: '選擇資料夾…',
+    mdAssetCustomFolderEmptyHint: '請選擇用於存放資源的資料夾',
+    mdAssetFileName: '檔案命名',
+    mdAssetFileNameDesc: '複製資源檔案時的命名方式',
+    mdAssetFileNameOriginal: '保留原檔名',
+    mdAssetFileNameUuid: '隨機 UUID 檔名',
+    mdAssetDesktopOnlyHint: '將資源複製到文件旁僅桌面端可用。',
     saveFormatAsk: '儲存時詢問格式',
     saveFormatAskDesc: '儲存單一檔案時彈出對話框，在 Markdown 與 ZQ 文件之間選擇',
     saveFormatDefaultLabel: '不詢問時預設使用',
@@ -262,7 +288,35 @@ const zhTW: AppLocale = {
   exportMsg: {
     exporting: '正在匯出...',
     success: '匯出成功',
-    failed: '匯出失敗'
+    failed: '匯出失敗',
+    openFolder: '開啟目錄'
+  },
+  exportPdf: {
+    untitled: '未命名',
+    subtitle: 'PDF 匯出設定',
+    export: '匯出',
+    close: '關閉',
+    firstPage: '首頁',
+    prevPage: '上一頁',
+    nextPage: '下一頁',
+    lastPage: '尾頁',
+    paperSize: '紙張類型',
+    margins: '紙張邊距',
+    orientation: '紙張方向',
+    portrait: '縱向',
+    landscape: '橫向',
+    margin: {
+      normal: '正常',
+      narrow: '窄',
+      wide: '寬',
+      minimal: '最小',
+      custom: '自訂'
+    },
+    marginTop: '上',
+    marginBottom: '下',
+    marginLeft: '左',
+    marginRight: '右',
+    marginUnit: '單位：英寸（0–2）',
   },
   saveMsg: {
     success: '檔案已儲存'

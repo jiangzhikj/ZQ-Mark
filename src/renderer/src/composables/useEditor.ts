@@ -1,6 +1,12 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ZqMessage } from '@/components/ui'
 import i18n from '@/i18n'
+import type { PdfExportSettings } from '../../shared/pdf-export'
+import {
+  normalizeMdAssetSettings,
+  buildAssetUrlReplacements,
+  applyAssetUrlReplacementsInMarkdown,
+} from '../../../shared/markdown-assets'
 
 const markdownContent = ref('')
 const filePath = ref<string | null>(null)
@@ -19,8 +25,9 @@ const largeFileTotalLines = ref(0)
 const largeFileLoading = ref(false)
 let _fullContent: string | null = null
 
-const windowMode = ref<'document' | 'library'>('document')
+const windowMode = ref<'document' | 'library' | 'folder'>('document')
 const libraryDocId = ref<string | null>(null)
+const folderRootPath = ref<string | null>(null)
 const dirtyDocIds = new Set<string>()
 const autoSaveEnabled = ref(true)
 /** 文档格式：'md' 为标准 Markdown，'zq' 为 ZQ 自定义格式 */
@@ -29,16 +36,20 @@ const documentFormat = ref<'md' | 'zq'>('md')
 let _getMarkdown: (() => string) | null = null
 let _getHTML: (() => string) | null = null
 let _getJSON: (() => any) | null = null
-let _setContent: ((content: string) => void) | null = null
-let _setContentJSON: ((json: any) => void) | null = null
+let _setContent: ((content: string, resetHistory?: boolean) => void) | null = null
+let _setContentJSON: ((json: any, resetHistory?: boolean) => void) | null = null
 
 let _pendingContent: string | null = null
 let _pendingJSON: any = null
 let _autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let _suppressUpdate = false
 let _resolveSaveFormat: (() => Promise<'md' | 'zq' | 'cancel'>) | null = null
+let _resolvePdfExport: (() => Promise<PdfExportSettings | null>) | null = null
 
 let _unsavedDialog: (() => Promise<'save' | 'discard' | 'cancel'>) | null = null
+let _saveInProgress = false
+let _sourceModeActive = false
+let _getSourceMarkdownIfActive: (() => string | null) | null = null
 const AUTO_SAVE_DELAY = 1500
 
 function t(key: string, params?: Record<string, unknown>): string {
@@ -96,6 +107,94 @@ function encodeUrlSpacesInMarkdown(md: string): string {
   )
 }
 
+function appendLargeFileTail(md: string): string {
+  if (largeFileTruncated.value && _fullContent) {
+    const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
+    return md + '\n' + remainingLines.join('\n')
+  }
+  return md
+}
+
+async function resolveMdForLoad(md: string, _docPath: string): Promise<string> {
+  if (!md) return md
+  return encodeUrlSpacesInMarkdown(md)
+}
+
+async function prepareMdForSave(docPath: string): Promise<string> {
+  const settings = await window.electron.getSettings()
+  const assetSettings = normalizeMdAssetSettings(settings)
+
+  if (assetSettings.mdAssetMode === 'absolute') {
+    let md = _getMarkdown?.() || ''
+    md = md.replace(/local-asset:\/\//g, 'file://')
+    return appendLargeFileTail(md)
+  }
+
+  let md = _getMarkdown?.() || ''
+  const raw = _getJSON?.()
+
+  if (raw) {
+    const originalJson = JSON.parse(JSON.stringify(raw))
+    const { json: materialized } = await window.electron.materializeMdAssets({
+      json: raw,
+      docPath,
+      settings: assetSettings,
+    })
+    const replacements = buildAssetUrlReplacements(originalJson, materialized)
+    md = applyAssetUrlReplacementsInMarkdown(md, replacements)
+  }
+
+  if (md.includes('local-asset:') && window.electron.materializeMdContent) {
+    md = await window.electron.materializeMdContent({
+      md,
+      docPath,
+      settings: assetSettings,
+    })
+  }
+
+  return appendLargeFileTail(md)
+}
+
+function isMdDocumentPath(path: string | null): boolean {
+  if (!path || isZqFormat.value || documentFormat.value === 'zq') return false
+  return getExtension(path) !== '.zq'
+}
+
+/** 源码模式展示：与落盘 .md 一致（相对路径），不暴露 local-asset */
+async function getMarkdownForSourceView(): Promise<string> {
+  const path = filePath.value
+  if (!path || !isMdDocumentPath(path)) {
+    return _getMarkdown?.() || ''
+  }
+  return prepareMdForSave(path)
+}
+
+/** 从源码模式写回编辑器：保持相对路径，由节点视图在渲染时解析 */
+async function applyMarkdownFromSource(md: string): Promise<void> {
+  _suppressUpdate = true
+  if (_setContent) {
+    _setContent(md, false)
+  }
+  _suppressUpdate = false
+  markdownContent.value = md
+}
+
+function setSourceModeActive(active: boolean): void {
+  _sourceModeActive = active
+}
+
+function registerSourceMarkdownProvider(fn: () => string | null): void {
+  _getSourceMarkdownIfActive = fn
+}
+
+async function getMdContentForSave(docPath: string): Promise<string> {
+  if (_sourceModeActive && _getSourceMarkdownIfActive) {
+    const src = _getSourceMarkdownIfActive()
+    if (src !== null) return appendLargeFileTail(src)
+  }
+  return prepareMdForSave(docPath)
+}
+
 export function useEditor() {
   const isModified = computed(() => editVersion.value !== savedVersion.value)
 
@@ -111,8 +210,8 @@ export function useEditor() {
     getMarkdown: () => string
     getHTML: () => string
     getJSON: () => any
-    setContent: (content: string) => void
-    setContentJSON: (json: any) => void
+    setContent: (content: string, resetHistory?: boolean) => void
+    setContentJSON: (json: any, resetHistory?: boolean) => void
   }) {
     _getMarkdown = api.getMarkdown
     _getHTML = api.getHTML
@@ -136,7 +235,7 @@ export function useEditor() {
   }
 
   function scheduleAutoSave() {
-    if (!autoSaveEnabled.value) return
+    if (!autoSaveEnabled.value || _sourceModeActive) return
     if (_autoSaveTimer) clearTimeout(_autoSaveTimer)
     _autoSaveTimer = setTimeout(() => {
       _autoSaveTimer = null
@@ -145,44 +244,50 @@ export function useEditor() {
   }
 
   async function performAutoSave() {
-    if (windowMode.value === 'library') {
-      if (!libraryDocId.value) return
-      const raw = _getJSON?.()
-      if (!raw) return
-      const json = JSON.parse(JSON.stringify(raw))
-      await window.electron.librarySaveDoc({ docId: libraryDocId.value, json })
-      const savePath = await window.electron.librarySave()
-      if (savePath) {
-        filePath.value = savePath
-        markAsSaved()
-        dirtyDocIds.clear()
+    if (_saveInProgress) return
+    _saveInProgress = true
+    try {
+      if (windowMode.value === 'library') {
+        if (!libraryDocId.value) return
+        const raw = _getJSON?.()
+        if (!raw) return
+        const json = JSON.parse(JSON.stringify(raw))
+        await window.electron.librarySaveDoc({ docId: libraryDocId.value, json })
+        const savePath = await window.electron.librarySave()
+        if (savePath) {
+          filePath.value = savePath
+          markAsSaved()
+          dirtyDocIds.clear()
+        }
+        return
       }
-      return
-    }
 
-    if (!filePath.value) return
-    const ext = filePath.value ? getExtension(filePath.value) : ''
-    if (ext === '.zq' || isZqFormat.value) {
-      const raw = _getJSON?.()
-      if (!raw) return
-      const json = JSON.parse(JSON.stringify(raw))
-      const title = fileName.value?.replace(/\.[^.]+$/, '') || 'untitled'
-      const meta = zqMeta.value ? JSON.parse(JSON.stringify(zqMeta.value)) : undefined
-      const result = await window.electron.saveZqFile({ filePath: filePath.value, json, title, existingMeta: meta })
-      if (result) {
-        isZqFormat.value = true
-        markAsSaved()
+      if (windowMode.value === 'folder') {
+        await flushFolderFile()
+        return
       }
-    } else {
-      let md = _getMarkdown?.() || ''
-      md = md.replace(/local-asset:\/\//g, 'file://')
-      if (largeFileTruncated.value && _fullContent) {
-        const editedPart = md
-        const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
-        md = editedPart + '\n' + remainingLines.join('\n')
+
+      if (!filePath.value) return
+      const ext = filePath.value ? getExtension(filePath.value) : ''
+      if (ext === '.zq' || isZqFormat.value) {
+        const raw = _getJSON?.()
+        if (!raw) return
+        const json = JSON.parse(JSON.stringify(raw))
+        const title = fileName.value?.replace(/\.[^.]+$/, '') || 'untitled'
+        const meta = zqMeta.value ? JSON.parse(JSON.stringify(zqMeta.value)) : undefined
+        const result = await window.electron.saveZqFile({ filePath: filePath.value, json, title, existingMeta: meta })
+        if (result) {
+          isZqFormat.value = true
+          markAsSaved()
+        }
+      } else {
+        if (!filePath.value) return
+        const md = await getMdContentForSave(filePath.value)
+        const result = await window.electron.saveFile({ filePath: filePath.value, content: md })
+        if (result) markAsSaved()
       }
-      const result = await window.electron.saveFile({ filePath: filePath.value, content: md })
-      if (result) markAsSaved()
+    } finally {
+      _saveInProgress = false
     }
   }
 
@@ -193,6 +298,9 @@ export function useEditor() {
     if (windowMode.value === 'library' && libraryDocId.value) {
       dirtyDocIds.add(libraryDocId.value)
     }
+    if (windowMode.value === 'folder' && filePath.value) {
+      dirtyDocIds.add(filePath.value)
+    }
     scheduleAutoSave()
   }
 
@@ -200,8 +308,27 @@ export function useEditor() {
     savedVersion.value = editVersion.value
   }
 
+  function clearEditor() {
+    filePath.value = null
+    fileName.value = ''
+    isZqFormat.value = false
+    zqMeta.value = null
+    markdownContent.value = ''
+    resetTruncation()
+    _suppressUpdate = true
+    if (_setContent) {
+      _setContent('')
+    } else {
+      _pendingContent = ''
+      _pendingJSON = null
+    }
+    _suppressUpdate = false
+    markAsSaved()
+    dirtyDocIds.clear()
+  }
+
   async function confirmUnsaved(): Promise<boolean> {
-    const hasUnsaved = windowMode.value === 'library'
+    const hasUnsaved = windowMode.value === 'library' || windowMode.value === 'folder'
       ? isModified.value || dirtyDocIds.size > 0
       : isModified.value
     if (!hasUnsaved) return true
@@ -221,14 +348,107 @@ export function useEditor() {
 
   // ─── Library mode: switch doc within the library ───
 
-  function setWindowMode(mode: 'document' | 'library') {
+  function setWindowMode(mode: 'document' | 'library' | 'folder') {
     windowMode.value = mode
   }
 
-  async function switchLibraryDoc(docId: string): Promise<boolean> {
+  async function flushFolderFile(): Promise<boolean> {
+    if (windowMode.value !== 'folder' || !filePath.value) return false
+
+    const ext = getExtension(filePath.value)
+    if (ext === '.zq' || isZqFormat.value) {
+      const raw = _getJSON?.()
+      if (!raw) return false
+      const json = JSON.parse(JSON.stringify(raw))
+      const title = fileName.value?.replace(/\.[^.]+$/, '') || 'untitled'
+      const meta = zqMeta.value ? JSON.parse(JSON.stringify(zqMeta.value)) : undefined
+      const ok = await window.electron.folderWriteFile({
+        filePath: filePath.value,
+        json,
+        title,
+        meta,
+      })
+      if (ok) {
+        markAsSaved()
+        dirtyDocIds.delete(filePath.value)
+      }
+      return ok
+    }
+
+    let md = await getMdContentForSave(filePath.value)
+    const ok = await window.electron.folderWriteFile({
+      filePath: filePath.value,
+      content: md,
+    })
+    if (ok) {
+      markAsSaved()
+      dirtyDocIds.delete(filePath.value)
+    }
+    return ok
+  }
+
+  async function switchFolderFile(
+    targetPath: string,
+    options?: { skipFlush?: boolean },
+  ): Promise<boolean> {
+    if (windowMode.value !== 'folder') return false
+
+    if (!options?.skipFlush && filePath.value && isModified.value) {
+      await flushFolderFile()
+    }
+
+    const result = await window.electron.folderReadFile(targetPath)
+    if (!result) return false
+
+    filePath.value = targetPath
+    fileName.value = result.name
+    documentFormat.value = result.isZq ? 'zq' : 'md'
+
+    _suppressUpdate = true
+    if (result.isZq && result.json) {
+      isZqFormat.value = true
+      zqMeta.value = result.meta || null
+      resetTruncation()
+      if (_setContentJSON) {
+        _setContentJSON(result.json)
+      } else {
+        _pendingJSON = result.json
+      }
+    } else {
+      isZqFormat.value = false
+      zqMeta.value = null
+      const fullMd = result.content ?? ''
+      const resolved = await resolveMdForLoad(fullMd, targetPath)
+      const md = applyTruncation(resolved)
+      markdownContent.value = md
+      if (_setContent) {
+        _setContent(md)
+      } else {
+        _pendingContent = md
+      }
+    }
+    _suppressUpdate = false
+    markAsSaved()
+    if (dirtyDocIds.has(targetPath)) {
+      editVersion.value++
+    }
+    return true
+  }
+
+  async function saveFolderFile() {
+    const ok = await flushFolderFile()
+    if (ok) {
+      ZqMessage.success(t('saveMsg.success'))
+    }
+  }
+
+  async function switchLibraryDoc(
+    docId: string,
+    options?: { skipSave?: boolean },
+  ): Promise<boolean> {
     if (windowMode.value !== 'library') return false
 
-    if (libraryDocId.value && _getJSON) {
+    if (!options?.skipSave && libraryDocId.value && _getJSON) {
       const raw = _getJSON()
       if (raw) {
         const json = JSON.parse(JSON.stringify(raw))
@@ -272,16 +492,26 @@ export function useEditor() {
 
   // ─── Document mode operations ───
 
-  async function openFile(): Promise<'library-in-place' | 'opened' | null> {
+  async function openFile(): Promise<'library-in-place' | 'folder-in-place' | 'opened' | null> {
     if (!(await confirmUnsaved())) return null
 
     const result = await window.electron.openFile()
     if (!result) return null
 
-    if ((result as any).opened === 'library-in-place') return 'library-in-place'
-    if ((result as any).opened === 'library-window') return null
+    if (result.opened === 'library-in-place') return 'library-in-place'
+    if (result.opened === 'library-window') return null
+    if (result.opened === 'folder-in-place') {
+      folderRootPath.value = result.filePath ?? null
+      windowMode.value = 'folder'
+      clearEditor()
+      return 'folder-in-place'
+    }
+    if (result.opened === 'folder-window') return null
 
     if (!result.filePath) return null
+
+    windowMode.value = 'document'
+    folderRootPath.value = null
 
     filePath.value = result.filePath
     fileName.value = fileNameFromPath(result.filePath)
@@ -300,7 +530,8 @@ export function useEditor() {
       isZqFormat.value = false
       zqMeta.value = null
       const fullMd = result.content ?? ''
-      const md = applyTruncation(encodeUrlSpacesInMarkdown(fullMd))
+      const resolved = await resolveMdForLoad(fullMd, result.filePath)
+      const md = applyTruncation(resolved)
       markdownContent.value = md
       if (_setContent) {
         _setContent(md)
@@ -314,17 +545,16 @@ export function useEditor() {
   }
 
   async function doSaveMd(path: string | null) {
-    let md = _getMarkdown?.() || ''
-    // 替换 local-asset:// 为 file://，使其他 Markdown 编辑器也能显示图片
-    md = md.replace(/local-asset:\/\//g, 'file://')
-    if (largeFileTruncated.value && _fullContent) {
-      const editedPart = md
-      const remainingLines = _fullContent.split('\n').slice(largeFileLoadedLines.value)
-      md = editedPart + '\n' + remainingLines.join('\n')
+    let savePath = path
+    if (!savePath) {
+      savePath = await window.electron.pickMdSavePath(null)
+      if (!savePath) return
     }
+
+    const md = await getMdContentForSave(savePath)
     const result = await window.electron.saveFile({
-      filePath: path,
-      content: md
+      filePath: savePath,
+      content: md,
     })
     if (result) {
       filePath.value = result
@@ -338,6 +568,11 @@ export function useEditor() {
   async function saveFile() {
     if (windowMode.value === 'library') {
       await saveLibraryDoc()
+      return
+    }
+
+    if (windowMode.value === 'folder') {
+      await saveFolderFile()
       return
     }
 
@@ -361,6 +596,10 @@ export function useEditor() {
 
   function setSaveFormatResolver(fn: () => Promise<'md' | 'zq' | 'cancel'>) {
     _resolveSaveFormat = fn
+  }
+
+  function setPdfExportResolver(fn: () => Promise<PdfExportSettings | null>) {
+    _resolvePdfExport = fn
   }
 
   function setUnsavedDialog(fn: () => Promise<'save' | 'discard' | 'cancel'>) {
@@ -401,7 +640,9 @@ export function useEditor() {
     window.electron.newLibraryWindow()
   }
 
-  function loadFileResult(result: { filePath: string; content: string; json?: any; meta?: any; isZq: boolean }) {
+  async function loadFileResult(result: { filePath: string; content: string; json?: any; meta?: any; isZq: boolean }) {
+    windowMode.value = 'document'
+    folderRootPath.value = null
     filePath.value = result.filePath
     fileName.value = fileNameFromPath(result.filePath)
     documentFormat.value = result.isZq ? 'zq' : 'md'
@@ -419,8 +660,10 @@ export function useEditor() {
     } else {
       isZqFormat.value = false
       zqMeta.value = null
+      resetTruncation()
       const fullMd = result.content ?? ''
-      const md = applyTruncation(encodeUrlSpacesInMarkdown(fullMd))
+      const resolved = await resolveMdForLoad(fullMd, result.filePath)
+      const md = applyTruncation(resolved)
       markdownContent.value = md
       if (_setContent) {
         _setContent(md)
@@ -438,12 +681,32 @@ export function useEditor() {
 
     const title = fileName.value?.replace(/\.[^.]+$/, '') || 'untitled'
 
+    let pdfSettings: PdfExportSettings | undefined
+    if (format === 'pdf') {
+      if (!_resolvePdfExport) return
+      const resolved = await _resolvePdfExport()
+      if (!resolved) return
+      pdfSettings = resolved
+    }
+
     ZqMessage.info(t('exportMsg.exporting'))
 
     try {
-      const result = await window.electron.exportFile({ format, html, title })
+      const result = await window.electron.exportFile({
+        format,
+        html,
+        title,
+        pdfSettings,
+      })
       if (result) {
-        ZqMessage.success(t('exportMsg.success'))
+        ZqMessage.success(t('exportMsg.success'), {
+          action: {
+            label: t('exportMsg.openFolder'),
+            onClick: () => {
+              void window.electron.showInFolder(result)
+            },
+          },
+        })
       }
     } catch {
       ZqMessage.error(t('exportMsg.failed'))
@@ -463,7 +726,6 @@ export function useEditor() {
     switch (action) {
       case 'file:new': newFile(); break
       case 'file:newLibrary': newLibrary(); break
-      case 'file:open': openFile(); break
       case 'file:save': saveFile(); break
       case 'file:saveAsMd': saveAsMd(); break
       case 'file:saveAsZq': saveAsZq(null); break
@@ -482,7 +744,7 @@ export function useEditor() {
   onMounted(async () => {
     cleanupMenu = window.electron.onMenuAction(handleMenuAction)
     cleanupDirty = window.electron.onCheckDirty(() => {
-      if (windowMode.value === 'library') {
+      if (windowMode.value === 'library' || windowMode.value === 'folder') {
         return isModified.value || dirtyDocIds.size > 0
       }
       return isModified.value
@@ -490,6 +752,9 @@ export function useEditor() {
 
     try {
       windowMode.value = await window.electron.getWindowMode()
+      if (windowMode.value === 'folder') {
+        folderRootPath.value = await window.electron.folderGetRoot()
+      }
     } catch {
       windowMode.value = 'document'
     }
@@ -544,7 +809,7 @@ export function useEditor() {
 
     _suppressUpdate = true
     if (_setContent) {
-      _setContent(content)
+      _setContent(content, false)
     }
     _suppressUpdate = false
     markdownContent.value = content
@@ -552,6 +817,22 @@ export function useEditor() {
 
     if (loadTo >= total) {
       resetTruncation()
+    }
+  }
+
+  async function prepareWorkspaceDocSwitch(): Promise<void> {
+    if (windowMode.value === 'folder') {
+      if (filePath.value && isModified.value) {
+        await flushFolderFile()
+      }
+      return
+    }
+    if (windowMode.value === 'library' && libraryDocId.value && _getJSON) {
+      const raw = _getJSON()
+      if (raw) {
+        const json = JSON.parse(JSON.stringify(raw))
+        await window.electron.librarySaveDoc({ docId: libraryDocId.value, json })
+      }
     }
   }
 
@@ -566,6 +847,7 @@ export function useEditor() {
     stats,
     windowMode,
     libraryDocId,
+    folderRootPath,
     autoSaveEnabled,
     largeFileTruncated,
     largeFileLoadedLines,
@@ -579,14 +861,23 @@ export function useEditor() {
     saveAsZq,
     setDocumentFormat,
     setSaveFormatResolver,
+    setPdfExportResolver,
     setUnsavedDialog,
     newFile,
     newLibrary,
     switchLibraryDoc,
+    switchFolderFile,
     saveLibraryDoc,
+    saveFolderFile,
     loadFileResult,
     setWindowMode,
+    clearEditor,
     loadMoreLines,
-    loadAllLines
+    loadAllLines,
+    prepareWorkspaceDocSwitch,
+    getMarkdownForSourceView,
+    applyMarkdownFromSource,
+    setSourceModeActive,
+    registerSourceMarkdownProvider,
   }
 }

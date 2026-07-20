@@ -1,22 +1,22 @@
 {
-  "version": "1.1.0",
-  "notes": "- 添加单词检查开关，默认关闭\n- 修复其他md编辑中添加本地图片，不显示的问题.\n- 修复其他的体验",
+  "version": "1.1.1",
+  "notes": "- 增强PDF导出\n- 导出成功后直接打开导出目录.\n- 修复其他的体验",
   "pub_date": "2026-04-09T00:00:00Z",
   "platforms": {
     "darwin-arm64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark-1.1.0-arm64.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.1/ZQ%20Mark-1.1.1-arm64.dmg",
       "size": 89000000
     },
     "darwin-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark-1.1.0.dmg",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.1/ZQ%20Mark-1.1.1.dmg",
       "size": 92000000
     },
     "win32-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark%20Setup%201.1.0.exe",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.1/ZQ%20Mark%20Setup%201.1.1.exe",
       "size": 78000000
     },
     "linux-x64": {
-      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.0/ZQ%20Mark-1.1.0-x86_64.AppImage",
+      "url": "https://minio-api.fuadmin.cn/zq-mark/v1.1.1/ZQ%20Mark-1.1.1-x86_64.AppImage",
       "size": 95000000
     }
   }

@@ -55,6 +55,10 @@ const defaultSettings = (): AppSettings => ({
   uiLocale: 'system',
   uiThemeMode: 'system',
   spellcheck: false,
+  mdAssetMode: 'relative',
+  mdAssetFolder: 'assets',
+  mdAssetCustomFolder: '',
+  mdAssetFileName: 'original',
 })
 
 function readSettings(): AppSettings {
@@ -312,6 +316,53 @@ export function createWebElectronApi(): ElectronAPI {
       }
     },
 
+    saveMdAsset: async (data) => {
+      const blob = new Blob([data.buffer])
+      const url = URL.createObjectURL(blob)
+      const id = crypto.randomUUID()
+      return {
+        id,
+        path: '',
+        url,
+        name: data.fileName,
+        size: data.buffer.byteLength,
+        relativePath: '',
+      }
+    },
+
+    materializeMdAssets: async ({ json }) => ({ json }),
+
+    materializeMdContent: async ({ md }) => md,
+
+    resolveMdAssetsInJson: async ({ json }) => json,
+
+    resolveDocAssetUrl: async () => null,
+
+    resolveMdContent: async ({ md }) => md,
+
+    pickMdSavePath: async (filePath) => {
+      if (filePath) return filePath
+      if ('showSaveFilePicker' in window) {
+        try {
+          const handle = await (window as any).showSaveFilePicker({
+            suggestedName: 'untitled.md',
+            types: [{ accept: { 'text/markdown': ['.md'] } }],
+          })
+          const f = await handle.getFile()
+          const vp = `web:${f.name}`
+          fileHandles.set(vp, handle)
+          return vp
+        } catch {
+          return null
+        }
+      }
+      return 'web:untitled.md'
+    },
+
+    pickMdAssetCustomFolder: async () => null,
+
+    openLocalFileForDoc: async () => null,
+
     saveArrayBufferAs: async (buffer, defaultFileName) => {
       const name = defaultFileName || 'image.png'
       if ('showSaveFilePicker' in window) {
@@ -521,6 +572,17 @@ export function createWebElectronApi(): ElectronAPI {
       webLibraryRuntime.dirty = true
       return true
     },
+
+    folderGetTree: async () => [],
+    folderGetRoot: async () => null,
+    folderGetName: async () => '',
+    folderReadFile: async () => null,
+    folderWriteFile: async () => false,
+    folderCreateFile: async () => null,
+    folderCreateFolder: async () => null,
+    folderRename: async () => null,
+    folderDelete: async () => false,
+    folderMove: async () => false,
 
     updateCheck: async () => {},
     updateDownload: async () => {},
